@@ -11,6 +11,7 @@ Check raw_termEvaluationClosedStep_forget_to_syntax.
 Check raw_termEvaluationTraversal_forget_to_syntax.
 Check raw_codedAssignmentDefinedThrough_weaken.
 Check raw_quotedTerm_syntax_realizable_of_assignment.
+Check raw_quotedTerm_universally_adequate.
 
 (** Atomic adequacy is available for every externally quoted formula and
     for every externally quoted finite context. *)
@@ -33,13 +34,17 @@ Check raw_codedFormulaSingleSubstitution_quoted_sound.
 (** Endpoint adequacy and its proof-wide support-table consequence are
     deliberately stated only for externally quoted valid derivations. *)
 Check raw_quotedProof_endpoint_atomically_adequate.
+Check raw_quotedProof_constructor_payloads_atomically_adequate.
 Check raw_proofAtomicallyAdequate_quoted.
 
 Print Assumptions raw_quotedTerm_syntax_realizable_of_assignment.
+Print Assumptions raw_quotedTerm_universally_adequate.
 Print Assumptions raw_quotedFormula_atomically_adequate.
 Print Assumptions raw_quotedContext_all_atomically_adequate.
 Print Assumptions raw_codedTermShift_quoted_sound.
 Print Assumptions raw_codedTermOpening_quoted_sound.
 Print Assumptions raw_codedFormulaSingleSubstitution_quoted_sound.
 Print Assumptions raw_quotedProof_endpoint_atomically_adequate.
+Print Assumptions
+  raw_quotedProof_constructor_payloads_atomically_adequate.
 Print Assumptions raw_proofAtomicallyAdequate_quoted.

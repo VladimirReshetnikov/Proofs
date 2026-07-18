@@ -204,6 +204,17 @@ Proof.
       (raw_succ M (rawQuotedTermCode M quoted)) hindexCode hcode).
 Qed.
 
+(** Quoted terms satisfy the assignment-parametric payload condition used
+    by proof atomic adequacy. *)
+Theorem raw_quotedTerm_universally_adequate : forall
+    (M : RawPAModel), RawPASatisfies M -> forall quoted,
+  RawCodedTermUniversallyAdequate M (rawQuotedTermCode M quoted).
+Proof.
+  intros M hPA quoted assignmentCode assignmentStep hdefined.
+  exact (raw_quotedTerm_syntax_realizable_of_assignment M hPA
+    quoted assignmentCode assignmentStep hdefined).
+Qed.
+
 (** ------------------------------------------------------------------
     Standard quoted formulae. *)
 
@@ -1314,6 +1325,81 @@ Proof.
   all: apply raw_quotedFormula_atomically_adequate; exact hPA.
 Qed.
 
+(** Every formula and term carried directly by a standard constructor is a
+    standard quotation.  The generic constructor relation has eight witness
+    fields, many of which are unconstrained in a particular rule; list-code
+    injectivity is therefore used to identify only the fields actually
+    stored by the matching constructor before proving their adequacy. *)
+Ltac solve_raw_quoted_constructor_payload hPA :=
+  first
+    [ left; repeat split;
+        first
+          [ reflexivity
+          | apply raw_quotedFormula_atomically_adequate; exact hPA
+          | apply raw_quotedTerm_universally_adequate; exact hPA ]
+    | right; solve_raw_quoted_constructor_payload hPA ].
+
+Lemma raw_quotedProof_constructor_payloads_atomically_adequate : forall
+    (M : RawPAModel), RawPASatisfies M -> forall derivation,
+  RawProofConstructorPayloadsAtomicallyAdequate M
+    (rawQuotedProofCode M derivation).
+Proof.
+  intros M hPA derivation context a b c t child1 child2 child3
+    hconstructor.
+  unfold RawProofConstructorCode in hconstructor.
+  unfold RawProofConstructorPayloadAtomicallyAdequate.
+  destruct hconstructor as
+    [hcode |
+     [hcode |
+      [hcode |
+       [hcode |
+        [hcode |
+         [hcode |
+          [hcode |
+           [hcode |
+            [hcode |
+             [hcode |
+              [hcode |
+               [hcode |
+                [hcode |
+                 [hcode |
+                  [hcode |
+                   [hcode | hcode]]]]]]]]]]]]]]]].
+  all: destruct derivation.
+  all: cbn [rawQuotedProofCode rawListCode] in *.
+  all: repeat match goal with
+  | hnodes : rawListNode ?model ?head ?tail =
+      rawListNode ?model ?head' ?tail' |- _ =>
+      destruct (rawListNode_injective model hPA
+        head tail head' tail' hnodes) as [? ?]; clear hnodes
+  end.
+  all: try match goal with
+  | hnil : raw_zero ?model = rawListNode ?model ?head ?tail |- _ =>
+      exfalso; exact (rawListNode_not_zero model hPA head tail hnil)
+  | hnil : rawListNode ?model ?head ?tail = raw_zero ?model |- _ =>
+      exfalso; apply (rawListNode_not_zero model hPA head tail);
+      exact hnil
+  end.
+  all: subst.
+  all: cbn [rawNumeralValue] in *.
+  all: repeat match goal with
+  | htag : raw_succ ?model ?left = raw_succ ?model ?right |- _ =>
+      apply (raw_succ_injective_syntax model hPA) in htag
+  end.
+  all: try match goal with
+  | htag : raw_zero ?model = raw_succ ?model ?value |- _ =>
+      exfalso; exact (raw_zero_not_succ_syntax model hPA value htag)
+  | htag : raw_succ ?model ?value = raw_zero ?model |- _ =>
+      exfalso; apply (raw_zero_not_succ_syntax model hPA value);
+      symmetry; exact htag
+  end.
+  all: try solve_raw_quoted_constructor_payload hPA.
+  do 16 right. repeat split.
+  - apply raw_quotedTerm_universally_adequate. exact hPA.
+  - apply raw_quotedTerm_universally_adequate. exact hPA.
+  - apply raw_quotedFormula_atomically_adequate. exact hPA.
+Qed.
+
 (** The exact support selector from standard restricted-proof adequacy marks
     precisely valid quoted derivations below the external root bound.  It
     therefore supplies both syntax closure and the universal endpoint
@@ -1358,19 +1444,34 @@ Proof.
         level (S (rawProofCode derivation)) supportCode supportStep
         (conj hdefined hexact) row child hrowCodeBound
         hrowValid hrowRank hchild).
-  - intros code hcode hsupported.
-    assert (hcodeBound : rawLt M code
-        (rawNumeralValue M (S (rawProofCode derivation)))).
-    {
-      rewrite rawQuotedProofCode_standard in hcode by exact hPA.
-      change (rawLt M code
-        (rawNumeralValue M (S (rawProofCode derivation)))) in hcode.
-      exact hcode.
-    }
-    destruct (proj1 (hexact code hcodeBound) hsupported) as
-      (row & hrow & _ & _ & _).
-    subst code.
-    apply raw_quotedProof_endpoint_atomically_adequate. exact hPA.
+  - split.
+    + intros code hcode hsupported.
+      assert (hcodeBound : rawLt M code
+          (rawNumeralValue M (S (rawProofCode derivation)))).
+      {
+        rewrite rawQuotedProofCode_standard in hcode by exact hPA.
+        change (rawLt M code
+          (rawNumeralValue M (S (rawProofCode derivation)))) in hcode.
+        exact hcode.
+      }
+      destruct (proj1 (hexact code hcodeBound) hsupported) as
+        (row & hrow & _ & _ & _).
+      subst code.
+      apply raw_quotedProof_endpoint_atomically_adequate. exact hPA.
+    + intros code hcode hsupported.
+      assert (hcodeBound : rawLt M code
+          (rawNumeralValue M (S (rawProofCode derivation)))).
+      {
+        rewrite rawQuotedProofCode_standard in hcode by exact hPA.
+        change (rawLt M code
+          (rawNumeralValue M (S (rawProofCode derivation)))) in hcode.
+        exact hcode.
+      }
+      destruct (proj1 (hexact code hcodeBound) hsupported) as
+        (row & hrow & _ & _ & _).
+      subst code.
+      apply raw_quotedProof_constructor_payloads_atomically_adequate.
+      exact hPA.
 Qed.
 
 End PABoundedRawCodedProofAtomicAdequacyStandard.

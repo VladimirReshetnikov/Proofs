@@ -24,11 +24,14 @@ From PAFiniteBasisReduction Require Import
 From BoundedPAConsistency Require Import
   PolynomialPairInjectivity RawCodedSyntaxConstructors
   RawCodedAssignment RawCodedContextLists
+  RawCodedTermEvaluationRealization
   RawCodedProofConstructors
   RawCodedProofDescent RawCodedProofTraversal
   RawCodedProofEndpoints RawCodedFixedLevelTruthTotality.
 
 Module PABoundedRawCodedProofAtomicAdequacy.
+
+Import ListNotations.
 
 Import PA.
 Import PAListCode.
@@ -41,6 +44,7 @@ Import PABoundedPolynomialPairInjectivity.
 Import PABoundedRawCodedAssignment.
 Import PABoundedRawCodedSyntaxConstructors.
 Import PABoundedRawCodedContextLists.
+Import PABoundedRawCodedTermEvaluationRealization.
 Import PABoundedRawCodedProofConstructors.
 Import PABoundedRawCodedProofDescent.
 Import PABoundedRawCodedProofTraversal.
@@ -67,6 +71,270 @@ Proof.
   intros M first second e t. unfold liftTerm.
   rewrite raw_term_eval_rename. apply raw_term_eval_ext. intro index.
   replace (index + 2) with (S (S index)) by lia. reflexivity.
+Qed.
+
+Lemma raw_proofAtomic_eval_liftTerm_eight : forall
+    (M : RawPAModel) a b c d f g h i (e : nat -> M) t,
+  raw_term_eval M
+    (scons M a (scons M b (scons M c (scons M d
+      (scons M f (scons M g (scons M h (scons M i e))))))))
+    (liftTerm 8 t) = raw_term_eval M e t.
+Proof.
+  intros M a b c d f g h i e t. unfold liftTerm.
+  rewrite raw_term_eval_rename. apply raw_term_eval_ext. intro index.
+  replace (index + 8) with
+    (S (S (S (S (S (S (S (S index)))))))) by lia.
+  reflexivity.
+Qed.
+
+(** A rule payload may contain a term which does not occur in either its
+    premise or its conclusion (for example, substituting into [Bot]).  Such
+    a replacement term therefore cannot be recovered from endpoint formula
+    adequacy.  The following assignment-parametric condition is the exact
+    syntax resource needed by represented term-evaluator totality. *)
+Definition RawCodedTermUniversallyAdequate (M : RawPAModel)
+    (root : M) : Prop :=
+  forall assignmentCode assignmentStep : M,
+    RawCodedAssignmentDefinedThrough M assignmentCode assignmentStep
+      (raw_succ M root) ->
+    RawTermSyntaxRealizable M root assignmentCode assignmentStep.
+
+Arguments RawCodedTermUniversallyAdequate M root : clear implicits.
+
+Definition codedTermUniversallyAdequateTermAt (root : term) : formula :=
+  pAll (pAll
+    (pImp
+      (codedAssignmentDefinedThroughTermAt
+        (tVar 1) (tVar 0) (liftTerm 2 (tSucc root)))
+      (termSyntaxRealizableTermAt
+        (liftTerm 2 root) (tVar 1) (tVar 0)))).
+
+Lemma raw_sat_codedTermUniversallyAdequateTermAt_iff : forall
+    (M : RawPAModel) e root,
+  raw_formula_sat M e (codedTermUniversallyAdequateTermAt root) <->
+  RawCodedTermUniversallyAdequate M (raw_term_eval M e root).
+Proof.
+  intros M e root.
+  unfold codedTermUniversallyAdequateTermAt,
+    RawCodedTermUniversallyAdequate.
+  cbn [raw_formula_sat].
+  setoid_rewrite raw_sat_codedAssignmentDefinedThroughTermAt_iff.
+  setoid_rewrite raw_sat_termSyntaxRealizableTermAt_iff.
+  repeat setoid_rewrite raw_proofAtomic_eval_liftTerm_two.
+  cbn [raw_term_eval scons]. reflexivity.
+Qed.
+
+(** Constructor payload adequacy is deliberately exact.  Formula fields are
+    covered only where the corresponding proof constructor actually uses a
+    formula, and term fields only where it actually uses a term.  Requiring
+    all eight generic constructor witnesses to be formulas or terms would be
+    unsound because unused witnesses are unconstrained. *)
+Definition RawProofConstructorPayloadAtomicallyAdequate (M : RawPAModel)
+    (code context a b c t child1 child2 child3 : M) : Prop :=
+  (code = rawListCode M [rawNumeralValue M 0; context; a] /\
+    RawCodedFormulaAtomicallyAdequate M a) \/
+  (code = rawListCode M
+      [rawNumeralValue M 1; context; a; b; child1] /\
+    RawCodedFormulaAtomicallyAdequate M a /\
+    RawCodedFormulaAtomicallyAdequate M b) \/
+  (code = rawListCode M
+      [rawNumeralValue M 2; context; a; b; child1; child2] /\
+    RawCodedFormulaAtomicallyAdequate M a /\
+    RawCodedFormulaAtomicallyAdequate M b) \/
+  (code = rawListCode M
+      [rawNumeralValue M 3; context; a; child1] /\
+    RawCodedFormulaAtomicallyAdequate M a) \/
+  (code = rawListCode M [rawNumeralValue M 4; context; a] /\
+    RawCodedFormulaAtomicallyAdequate M a) \/
+  (code = rawListCode M
+      [rawNumeralValue M 5; context; a; b; child1; child2] /\
+    RawCodedFormulaAtomicallyAdequate M a /\
+    RawCodedFormulaAtomicallyAdequate M b) \/
+  (code = rawListCode M
+      [rawNumeralValue M 6; context; a; b; child1] /\
+    RawCodedFormulaAtomicallyAdequate M a /\
+    RawCodedFormulaAtomicallyAdequate M b) \/
+  (code = rawListCode M
+      [rawNumeralValue M 7; context; a; b; child1] /\
+    RawCodedFormulaAtomicallyAdequate M a /\
+    RawCodedFormulaAtomicallyAdequate M b) \/
+  (code = rawListCode M
+      [rawNumeralValue M 8; context; a; b; child1] /\
+    RawCodedFormulaAtomicallyAdequate M a /\
+    RawCodedFormulaAtomicallyAdequate M b) \/
+  (code = rawListCode M
+      [rawNumeralValue M 9; context; a; b; child1] /\
+    RawCodedFormulaAtomicallyAdequate M a /\
+    RawCodedFormulaAtomicallyAdequate M b) \/
+  (code = rawListCode M
+      [rawNumeralValue M 10; context; a; b; c;
+        child1; child2; child3] /\
+    RawCodedFormulaAtomicallyAdequate M a /\
+    RawCodedFormulaAtomicallyAdequate M b /\
+    RawCodedFormulaAtomicallyAdequate M c) \/
+  (code = rawListCode M
+      [rawNumeralValue M 11; context; a; child1] /\
+    RawCodedFormulaAtomicallyAdequate M a) \/
+  (code = rawListCode M
+      [rawNumeralValue M 12; context; a; t; child1] /\
+    RawCodedFormulaAtomicallyAdequate M a /\
+    RawCodedTermUniversallyAdequate M t) \/
+  (code = rawListCode M
+      [rawNumeralValue M 13; context; a; t; child1] /\
+    RawCodedFormulaAtomicallyAdequate M a /\
+    RawCodedTermUniversallyAdequate M t) \/
+  (code = rawListCode M
+      [rawNumeralValue M 14; context; a; b; child1; child2] /\
+    RawCodedFormulaAtomicallyAdequate M a /\
+    RawCodedFormulaAtomicallyAdequate M b) \/
+  (code = rawListCode M [rawNumeralValue M 15; context; t] /\
+    RawCodedTermUniversallyAdequate M t) \/
+  (code = rawListCode M
+      [rawNumeralValue M 16; context; a; b; c; child1; child2] /\
+    RawCodedTermUniversallyAdequate M a /\
+    RawCodedTermUniversallyAdequate M b /\
+    RawCodedFormulaAtomicallyAdequate M c).
+
+Arguments RawProofConstructorPayloadAtomicallyAdequate
+  M code context a b c t child1 child2 child3 : clear implicits.
+
+Definition proofConstructorPayloadAtomicallyAdequateTermAt
+    (code context a b c t child1 child2 child3 : term) : formula :=
+  proofFormulaDisjunction
+    [pAnd
+      (pEq code (proofAssCodeTerm context a))
+      (codedFormulaAtomicallyAdequateTermAt a);
+     pAnd
+      (pEq code (proofImpICodeTerm context a b child1))
+      (pAnd (codedFormulaAtomicallyAdequateTermAt a)
+        (codedFormulaAtomicallyAdequateTermAt b));
+     pAnd
+      (pEq code (proofImpECodeTerm context a b child1 child2))
+      (pAnd (codedFormulaAtomicallyAdequateTermAt a)
+        (codedFormulaAtomicallyAdequateTermAt b));
+     pAnd
+      (pEq code (proofBotECodeTerm context a child1))
+      (codedFormulaAtomicallyAdequateTermAt a);
+     pAnd
+      (pEq code (proofLemCodeTerm context a))
+      (codedFormulaAtomicallyAdequateTermAt a);
+     pAnd
+      (pEq code (proofAndICodeTerm context a b child1 child2))
+      (pAnd (codedFormulaAtomicallyAdequateTermAt a)
+        (codedFormulaAtomicallyAdequateTermAt b));
+     pAnd
+      (pEq code (proofAndE1CodeTerm context a b child1))
+      (pAnd (codedFormulaAtomicallyAdequateTermAt a)
+        (codedFormulaAtomicallyAdequateTermAt b));
+     pAnd
+      (pEq code (proofAndE2CodeTerm context a b child1))
+      (pAnd (codedFormulaAtomicallyAdequateTermAt a)
+        (codedFormulaAtomicallyAdequateTermAt b));
+     pAnd
+      (pEq code (proofOrI1CodeTerm context a b child1))
+      (pAnd (codedFormulaAtomicallyAdequateTermAt a)
+        (codedFormulaAtomicallyAdequateTermAt b));
+     pAnd
+      (pEq code (proofOrI2CodeTerm context a b child1))
+      (pAnd (codedFormulaAtomicallyAdequateTermAt a)
+        (codedFormulaAtomicallyAdequateTermAt b));
+     pAnd
+      (pEq code (proofOrECodeTerm context a b c child1 child2 child3))
+      (pAnd (codedFormulaAtomicallyAdequateTermAt a)
+        (pAnd (codedFormulaAtomicallyAdequateTermAt b)
+          (codedFormulaAtomicallyAdequateTermAt c)));
+     pAnd
+      (pEq code (proofAllICodeTerm context a child1))
+      (codedFormulaAtomicallyAdequateTermAt a);
+     pAnd
+      (pEq code (proofAllECodeTerm context a t child1))
+      (pAnd (codedFormulaAtomicallyAdequateTermAt a)
+        (codedTermUniversallyAdequateTermAt t));
+     pAnd
+      (pEq code (proofExICodeTerm context a t child1))
+      (pAnd (codedFormulaAtomicallyAdequateTermAt a)
+        (codedTermUniversallyAdequateTermAt t));
+     pAnd
+      (pEq code (proofExECodeTerm context a b child1 child2))
+      (pAnd (codedFormulaAtomicallyAdequateTermAt a)
+        (codedFormulaAtomicallyAdequateTermAt b));
+     pAnd
+      (pEq code (proofEqReflCodeTerm context t))
+      (codedTermUniversallyAdequateTermAt t);
+     pAnd
+      (pEq code (proofEqElimCodeTerm context a b c child1 child2))
+      (pAnd (codedTermUniversallyAdequateTermAt a)
+        (pAnd (codedTermUniversallyAdequateTermAt b)
+          (codedFormulaAtomicallyAdequateTermAt c)))].
+
+Lemma raw_sat_proofConstructorPayloadAtomicallyAdequateTermAt_iff : forall
+    (M : RawPAModel) e code context a b c t child1 child2 child3,
+  raw_formula_sat M e
+    (proofConstructorPayloadAtomicallyAdequateTermAt
+      code context a b c t child1 child2 child3) <->
+  RawProofConstructorPayloadAtomicallyAdequate M
+    (raw_term_eval M e code) (raw_term_eval M e context)
+    (raw_term_eval M e a) (raw_term_eval M e b)
+    (raw_term_eval M e c) (raw_term_eval M e t)
+    (raw_term_eval M e child1) (raw_term_eval M e child2)
+    (raw_term_eval M e child3).
+Proof.
+  intros. unfold proofConstructorPayloadAtomicallyAdequateTermAt,
+    RawProofConstructorPayloadAtomicallyAdequate,
+    proofAssCodeTerm, proofImpICodeTerm, proofImpECodeTerm,
+    proofBotECodeTerm, proofLemCodeTerm, proofAndICodeTerm,
+    proofAndE1CodeTerm, proofAndE2CodeTerm,
+    proofOrI1CodeTerm, proofOrI2CodeTerm, proofOrECodeTerm,
+    proofAllICodeTerm, proofAllECodeTerm, proofExICodeTerm,
+    proofExECodeTerm, proofEqReflCodeTerm, proofEqElimCodeTerm.
+  cbn [proofFormulaDisjunction raw_formula_sat].
+  repeat rewrite raw_eval_proofCodeFieldsTerm.
+  repeat rewrite raw_sat_codedFormulaAtomicallyAdequateTermAt_iff.
+  repeat rewrite raw_sat_codedTermUniversallyAdequateTermAt_iff.
+  repeat rewrite raw_term_eval_numeral.
+  cbn [map]. tauto.
+Qed.
+
+Definition RawProofConstructorPayloadsAtomicallyAdequate
+    (M : RawPAModel) (code : M) : Prop :=
+  forall context a b c t child1 child2 child3 : M,
+    RawProofConstructorCode M
+      code context a b c t child1 child2 child3 ->
+    RawProofConstructorPayloadAtomicallyAdequate M
+      code context a b c t child1 child2 child3.
+
+Arguments RawProofConstructorPayloadsAtomicallyAdequate M code
+  : clear implicits.
+
+Definition proofConstructorPayloadsAtomicallyAdequateTermAt
+    (code : term) : formula :=
+  pAll (pAll (pAll (pAll (pAll (pAll (pAll (pAll
+    (pImp
+      (rawProofConstructorCodeTermAt
+        (liftTerm 8 code)
+        (tVar 7) (tVar 6) (tVar 5) (tVar 4)
+        (tVar 3) (tVar 2) (tVar 1) (tVar 0))
+      (proofConstructorPayloadAtomicallyAdequateTermAt
+        (liftTerm 8 code)
+        (tVar 7) (tVar 6) (tVar 5) (tVar 4)
+        (tVar 3) (tVar 2) (tVar 1) (tVar 0)))))))))).
+
+Lemma raw_sat_proofConstructorPayloadsAtomicallyAdequateTermAt_iff : forall
+    (M : RawPAModel) e code,
+  raw_formula_sat M e
+    (proofConstructorPayloadsAtomicallyAdequateTermAt code) <->
+  RawProofConstructorPayloadsAtomicallyAdequate M
+    (raw_term_eval M e code).
+Proof.
+  intros M e code.
+  unfold proofConstructorPayloadsAtomicallyAdequateTermAt,
+    RawProofConstructorPayloadsAtomicallyAdequate.
+  cbn [raw_formula_sat].
+  setoid_rewrite raw_sat_rawProofConstructorCodeTermAt_iff.
+  setoid_rewrite
+    raw_sat_proofConstructorPayloadAtomicallyAdequateTermAt_iff.
+  repeat setoid_rewrite raw_proofAtomic_eval_liftTerm_eight.
+  cbn [raw_term_eval scons]. reflexivity.
 Qed.
 
 (** ------------------------------------------------------------------
@@ -187,16 +455,21 @@ Proof.
   cbn [raw_term_eval scons]. reflexivity.
 Qed.
 
-(** The syntax certificate closes recursive support.  The second conjunct
-    places atomic adequacy on every marked node in exactly that support
-    table, including all nonstandard nodes below the root. *)
+(** The syntax certificate closes recursive support.  The remaining two
+    conjuncts place endpoint and constructor-payload adequacy on every marked
+    node in exactly that support table, including all nonstandard nodes below
+    the root. *)
 Definition RawProofAtomicAdequacyWithSupport (M : RawPAModel)
     (root supportCode supportStep : M) : Prop :=
   RawProofSyntaxCertificateWithSupport M root supportCode supportStep /\
-  forall code : M,
-    rawLt M code (raw_succ M root) ->
-    rawProofCodeSupported M supportCode supportStep code ->
-    RawProofEndpointAtomicallyAdequate M code.
+  (forall code : M,
+      rawLt M code (raw_succ M root) ->
+      rawProofCodeSupported M supportCode supportStep code ->
+      RawProofEndpointAtomicallyAdequate M code) /\
+  (forall code : M,
+      rawLt M code (raw_succ M root) ->
+      rawProofCodeSupported M supportCode supportStep code ->
+      RawProofConstructorPayloadsAtomicallyAdequate M code).
 
 Arguments RawProofAtomicAdequacyWithSupport
   M root supportCode supportStep : clear implicits.
@@ -205,13 +478,22 @@ Definition proofAtomicAdequacyWithSupportTermAt
     (root supportCode supportStep : term) : formula :=
   pAnd
     (proofSyntaxCertificateWithSupportTermAt root supportCode supportStep)
-    (pAll
-      (pImp
-        (Formula.ltTermAt (tVar 0) (liftTerm 1 (tSucc root)))
+    (pAnd
+      (pAll
         (pImp
-          (proofCodeSupportedTermAt
-            (liftTerm 1 supportCode) (liftTerm 1 supportStep) (tVar 0))
-          (proofEndpointAtomicallyAdequateTermAt (tVar 0))))).
+          (Formula.ltTermAt (tVar 0) (liftTerm 1 (tSucc root)))
+          (pImp
+            (proofCodeSupportedTermAt
+              (liftTerm 1 supportCode) (liftTerm 1 supportStep) (tVar 0))
+            (proofEndpointAtomicallyAdequateTermAt (tVar 0)))))
+      (pAll
+        (pImp
+          (Formula.ltTermAt (tVar 0) (liftTerm 1 (tSucc root)))
+          (pImp
+            (proofCodeSupportedTermAt
+              (liftTerm 1 supportCode) (liftTerm 1 supportStep) (tVar 0))
+            (proofConstructorPayloadsAtomicallyAdequateTermAt
+              (tVar 0)))))).
 
 Lemma raw_sat_proofAtomicAdequacyWithSupportTermAt_iff : forall
     (M : RawPAModel) e root supportCode supportStep,
@@ -230,6 +512,8 @@ Proof.
   setoid_rewrite raw_sat_ltTermAt_iff.
   setoid_rewrite raw_sat_proofCodeSupportedTermAt_iff.
   setoid_rewrite raw_sat_proofEndpointAtomicallyAdequateTermAt_iff.
+  setoid_rewrite
+    raw_sat_proofConstructorPayloadsAtomicallyAdequateTermAt_iff.
   repeat setoid_rewrite raw_proofAtomic_eval_liftTerm_one.
   cbn [raw_term_eval scons]. reflexivity.
 Qed.
@@ -269,7 +553,21 @@ Theorem raw_proofAtomicAdequacy_root_endpoint : forall
   RawProofEndpointAtomicallyAdequate M root.
 Proof.
   intros M hPA root supportCode supportStep
-    [[_ hrootSupported] hrows].
+    [[_ hrootSupported] [hrows _]].
+  exact (hrows root (raw_assignment_lt_self_succ M hPA root)
+    hrootSupported).
+Qed.
+
+(** Constructor payloads at the root are covered by the same marked support
+    row as endpoint formulas. *)
+Theorem raw_proofAtomicAdequacy_root_constructor_payloads : forall
+    (M : RawPAModel), RawPASatisfies M -> forall
+      root supportCode supportStep,
+  RawProofAtomicAdequacyWithSupport M root supportCode supportStep ->
+  RawProofConstructorPayloadsAtomicallyAdequate M root.
+Proof.
+  intros M hPA root supportCode supportStep
+    [[_ hrootSupported] [_ hrows]].
   exact (hrows root (raw_assignment_lt_self_succ M hPA root)
     hrootSupported).
 Qed.
@@ -282,6 +580,17 @@ Proof.
   intros M hPA root
     (supportCode & supportStep & hadequate).
   exact (raw_proofAtomicAdequacy_root_endpoint M hPA
+    root supportCode supportStep hadequate).
+Qed.
+
+Corollary raw_proofAtomicallyAdequate_root_constructor_payloads : forall
+    (M : RawPAModel), RawPASatisfies M -> forall root,
+  RawProofAtomicallyAdequate M root ->
+  RawProofConstructorPayloadsAtomicallyAdequate M root.
+Proof.
+  intros M hPA root
+    (supportCode & supportStep & hadequate).
+  exact (raw_proofAtomicAdequacy_root_constructor_payloads M hPA
     root supportCode supportStep hadequate).
 Qed.
 
@@ -306,7 +615,7 @@ Theorem raw_proofAtomicAdequacy_recursive_child : forall
   rawLt M child root.
 Proof.
   intros M hPA root supportCode supportStep
-    [hsyntax hrows]
+    [hsyntax [hrows hpayloadRows]]
     context a b c t child1 child2 child3 hconstructor
     fields children hentry hfields child hchild.
   destruct (raw_proofSyntaxCertificate_recursive_child M hPA
@@ -314,9 +623,15 @@ Proof.
     context a b c t child1 child2 child3 hconstructor
     fields children hentry hfields child hchild)
     as [hchildSyntax hchildBelow].
-  split; [split | exact hchildBelow].
-  - exact hchildSyntax.
+  split; [| exact hchildBelow].
+  split; [exact hchildSyntax |]. split.
   - intros code hcode hsupported. apply hrows; [| exact hsupported].
+    eapply raw_lt_le_trans_pair; [exact hPA | exact hcode |].
+    eapply raw_le_trans; [exact hPA | |].
+    + exact (raw_succ_le_of_lt_pair M hPA child root hchildBelow).
+    + exact (raw_lt_to_le M root (raw_succ M root)
+        (raw_assignment_lt_self_succ M hPA root)).
+  - intros code hcode hsupported. apply hpayloadRows; [| exact hsupported].
     eapply raw_lt_le_trans_pair; [exact hPA | exact hcode |].
     eapply raw_le_trans; [exact hPA | |].
     + exact (raw_succ_le_of_lt_pair M hPA child root hchildBelow).
