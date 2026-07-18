@@ -93,8 +93,11 @@ details.
 > and zero exactly when it is false.
 > An independently arithmetized quantifier-free syntax certificate now also
 > drives the truth-table construction through arbitrary nonstandard bounds.
-> PA supplies the required truth-bit CRT capacity internally; only the
-> separately exposed term-evaluation capacity for equality operands remains.
+> PA supplies the truth-bit CRT capacity internally, while the uniform term
+> capacity theorem supplies evaluation certificates for equality operands.
+> Thus every realizable nonstandard rank-zero syntax code has a unique truth
+> certificate, and this totality is itself closed into an object-level PA
+> derivation.
 > Rocq now also exposes every one of the seventeen raw-proof constructor codes
 > as a transparent PA term.  Their common constructor formula has exact
 > semantics in every law-free raw arithmetic structure, and quotation agrees
@@ -743,6 +746,15 @@ explicit `RawRankZeroAtomicTermCapacity`, which is precisely the outstanding
 fixed-step capacity for evaluating the equality operands—not an assumed truth
 table or an external decoder.
 
+`RawCodedRankZeroTruthTotality.v` discharges that final condition by applying
+the term-evaluation capacity theorem to each equality payload's independently
+arithmetized term-syntax certificate.  It obtains unconditional existence and
+uniqueness for every realizable model-internal rank-zero syntax code and coded
+assignment.  The module also exposes a closed PA formula expressing this
+totality, proves its exact arbitrary-model semantics and validity, and derives
+the checked object theorem
+`PA_proves_rankZeroTruthTotalityOnSyntaxFormula`.
+
 `RawCodedRankZeroTruthStandardAdequacy.v` validates that global graph on every
 externally typed quantifier-free formula.  A checked decoder and classical
 zero/one semantic vector generate finite support and truth tables, while the
@@ -897,9 +909,10 @@ obligations rather than implementation guesses.
 - [x] In Rocq/Coq, construct rank-zero truth tables by PA induction through
   arbitrary nonstandard quantifier-free syntax bounds and discharge their
   truth-bit beta capacity internally.
-- [ ] Prove model-internal realization/totality of rank-zero truth certificates
-  for arbitrary nonstandard admissible formula codes and assignments by
-  discharging the inherited term-evaluation capacity for equality atoms.
+- [x] Prove model-internal realization/totality of rank-zero truth certificates
+  for arbitrary nonstandard admissible formula codes and assignments, discharge
+  equality-atom term capacity, and close totality into an object-level PA
+  theorem.
 - [x] In Lean, construct represented coded term evaluation and the rank-zero
   partial-truth evaluator with atomic and Boolean clauses.
 - [x] In Lean, prove internal term shift/substitution transport and the
