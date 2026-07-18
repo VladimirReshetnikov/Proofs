@@ -454,6 +454,8 @@ Logic/PeanoArithmetic/BoundedConsistency/Coq/PolynomialPairInjectivity.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/PolynomialPairInjectivityAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedFormulaRankStep.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedFormulaRankStepAudit.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedFormulaRankStepFunctionality.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedFormulaRankStepFunctionalityAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedAssignment.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedAssignmentAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedTermEvaluationStep.v

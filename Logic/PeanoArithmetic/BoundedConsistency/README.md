@@ -51,7 +51,9 @@ details.
 > one-constructor Sigma/Pi rank equations over arbitrary raw-model elements.
 > PA now proves that the concrete polynomial pairing constructor is injective,
 > which makes its list nodes and code constructors unambiguous in every raw PA
-> model; the model-internal global rank traversal remains under construction.
+> model.  PA-order antisymmetry also makes every local maximum and constructor
+> rank equation functional; the model-internal global rank traversal remains
+> under construction.
 > A beta-coded assignment formula now additionally has exact arbitrary-model
 > lookup semantics, functional values, and PA-provable de Bruijn binder
 > extension through every possibly nonstandard model-internal prefix.  The
@@ -533,6 +535,13 @@ already certified child rows, including the two quantifier polarity switches.
 These are exact arbitrary-model one-step laws; a later beta-coded postorder
 traversal must still connect them into a total rank computation.
 
+`RawCodedFormulaRankStepFunctionality.v` proves the arithmetic determinism of
+those rows.  Antisymmetry makes the transparent maximum relation single-valued,
+and consequently the implication, Boolean, universal, and existential
+Sigma/Pi equations each return a unique rank pair for fixed child ranks.  The
+same result is exposed at every constructor-wrapper relation used by a global
+traversal.
+
 `RawCodedSyntaxConstructorSeparation.v` proves the list-arity separation and
 constructor consequences needed by that traversal, conditional on one sharply
 named arithmetic obligation: an object-level PA derivation of injectivity for
@@ -675,6 +684,7 @@ obligations rather than implementation guesses.
   models and complete the cross-syntax/typed-hierarchy correspondence.
 - [x] In Rocq/Coq, define transparent term/formula-code constructors and prove
   exact local Sigma/Pi rank-step semantics over arbitrary raw-model elements.
+- [x] In Rocq/Coq, prove every local Sigma/Pi rank equation functional.
 - [x] In Rocq/Coq, prove PA injectivity of the polynomial pairing constructor.
 - [ ] Assemble the local rank rows into a model-internal global traversal.
 - [ ] Prove closure of the code-level bound under every syntactic operation
