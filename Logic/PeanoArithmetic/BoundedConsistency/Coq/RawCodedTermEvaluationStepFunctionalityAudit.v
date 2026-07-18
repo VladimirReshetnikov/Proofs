@@ -1,0 +1,28 @@
+(** Assumption audit for full local coded-term functionality. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedTermEvaluationStepFunctionality.
+
+Import PABoundedRawCodedTermEvaluationStepFunctionality.
+
+Check raw_codeList1_neq_codeList3.
+Check raw_termVarCode_neq_termZeroCode.
+Check raw_termVarCode_neq_termSuccCode.
+Check raw_termVarCode_neq_termAddCode.
+Check raw_termZeroCode_neq_termMulCode.
+Check raw_termAddCode_neq_termMulCode.
+
+Check raw_termVarEvaluationRows_value_functional.
+Check raw_termSuccEvaluationRows_value_functional.
+Check raw_termAddEvaluationRows_value_functional.
+Check raw_termMulEvaluationRows_value_functional.
+Check raw_termEvaluationStep_functional.
+Check raw_sat_termEvaluationStepTermAt_functional.
+
+Print Assumptions raw_codeList1_neq_codeList3.
+Print Assumptions raw_termVarCode_neq_termSuccCode.
+Print Assumptions raw_termAddCode_neq_termMulCode.
+Print Assumptions raw_termVarEvaluationRows_value_functional.
+Print Assumptions raw_termAddEvaluationRows_value_functional.
+Print Assumptions raw_termEvaluationStep_functional.
+Print Assumptions raw_sat_termEvaluationStepTermAt_functional.
