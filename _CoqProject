@@ -429,6 +429,8 @@ Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedSyntax.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedSyntaxAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedProof.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedProofAudit.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/RawModelCompleteness.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/RawModelCompletenessAudit.v
 SetTheory/ClosureAxiomatization/Coq/Forward.v
 SetTheory/ClosureAxiomatization/Coq/Reverse.v
 SetTheory/ZF/Coq/Zf.v

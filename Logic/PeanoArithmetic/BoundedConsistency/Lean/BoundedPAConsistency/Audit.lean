@@ -1,8 +1,10 @@
 import BoundedPAConsistency.Basic
 import BoundedPAConsistency.CodedHierarchy
 import BoundedPAConsistency.Internal
+import BoundedPAConsistency.QuantifierFreeTarski
 import BoundedPAConsistency.QuantifierFreeTruth
 import BoundedPAConsistency.RestrictedConsistency
+import BoundedPAConsistency.TermEvaluationTransport
 
 /-!
 # Kernel audit for bounded PA consistency, phase one
@@ -43,6 +45,9 @@ open LeanProofs.BoundedPAConsistency
 #check LeanProofs.BoundedPAConsistency.TermEvaluation.termValue_bvar_zero_seqCons
 #check LeanProofs.BoundedPAConsistency.TermEvaluation.termValue_add
 #check LeanProofs.BoundedPAConsistency.TermEvaluation.termValue_mul
+#check LeanProofs.BoundedPAConsistency.TermEvaluationTransport.termValue_termShift_of_isFreeTail
+#check LeanProofs.BoundedPAConsistency.TermEvaluationTransport.termValue_termSubst_of_isSubstitutionBound
+#check LeanProofs.BoundedPAConsistency.TermEvaluationTransport.exists_isSubstitutionEnvironment
 #check LeanProofs.BoundedPAConsistency.CodedHierarchy.quantifierGroupsCode
 #check LeanProofs.BoundedPAConsistency.CodedHierarchy.QuantifierBoundedCode
 #check LeanProofs.BoundedPAConsistency.CodedHierarchy.rankPair_neg
@@ -50,6 +55,9 @@ open LeanProofs.BoundedPAConsistency
 #check LeanProofs.BoundedPAConsistency.CodedHierarchy.rankPair_subst
 #check LeanProofs.BoundedPAConsistency.QuantifierFreeTruth.qfValue
 #check LeanProofs.BoundedPAConsistency.QuantifierFreeTruth.qfValue_isBit
+#check LeanProofs.BoundedPAConsistency.QuantifierFreeTarski.quantifierGroupsCode_eq_zero_iff
+#check LeanProofs.BoundedPAConsistency.QuantifierFreeTarski.qfTrue_and_iff
+#check LeanProofs.BoundedPAConsistency.QuantifierFreeTarski.qfTrue_eq_atom_iff
 #check LeanProofs.BoundedPAConsistency.RestrictedDerivation
 #check LeanProofs.BoundedPAConsistency.RestrictedProof
 #check LeanProofs.BoundedPAConsistency.RestrictedConsistent
@@ -70,10 +78,16 @@ open LeanProofs.BoundedPAConsistency
 #print axioms LeanProofs.BoundedPAConsistency.TermEvaluation.termValue_bvar_zero_seqCons
 #print axioms LeanProofs.BoundedPAConsistency.TermEvaluation.termValue_add
 #print axioms LeanProofs.BoundedPAConsistency.TermEvaluation.termValue_mul
+#print axioms LeanProofs.BoundedPAConsistency.TermEvaluationTransport.termValue_termShift_of_isFreeTail
+#print axioms LeanProofs.BoundedPAConsistency.TermEvaluationTransport.termValue_termSubst_of_isSubstitutionBound
+#print axioms LeanProofs.BoundedPAConsistency.TermEvaluationTransport.exists_isSubstitutionEnvironment
 #print axioms LeanProofs.BoundedPAConsistency.CodedHierarchy.rankPair_neg
 #print axioms LeanProofs.BoundedPAConsistency.CodedHierarchy.rankPair_shift
 #print axioms LeanProofs.BoundedPAConsistency.CodedHierarchy.rankPair_subst
 #print axioms LeanProofs.BoundedPAConsistency.QuantifierFreeTruth.qfValue_isBit
+#print axioms LeanProofs.BoundedPAConsistency.QuantifierFreeTarski.quantifierGroupsCode_eq_zero_iff
+#print axioms LeanProofs.BoundedPAConsistency.QuantifierFreeTarski.qfTrue_and_iff
+#print axioms LeanProofs.BoundedPAConsistency.QuantifierFreeTarski.qfTrue_eq_atom_iff
 #print axioms LeanProofs.BoundedPAConsistency.RestrictedDerivation.defined
 #print axioms LeanProofs.BoundedPAConsistency.RestrictedProof.defined
 #print axioms LeanProofs.BoundedPAConsistency.eval_paRestrictedConsistencySentence_iff

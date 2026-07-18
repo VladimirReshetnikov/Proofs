@@ -18,8 +18,14 @@ details.
 > codes: in every possibly nonstandard model of `I Sigma 1` it represents the
 > coded polarity rank, all-occurrences restricted derivation predicate, and
 > fixed-external-bound consistency sentence.  It also has represented coded
-> term evaluation and rank-zero formula truth.  The higher-level partial truth
-> predicates and internal rule/axiom soundness proof are still missing.
+> term evaluation, nonstandard-code shift/substitution transport, and a
+> rank-zero formula truth predicate with structural and Boolean Tarski
+> clauses.  Rocq now represents its executable checker by an arithmetic
+> formula on the standard natural-number model and has a generic route from
+> arbitrary raw-model validity to an object-level PA proof; these are separate
+> endpoints, and nonstandard checker validity does not yet connect them.  The
+> higher-level partial truth predicates and internal rule/axiom soundness proof
+> are still missing.
 > Consequently the requested object theorem `PA ⊢ Con_n(PA)` for each
 > external `n` is **not yet implemented** in either kernel.
 
@@ -226,6 +232,13 @@ variables, binder extension, argument vectors, and the arithmetic constants,
 addition, and multiplication.  This is the term-semantic input to partial
 truth; it does not yet evaluate formula codes.
 
+`BoundedPAConsistency.TermEvaluationTransport` proves, by internal structural
+induction rather than decoding, that evaluation commutes with coded
+free-variable shift and simultaneous bound-variable substitution.  It also
+constructs genuine HFS fresh-head and reversed de Bruijn substitution
+environments.  The results therefore apply to nonstandard term codes in every
+model of `I Sigma 1`.
+
 ### Lean coded hierarchy and restricted proof sentence
 
 `BoundedPAConsistency.CodedHierarchy` uses Foundation's formula fixed-point
@@ -256,8 +269,15 @@ combinations using a represented finite HFS certificate, supplies exact
 positive and negative equality/order clauses, conjunction/disjunction
 clauses, Boolean-valuedness, and complementary truth/falsity predicates on
 the Delta-one level-zero domain.  Quantifier constructors are deliberately
-totalized to zero and carry no semantic claim.  Higher fixed levels and the
-transport laws needed by sequent rules remain to be constructed.
+totalized to zero and carry no semantic claim.
+
+`BoundedPAConsistency.QuantifierFreeTarski` proves internally that level zero
+forces *both* polarity ranks to vanish, a fact not immediate from the
+minimum-based definition on nonstandard codes.  It derives exact domain
+inversion at conjunction/disjunction, exclusion of quantifier constructors,
+and positive/negative Tarski clauses for arithmetic atoms and Boolean
+connectives.  Formula-level negation, shift, and substitution transport and
+higher fixed levels remain inputs to the proof-rule soundness argument.
 
 ### Rocq natural codes and executable checker
 
@@ -273,9 +293,18 @@ The PA wrapper records explicit witnesses for the six fixed axiom schemes and
 for induction instances.  Every phase-one restricted PA derivation has an
 accepted code, and every accepted code erases to an ordinary PA derivation.
 This is still a computation performed by Rocq on standard `nat` values.  The
-checker has not yet been represented by a formula of PA or proved correct for
-nonstandard codes in arbitrary PA models; that distinction is exactly the
-remaining internalization boundary.
+checker now has an extracted computability witness and a representing PA
+formula whose correctness theorem is exact in the standard `nat` model.  It
+has not been proved correct for nonstandard codes in arbitrary PA models;
+that distinction is exactly the remaining internalization boundary.
+
+`RawModelCompleteness.v` supplies the other endpoint: a sentence valid under
+every valuation in every raw model of the PA axioms has an object-level
+`Formula.BProv Formula.Ax_s []` proof.  This theorem is intentionally
+conditional on arbitrary-model validity.  Combining it with the standard
+checker-formula correctness theorem would be unsound; the missing fixed-level
+partial-truth argument is precisely what must establish that validity for
+nonstandard model elements.
 
 ## The standard partial-truth argument
 
@@ -370,6 +399,8 @@ obligations rather than implementation guesses.
   substitution lemmas in PA.
 - [x] In Lean, construct represented coded term evaluation and the rank-zero
   partial-truth evaluator with atomic and Boolean clauses.
+- [x] In Lean, prove internal term shift/substitution transport and the
+  structural/Boolean rank-zero Tarski interface on nonstandard codes.
 - [ ] Construct fixed-level partial satisfaction and prove all Tarski clauses
   in PA.
 - [x] In Lean, generalize arithmetized fixed-point induction from level-one
@@ -401,6 +432,8 @@ From the repository root, the Lean library is registered as
 lake build BoundedPAConsistency.Basic BoundedPAConsistency.Internal \
   BoundedPAConsistency.CodedHierarchyAudit \
   BoundedPAConsistency.QuantifierFreeTruthAudit \
+  BoundedPAConsistency.QuantifierFreeTarskiAudit \
+  BoundedPAConsistency.TermEvaluationTransportAudit \
   BoundedPAConsistency.RestrictedDerivationAudit \
   BoundedPAConsistency.RestrictedConsistencyAudit \
   BoundedPAConsistency.Audit \
