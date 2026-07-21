@@ -12,6 +12,7 @@ import BoundedPAConsistency.QuantifierFreeTruth
 import BoundedPAConsistency.QuantifierFreePAAxioms
 import BoundedPAConsistency.RestrictedConsistency
 import BoundedPAConsistency.TermEvaluationTransport
+import BoundedPAConsistency.UniformInternalProvability
 
 /-!
 # Kernel audit for bounded PA consistency, phase one
@@ -92,6 +93,9 @@ open LeanProofs.BoundedPAConsistency
 #check LeanProofs.BoundedPAConsistency.RestrictedConsistent
 #check LeanProofs.BoundedPAConsistency.paRestrictedConsistencySentence
 #check LeanProofs.BoundedPAConsistency.eval_paRestrictedConsistencySentence_iff
+#check LeanProofs.BoundedPAConsistency.UniformInternalProvability.paUniformRestrictedConsistencyProvabilitySentence
+#check LeanProofs.BoundedPAConsistency.UniformInternalProvability.provable_paRestrictedConsistency_standard_point
+#check LeanProofs.BoundedPAConsistency.UniformInternalProvability.pa_proves_uniformRestrictedConsistencyProvability_iff_selectorInAllModels
 
 #print axioms hierarchyRanks_rename
 #print axioms hierarchyRanks_subst
@@ -140,3 +144,5 @@ open LeanProofs.BoundedPAConsistency
 #print axioms LeanProofs.BoundedPAConsistency.RestrictedDerivation.defined
 #print axioms LeanProofs.BoundedPAConsistency.RestrictedProof.defined
 #print axioms LeanProofs.BoundedPAConsistency.eval_paRestrictedConsistencySentence_iff
+#print axioms LeanProofs.BoundedPAConsistency.UniformInternalProvability.provable_paRestrictedConsistency_standard_point
+#print axioms LeanProofs.BoundedPAConsistency.UniformInternalProvability.pa_proves_uniformRestrictedConsistencyProvability_iff_selectorInAllModels

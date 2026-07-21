@@ -1,0 +1,23 @@
+(** Public surface and kernel-assumption audit for ordinary PA provability. *)
+
+From BoundedPAConsistency Require Import RawCodedPAProvability.
+
+Import PABoundedRawCodedPAProvability.
+
+Check RawCodedPAProofOf.
+Check codedPAProofOfTermAt.
+Check raw_sat_codedPAProofOfTermAt_iff.
+Check codedPAProvabilityTermAt.
+Check raw_sat_codedPAProvabilityTermAt_iff.
+Check codedPAProvabilityFormula.
+Check codedPAProvabilityFormula_sentence.
+Check raw_codedPAProofOf_standard.
+Check raw_codedPAProofOf_of_BProv.
+Check codedPAProvabilityFormula_raw_valid_of_BProv.
+Check PA_BProv_codedPAProvability_of_BProv.
+
+Print Assumptions raw_sat_codedPAProofOfTermAt_iff.
+Print Assumptions raw_sat_codedPAProvabilityTermAt_iff.
+Print Assumptions raw_codedPAProofOf_standard.
+Print Assumptions raw_codedPAProofOf_of_BProv.
+Print Assumptions PA_BProv_codedPAProvability_of_BProv.

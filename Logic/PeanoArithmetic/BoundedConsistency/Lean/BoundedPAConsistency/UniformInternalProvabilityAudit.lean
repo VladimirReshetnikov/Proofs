@@ -1,0 +1,42 @@
+import BoundedPAConsistency.UniformInternalProvability
+
+/-!
+# Audit for the literal uniform internal-provability sentence
+
+This audit keeps the three logically distinct statements visible in their
+types:
+
+* the single arithmetical sentence with an internal quantifier;
+* its arbitrary-model semantic specification, including nonstandard levels;
+* the metatheoretic family asserting the predicate only at standard numerals.
+
+In particular, the last theorem is not silently presented as a proof of the
+first sentence.
+-/
+
+namespace LeanProofs.BoundedPAConsistency.UniformInternalProvabilityAudit
+
+open LO FirstOrder
+open LO.FirstOrder.Arithmetic
+open LO.FirstOrder.Arithmetic.Bootstrapping
+open LO.FirstOrder.Arithmetic.Bootstrapping.Arithmetic
+open LeanProofs.BoundedPAConsistency.UniformInternalProvability
+
+#check paUniformRestrictedConsistencyProvabilitySentence
+#check eval_paUniformRestrictedConsistencyProvabilitySentence_iff
+#check substNumeral_paRestrictedConsistencyTemplate_eq_quote
+#check provable_paRestrictedConsistency_standard_point
+#check PARestrictedConsistencyProofSelectorIn
+#check PARestrictedConsistencyProofSelectorInAllModels
+#check eval_paUniformRestrictedConsistencyProvabilitySentence_iff_selector
+#check pa_proves_uniformRestrictedConsistencyProvability_of_selectorInAllModels
+#check pa_proves_uniformRestrictedConsistencyProvability_iff_selectorInAllModels
+
+#print axioms eval_paUniformRestrictedConsistencyProvabilitySentence_iff
+#print axioms substNumeral_paRestrictedConsistencyTemplate_eq_quote
+#print axioms provable_paRestrictedConsistency_standard_point
+#print axioms eval_paUniformRestrictedConsistencyProvabilitySentence_iff_selector
+#print axioms pa_proves_uniformRestrictedConsistencyProvability_of_selectorInAllModels
+#print axioms pa_proves_uniformRestrictedConsistencyProvability_iff_selectorInAllModels
+
+end LeanProofs.BoundedPAConsistency.UniformInternalProvabilityAudit

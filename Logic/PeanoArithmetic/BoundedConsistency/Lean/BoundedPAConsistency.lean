@@ -23,6 +23,7 @@ import BoundedPAConsistency.QuantifierFreeSoundness
 import BoundedPAConsistency.QuantifierFreePAAxioms
 import BoundedPAConsistency.RestrictedConsistency
 import BoundedPAConsistency.TermEvaluationTransport
+import BoundedPAConsistency.UniformInternalProvability
 
 /-!
 # Bounded-complexity consistency for PA
