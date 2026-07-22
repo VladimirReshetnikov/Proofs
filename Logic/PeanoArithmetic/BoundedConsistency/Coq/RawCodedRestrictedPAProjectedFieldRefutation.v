@@ -6,16 +6,18 @@
   realized six-edge formula-shift orbit.  In the innermost context, the
   seven checker fields are available through honest [RP_andE1]/[RP_andE2]
   derivations.  Consequently a remaining compiler need not manufacture
-  shifts or trust a meta-level decomposition of the checker conjunction: it
-  receives the complete local projection package and only has to compose
-  those proofs with the lower consistency certificate into falsity.
+  shifts, trust a meta-level decomposition of the checker conjunction, or
+  perform the final propositional composition.  It supplies only a local
+  proof of the exact six-premise dynamic-soundness implication; this module
+  applies the projected fields to it.
 
   This module deliberately does not call semantic validity a proof code.
   [RawRestrictedPAProjectedFieldRefutationCompiler] is the exact remaining
   proof-producing obligation.  The retained witnessed-axiom base now yields
   its own self-shift certificate internally, so the compiler contains only
-  the dynamic-reflection step.  The theorem below discharges every subsequent
-  context and projection step.
+  the represented dynamic-soundness implication.  The theorem below
+  discharges every subsequent context, projection, and implication-
+  elimination step.
 *)
 
 From PAHF Require Import PAHF.
@@ -32,6 +34,7 @@ From BoundedPAConsistency Require Import
   RawCodedRestrictedPAConsistencyShiftOrbit
   RawCodedRestrictedPAConsistencyShiftRealization
   RawCodedRestrictedPAFieldProjections
+  RawCodedRestrictedPADynamicSoundnessComposition
   RawCodedPAAxiomContextSelfShift.
 
 Module PABoundedRawCodedRestrictedPAProjectedFieldRefutation.
@@ -55,6 +58,7 @@ Import PABoundedRawCodedRestrictedPAConsistencyTripleExDescent.
 Import PABoundedRawCodedRestrictedPAConsistencyShiftOrbit.
 Import PABoundedRawCodedRestrictedPAConsistencyShiftRealization.
 Import PABoundedRawCodedRestrictedPAFieldProjections.
+Import PABoundedRawCodedRestrictedPADynamicSoundnessComposition.
 Import PABoundedRawCodedPAAxiomContextSelfShift.
 
 (** Canonical contexts after respectively one, two, and three existential
@@ -87,14 +91,13 @@ Arguments rawRestrictedPACanonicalShiftedProofContextCode
 
 (** The sole remaining carried compiler.
 
-    Its [projections] argument contains seven genuine local PA proof trees,
-    all in the exact field context used by the third existential elimination.
     The lower target/certificate and the successor numeral-code witness are
-    retained because the missing dynamic partial-truth construction must use
-    them.  Its first output is the exact unpacking of the incoming lower proof;
-    the witnessed base supplies its self-shift by theorem, and the callback
-    receives the seven projections and returns only the final covered local
-    proof of [bottom]. *)
+    retained because a represented proof selector may use them when producing
+    its next certificate.  Its first output is the exact unpacking of the
+    incoming lower proof.  The final field is no longer an arbitrary callback
+    over seven projections: it is one honest local proof of the explicitly
+    displayed dynamic-soundness implication, in the exact context used by the
+    third existential elimination. *)
 Definition RawRestrictedPAProjectedFieldRefutationCompiler
     (M : RawPAModel) : Prop :=
   forall level target certificate successorNumeralCode,
@@ -107,15 +110,10 @@ Definition RawRestrictedPAProjectedFieldRefutationCompiler
       RawCodedPAAxiomWitnessContext M witnessList baseContext /\
       RawProofRuleCoverage M lowerProof /\
       RawProofEndpoint M lowerProof baseContext target /\
-      (RawRestrictedPAFieldProjectionPackage M successorNumeralCode
+      RawRestrictedPADynamicSoundnessImplicationProof M
+        successorNumeralCode
         (rawRestrictedPACanonicalShiftedProofContextCode
-          M baseContext successorNumeralCode) ->
-       exists fieldChild : M,
-         RawCodedPALocalProofOf M
-           (rawRestrictedPAFieldsContextCode M successorNumeralCode
-             (rawRestrictedPACanonicalShiftedProofContextCode
-               M baseContext successorNumeralCode))
-           (rawFormulaBotCode M) fieldChild).
+          M baseContext successorNumeralCode).
 
 Arguments RawRestrictedPAProjectedFieldRefutationCompiler M
   : clear implicits.
@@ -135,9 +133,9 @@ Proof.
   intros M hPA hprojected level target certificate successorNumeralCode
     htarget hcertificate hnumeral.
   destruct (hprojected level target certificate successorNumeralCode
-      htarget hcertificate hnumeral) as
+    htarget hcertificate hnumeral) as
     (witnessList & lowerProof & baseContext & hcertificateView &
-      hwitness & hlowerCoverage & hlowerEndpoint & hrefute).
+      hwitness & hlowerCoverage & hlowerEndpoint & hsoundness).
   assert (hbaseShift : RawContextShift M baseContext baseContext).
   {
     exact (raw_codedPAAxiomWitnessContext_selfShift M hPA
@@ -176,8 +174,9 @@ Proof.
     exact (raw_restrictedPAFieldProjectionPackage M hPA
       successorNumeralCode shiftedProofContext hproofContextRealizable).
   }
-  destruct (hrefute hprojections)
-    as [fieldChild hfieldChild].
+  destruct (raw_codedPALocalProofOf_bottom_of_dynamicSoundness
+    M hPA successorNumeralCode shiftedProofContext
+    hsoundness hprojections) as [fieldChild hfieldChild].
   exists witnessList, lowerProof, baseContext, shiftedRootContext,
     shiftedWitnessContext, shiftedProofContext, fieldChild.
   split; [exact hcertificateView |].
@@ -201,7 +200,7 @@ Proof.
 Qed.
 
 (** Fully connected conditional endpoint for the exact requested PA theorem.
-    Only the local proof-producing reflection compiler above remains. *)
+    Only the represented dynamic-soundness implication above remains. *)
 Corollary
     PA_BProv_compactUniformRestrictedPAConsistencyProvabilityFormula_of_projectedFields
     : RawRestrictedPAProjectedFieldRefutationCompilerInAllModels ->
