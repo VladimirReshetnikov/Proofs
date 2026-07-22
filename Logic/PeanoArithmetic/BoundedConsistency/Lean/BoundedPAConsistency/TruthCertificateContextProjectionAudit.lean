@@ -22,6 +22,7 @@ open LeanProofs.BoundedPAConsistency.TruthCertificateContextProjection
 #check TruthCertificateFields.proveSubstitutionInvariant
 #check TruthCertificateFields.proveAxiomSound
 #check TruthCertificateFields.proveFinalConsistency
+#check PAInductionKernel.ofUniversalProof
 #check PAInductionKernel.recontextualize
 #check PAInductionKernel.underCrossLevel
 #check PAInductionKernel.underSubstitutionInvariant
@@ -32,6 +33,7 @@ open LeanProofs.BoundedPAConsistency.TruthCertificateContextProjection
 #print axioms TruthCertificateFields.proveSubstitutionInvariant
 #print axioms TruthCertificateFields.proveAxiomSound
 #print axioms TruthCertificateFields.proveFinalConsistency
+#print axioms PAInductionKernel.ofUniversalProof
 #print axioms PAInductionKernel.recontextualize
 #print axioms PAInductionKernel.underCrossLevel
 #print axioms PAInductionKernel.underSubstitutionInvariant

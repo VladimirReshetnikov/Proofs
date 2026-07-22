@@ -80,6 +80,52 @@ variable [V↓[ℒₒᵣ] ⊧* Peano]
 
 namespace PAInductionKernel
 
+/-- Install an already proved universal field behind the induction-kernel
+interface.
+
+Some certificate fields are most naturally established by PA's internal
+*structural* induction on formula codes.  Once that argument has produced
+`context -> forall x, predicate x`, running a second numerical induction
+would add no mathematical content.  This constructor derives the two
+premises expected by `PAInductionKernel` from the universal theorem itself:
+the zero instance is universal elimination, and the successor premise is a
+fixed first-order consequence which simply ignores its redundant induction
+hypothesis.
+
+The returned kernel still compiles to the exact public universal closure, so
+it can be used by the staged certificate compiler without changing that
+interface or weakening its target. -/
+noncomputable def ofUniversalProof
+    {context : Bootstrapping.Formula V ℒₒᵣ}
+    (predicate : Bootstrapping.Semiformula V ℒₒᵣ 1)
+    (shiftFixed : shift ℒₒᵣ predicate.val = predicate.val)
+    (proof : Peano.internalize V ⊢! context 🡒 ∀⁰ predicate) :
+    PAInductionKernel context where
+  predicate := predicate
+  shiftFixed := shiftFixed
+  proveZero :=
+    TProof.specializeWithCtxAux proof
+      ⌜(‘0’ : ArithmeticSemiterm ℕ 0)⌝
+  proveSuccessor :=
+    Entailment.C_trans proof <| by
+      classical
+      apply TProof.generalizeAux
+      have hall : Peano.internalize V ⊢!
+          (∀⁰ predicate).shift 🡒 ∀⁰ predicate.shift := by
+        simpa using
+          (show Peano.internalize V ⊢!
+              (∀⁰ predicate).shift 🡒 (∀⁰ predicate).shift from
+            Entailment.C_id)
+      have hsuccessor := TProof.specializeWithCtxAux hall
+        (⌜(‘#0 + 1’ : ArithmeticSemiterm ℕ 1)⌝ :
+          Bootstrapping.Semiterm V ℒₒᵣ 1).free
+      simpa [Bootstrapping.Semiformula.free,
+        Bootstrapping.Semiformula.shift_substs,
+        Bootstrapping.Semiformula.substs_substs] using
+        (Entailment.C_swap
+          (Entailment.C_of_conseq
+            (ψ := predicate.free) hsuccessor))
+
 /-- Change the closed context of an induction kernel along a represented PA
 implication.
 
