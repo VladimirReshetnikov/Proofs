@@ -1,0 +1,11 @@
+From BoundedPAConsistency Require Import RawCodedPAOpenProofConjunction.
+
+Import PABoundedRawCodedPAOpenProofConjunction.
+
+Check raw_codedPAOpenProofOf_andE.
+Check raw_codedPAOpenProofOf_andE1.
+Check raw_codedPAOpenProofOf_andE2.
+
+Print Assumptions raw_codedPAOpenProofOf_andE.
+Print Assumptions raw_codedPAOpenProofOf_andE1.
+Print Assumptions raw_codedPAOpenProofOf_andE2.

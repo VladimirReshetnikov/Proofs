@@ -1,0 +1,30 @@
+import BoundedPAConsistency.DynamicTruthShiftInvariantOrbit
+
+/-!
+# Audit for the model-indexed shift-invariance field
+
+These checks expose the exact zero and successor equations and the uniform
+Sigma-one graph used by a concrete truth-certificate family.
+-/
+
+namespace LeanProofs.BoundedPAConsistency.DynamicTruthShiftInvariantOrbitAudit
+
+open LO FirstOrder
+open LO.FirstOrder.Arithmetic
+open LO.FirstOrder.Arithmetic.Bootstrapping
+open LeanProofs.BoundedPAConsistency.DynamicTruthShiftInvariantFormula
+open LeanProofs.BoundedPAConsistency.DynamicTruthShiftInvariantOrbit
+
+#check modelIndexedShiftInvariantFormula
+#check modelIndexedShiftInvariantFormula_zero
+#check modelIndexedShiftInvariantFormula_succ
+#check modelIndexedShiftInvariantFormulaCode
+#check modelIndexedShiftInvariantFormulaCode_zero
+#check modelIndexedShiftInvariantFormulaCode_succ
+#check modelIndexedShiftInvariantFormulaCode_definable
+
+#print axioms modelIndexedShiftInvariantFormula_zero
+#print axioms modelIndexedShiftInvariantFormula_succ
+#print axioms modelIndexedShiftInvariantFormulaCode_definable
+
+end LeanProofs.BoundedPAConsistency.DynamicTruthShiftInvariantOrbitAudit

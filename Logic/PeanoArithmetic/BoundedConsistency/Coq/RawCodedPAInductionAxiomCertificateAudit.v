@@ -1,0 +1,20 @@
+(** Assumption audit for arbitrary-code induction-axiom certificates. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedPAInductionAxiomCertificate.
+
+Import PABoundedRawCodedPAInductionAxiomCertificate.
+
+Check rawPAAxiomInductionWitnessCode.
+Check rawPAInductionExtendedWitnessList.
+Check rawPAInductionExtendedContext.
+Check rawPAInductionAxiomProofRoot.
+Check rawPAInductionAxiomCertificate.
+Check raw_codedPAAxiomWitness_of_induction.
+Check raw_codedPAAxiomWitnessContext_add_induction.
+Check raw_codedPALocalProofOf_induction_axiom.
+Check raw_codedPAProofOf_induction_axiom.
+
+Print Assumptions raw_codedPAAxiomWitnessContext_add_induction.
+Print Assumptions raw_codedPALocalProofOf_induction_axiom.
+Print Assumptions raw_codedPAProofOf_induction_axiom.

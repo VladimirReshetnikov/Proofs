@@ -1,0 +1,40 @@
+import BoundedPAConsistency.DynamicTruthCertificateFieldFamily
+
+/-!
+# Audit for the assembled dynamic truth certificate fields
+-/
+
+namespace LeanProofs.BoundedPAConsistency.DynamicTruthCertificateFieldFamilyAudit
+
+open LO FirstOrder
+open LO.FirstOrder.Arithmetic
+open LeanProofs.BoundedPAConsistency.PrimitiveRecursiveTruthCertificate
+open LeanProofs.BoundedPAConsistency.DynamicTruthCertificateFieldFamily
+
+#check compiledDynamicTruthCertificateFamily
+#check compiledDynamicTruthCertificateFamily_localStep_zero
+#check compiledDynamicTruthCertificateFamily_localStep_succ
+#check compiledDynamicTruthCertificateFamily_crossLevel_zero
+#check compiledDynamicTruthCertificateFamily_crossLevel_succ
+#check compiledDynamicTruthCertificateFamily_shiftInvariant_zero
+#check compiledDynamicTruthCertificateFamily_shiftInvariant_succ
+#check compiledDynamicTruthCertificateFamily_substitutionInvariant_zero
+#check compiledDynamicTruthCertificateFamily_substitutionInvariant_succ
+#check compiledDynamicTruthCertificateFamily_axiomSound_zero
+#check compiledDynamicTruthCertificateFamily_axiomSound_succ
+#check compiledDynamicTruthCertificateFamily_code_definable
+
+#print axioms compiledDynamicTruthCertificateFamily_localStep_succ
+#print axioms compiledDynamicTruthCertificateFamily_crossLevel_succ
+#print axioms compiledDynamicTruthCertificateFamily_code_definable
+
+variable {V : Type*} [ORingStructure V]
+variable [V↓[ℒₒᵣ] ⊧* ISigma 1]
+
+/-- The family graph theorem has exactly the endpoint expected by the direct
+and staged selector bridges. -/
+example : HierarchySymbol.sigmaOne.DefinableFunction₁
+    (compiledDynamicTruthCertificateFamily (V := V)).code :=
+  compiledDynamicTruthCertificateFamily_code_definable
+
+end LeanProofs.BoundedPAConsistency.DynamicTruthCertificateFieldFamilyAudit

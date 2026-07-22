@@ -1,0 +1,23 @@
+(** Audit for diagonal substitution propagated through universal closure. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedUniversalClosureDiagonalSubstitution.
+
+Import PABoundedRawCodedUniversalClosureDiagonalSubstitution.
+
+Check codedFormulaDiagonalOperationTermAt.
+Check raw_sat_codedFormulaDiagonalOperationTermAt_iff.
+Check codedFormulaDiagonalSubstitutionTermAt.
+Check raw_sat_codedFormulaDiagonalSubstitutionTermAt_iff.
+Check RawCodedFormulaDiagonalSubstitutionAtAllDepths.
+Check codedFormulaDiagonalSubstitutionAtAllDepthsTermAt.
+Check raw_sat_codedFormulaDiagonalSubstitutionAtAllDepthsTermAt_iff.
+Check RawCodedUniversalClosureDiagonalSubstitutionAt.
+Check codedUniversalClosureDiagonalSubstitutionAtTermAt.
+Check raw_sat_codedUniversalClosureDiagonalSubstitutionAtTermAt_iff.
+Check raw_codedUniversalClosureDiagonalSubstitutionAt_all.
+Check raw_codedUniversalClosureSelfInstantiationThrough_of_diagonal.
+
+Print Assumptions raw_codedUniversalClosureDiagonalSubstitutionAt_all.
+Print Assumptions
+  raw_codedUniversalClosureSelfInstantiationThrough_of_diagonal.

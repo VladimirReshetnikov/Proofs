@@ -1,0 +1,30 @@
+import BoundedPAConsistency.DynamicTruthAxiomSoundnessOrbit
+
+/-!
+# Audit for the model-indexed PA-axiom-soundness field
+
+These checks expose the exact zero and successor equations and the uniform
+Sigma-one graph consumed by a concrete staged truth-certificate family.
+-/
+
+namespace LeanProofs.BoundedPAConsistency.DynamicTruthAxiomSoundnessOrbitAudit
+
+open LO FirstOrder
+open LO.FirstOrder.Arithmetic
+open LO.FirstOrder.Arithmetic.Bootstrapping
+open LeanProofs.BoundedPAConsistency.DynamicTruthAxiomSoundnessFormula
+open LeanProofs.BoundedPAConsistency.DynamicTruthAxiomSoundnessOrbit
+
+#check modelIndexedAxiomSoundnessFormula
+#check modelIndexedAxiomSoundnessFormula_zero
+#check modelIndexedAxiomSoundnessFormula_succ
+#check modelIndexedAxiomSoundnessFormulaCode
+#check modelIndexedAxiomSoundnessFormulaCode_zero
+#check modelIndexedAxiomSoundnessFormulaCode_succ
+#check modelIndexedAxiomSoundnessFormulaCode_definable
+
+#print axioms modelIndexedAxiomSoundnessFormula_zero
+#print axioms modelIndexedAxiomSoundnessFormula_succ
+#print axioms modelIndexedAxiomSoundnessFormulaCode_definable
+
+end LeanProofs.BoundedPAConsistency.DynamicTruthAxiomSoundnessOrbitAudit

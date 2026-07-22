@@ -1,0 +1,19 @@
+(** Public surface and assumption audit for universal-introduction certificates. *)
+
+From BoundedPAConsistency Require Import RawCodedPAProofAllICertificates.
+
+Import PABoundedRawCodedPAProofAllICertificates.
+
+Check rawProofAllICertificate.
+Check raw_codedPAProofOf_allI_from_fields.
+Check rawProofAllIEmptyCertificate.
+Check raw_codedPAProofOf_allI_empty_from_fields.
+Check rawProofUniversalOpenNegationRoot.
+Check rawProofUniversalOpenNegationCertificate.
+Check raw_codedPAProofOf_universal_negation_of_open_bottom.
+Check raw_codedPAProvability_universal_negation_of_open_bottom.
+
+Print Assumptions raw_codedPAProofOf_allI_from_fields.
+Print Assumptions raw_codedPAProofOf_allI_empty_from_fields.
+Print Assumptions raw_codedPAProofOf_universal_negation_of_open_bottom.
+Print Assumptions raw_codedPAProvability_universal_negation_of_open_bottom.

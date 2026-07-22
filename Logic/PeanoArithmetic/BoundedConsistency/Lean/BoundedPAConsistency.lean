@@ -14,8 +14,10 @@ import BoundedPAConsistency.FixedLevelTruthLaws
 import BoundedPAConsistency.FixedLevelTruthSubstitution
 import BoundedPAConsistency.FixedLevelTruthTarski
 import BoundedPAConsistency.Internal
+import BoundedPAConsistency.ModelCodedInductionAxiom
 import BoundedPAConsistency.ModelFormulaInduction
 import BoundedPAConsistency.OrientedHierarchy
+import BoundedPAConsistency.PrimitiveRecursiveTruthCertificate
 import BoundedPAConsistency.QuantifierFreeTruth
 import BoundedPAConsistency.QuantifierFreeTarski
 import BoundedPAConsistency.QuantifierFreeTransport
@@ -23,6 +25,9 @@ import BoundedPAConsistency.QuantifierFreeSoundness
 import BoundedPAConsistency.QuantifierFreePAAxioms
 import BoundedPAConsistency.RestrictedConsistency
 import BoundedPAConsistency.TermEvaluationTransport
+import BoundedPAConsistency.TruthCertificateProofCompiler
+import BoundedPAConsistency.UniformInternalProvability
+import BoundedPAConsistency.UniformProofPackage
 
 /-!
 # Bounded-complexity consistency for PA
@@ -52,5 +57,8 @@ argument proves truth of every possibly nonstandard induction-axiom code,
 including a nonstandard number of leading universal quantifiers.  Splitting
 the complete PA recognizer and applying arithmetic completeness yields the
 object theorem `PA ⊢ Con_n(PA)` for every external natural number `n`.  See
-the project README for the exact statement and the remaining Rocq work.
+the project README for the exact statement and the remaining Rocq work. For
+the genuinely uniform sentence, existential Sigma-one proof packages reduce
+the missing model-internal selector to explicit base, successor, and final
+proof-extraction obligations without requiring a canonical compiler.
 -/

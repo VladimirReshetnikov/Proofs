@@ -1,0 +1,31 @@
+import BoundedPAConsistency.DynamicTruthSubstitutionInvariantOrbit
+
+/-!
+# Audit for the model-indexed simultaneous-substitution invariance field
+
+These checks expose the exact zero and successor equations and the uniform
+Sigma-one graph used by a concrete truth-certificate family.  The splice is
+pure syntax infrastructure and does not claim an induction-kernel theorem.
+-/
+
+namespace LeanProofs.BoundedPAConsistency.DynamicTruthSubstitutionInvariantOrbitAudit
+
+open LO FirstOrder
+open LO.FirstOrder.Arithmetic
+open LO.FirstOrder.Arithmetic.Bootstrapping
+open LeanProofs.BoundedPAConsistency.DynamicTruthSubstitutionInvariantFormula
+open LeanProofs.BoundedPAConsistency.DynamicTruthSubstitutionInvariantOrbit
+
+#check modelIndexedSubstitutionInvariantFormula
+#check modelIndexedSubstitutionInvariantFormula_zero
+#check modelIndexedSubstitutionInvariantFormula_succ
+#check modelIndexedSubstitutionInvariantFormulaCode
+#check modelIndexedSubstitutionInvariantFormulaCode_zero
+#check modelIndexedSubstitutionInvariantFormulaCode_succ
+#check modelIndexedSubstitutionInvariantFormulaCode_definable
+
+#print axioms modelIndexedSubstitutionInvariantFormula_zero
+#print axioms modelIndexedSubstitutionInvariantFormula_succ
+#print axioms modelIndexedSubstitutionInvariantFormulaCode_definable
+
+end LeanProofs.BoundedPAConsistency.DynamicTruthSubstitutionInvariantOrbitAudit

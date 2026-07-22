@@ -1,0 +1,12 @@
+(** Assumption audit for the dynamic-soundness propositional shell. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedRestrictedPADynamicSoundnessComposition.
+
+Import PABoundedRawCodedRestrictedPADynamicSoundnessComposition.
+
+Check rawRestrictedPADynamicSoundnessImplicationCode.
+Check RawRestrictedPADynamicSoundnessImplicationProof.
+Check raw_codedPALocalProofOf_bottom_of_dynamicSoundness.
+
+Print Assumptions raw_codedPALocalProofOf_bottom_of_dynamicSoundness.

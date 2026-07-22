@@ -1,0 +1,21 @@
+(** Assumption audit for the projected-field refutation reduction. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedRestrictedPAProjectedFieldRefutation.
+
+Import PABoundedRawCodedRestrictedPAProjectedFieldRefutation.
+
+Check rawRestrictedPACanonicalShiftedRootContextCode.
+Check rawRestrictedPACanonicalShiftedWitnessContextCode.
+Check rawRestrictedPACanonicalShiftedProofContextCode.
+Check RawRestrictedPAProjectedFieldRefutationCompiler.
+Check RawRestrictedPAProjectedFieldRefutationCompilerInAllModels.
+Check raw_restrictedPAConsistencyFieldRefutation_of_projectedFields.
+Check raw_restrictedPAConsistencyFieldRefutationInAllModels_of_projectedFields.
+Check
+  PA_BProv_compactUniformRestrictedPAConsistencyProvabilityFormula_of_projectedFields.
+
+Print Assumptions
+  raw_restrictedPAConsistencyFieldRefutation_of_projectedFields.
+Print Assumptions
+  PA_BProv_compactUniformRestrictedPAConsistencyProvabilityFormula_of_projectedFields.

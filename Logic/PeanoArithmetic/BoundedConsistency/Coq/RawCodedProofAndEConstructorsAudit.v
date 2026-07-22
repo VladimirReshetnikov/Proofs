@@ -1,0 +1,21 @@
+From BoundedPAConsistency Require Import RawCodedProofAndEConstructors.
+
+Import PABoundedRawCodedProofAndEConstructors.
+
+Check RawAndProjection.
+Check rawAndProjectionTag.
+Check rawAndProjectionConclusion.
+Check rawProofAndERoot.
+Check raw_proofAndERoot_child_lt.
+Check raw_proofAndERoot_list_view.
+Check raw_proofAndERoot_recursive_children.
+Check raw_proofAndERoot_constructor.
+Check raw_proofAndE_syntax_step.
+Check raw_proofAndE_endpoint_rule_complete.
+Check raw_proofAndE_endpoint.
+Check raw_proofAndE_ruleCoverage.
+
+Print Assumptions raw_proofAndERoot_child_lt.
+Print Assumptions raw_proofAndERoot_recursive_children.
+Print Assumptions raw_proofAndE_endpoint_rule_complete.
+Print Assumptions raw_proofAndE_ruleCoverage.

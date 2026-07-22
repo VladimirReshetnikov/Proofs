@@ -1,0 +1,21 @@
+(** Public surface and assumption audit for assumption leaves. *)
+
+From BoundedPAConsistency Require Import RawCodedProofAssumptionLeaf.
+
+Import PABoundedRawCodedProofAssumptionLeaf.
+
+Check rawProofAssumptionRoot.
+Check raw_proofAssumptionRoot_list_view.
+Check raw_proofAssumptionRoot_not_recursive_case.
+Check raw_proofAssumption_syntax_step.
+Check raw_proofAssumption_endpoint_rule_complete.
+Check raw_proofAssumption_ruleCoverage.
+Check raw_proofAssumption_endpoint.
+Check raw_proofAssumption_cons_head_ruleCoverage.
+
+Print Assumptions raw_proofAssumptionRoot_list_view.
+Print Assumptions raw_proofAssumption_syntax_step.
+Print Assumptions raw_proofAssumption_endpoint_rule_complete.
+Print Assumptions raw_proofAssumption_ruleCoverage.
+Print Assumptions raw_proofAssumption_endpoint.
+Print Assumptions raw_proofAssumption_cons_head_ruleCoverage.

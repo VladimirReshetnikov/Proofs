@@ -920,6 +920,46 @@ formula-complexity bound.  Therefore a single PA proof of
 uniform truth predicate covering all levels would cross Tarski's
 undefinability boundary.  The numeralwise family avoids both uniformizations.
 
+## Internal provability of the bounded-consistency instances
+
+The sentence
+
+```text
+forall n, Prov_PA(code(Con_n(PA)))
+```
+
+is different from the forbidden universal consistency statement above.  Its
+inner assertion is PA's represented proof predicate, so it asks PA to verify
+that a proof code exists; it does not reflect that proof back to
+`Con_n(PA)`.  The outer quantifier is nevertheless an object-language
+quantifier and therefore includes nonstandard levels in nonstandard models.
+
+`BoundedPAConsistency.UniformInternalProvability` defines this literal Lean
+sentence using Foundation's numeral-substitution graph `ssnum` and represented
+predicate `provable Peano`.  It proves exact arbitrary-model semantics, exact
+agreement with `paRestrictedConsistencySentence n` at every standard numeral,
+and the externally indexed D1 consequence
+
+```lean
+theorem provable_paRestrictedConsistency_standard_point (n : Nat) :
+    Provable Peano
+      (substNumeral (quote paRestrictedConsistencyTemplate) (numeral n))
+```
+
+The module also isolates the strictly stronger remaining obligation as
+`PARestrictedConsistencyProofSelectorInAllModels` and proves that it is
+equivalent, by soundness and completeness, to the requested one-sentence PA
+derivation.  This selector must provide proof certificates for arbitrary
+model elements, not only for standard numerals; the preceding externally
+recursive semantic-completeness proof does not construct it.
+
+The Rocq modules `RawCodedPAProvability.v`,
+`RawCodedPAProvabilityRestrictedConsistency.v`, and
+`RawCodedPAUniformProvability.v` provide the parallel transparent proof
+predicate, fixed-standard-instance D1 theorem, exact uniform target, and
+conditional compiler boundary.  In both ports the compiler premise is kept
+explicit rather than being silently inferred from the numeralwise family.
+
 ## Implementation checklist
 
 The requested theorem is complete.  Unchecked items below are additional

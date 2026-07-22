@@ -1,0 +1,16 @@
+From BoundedPAConsistency Require Import
+  RawCodedRestrictedPAConsistencyShiftOrbit.
+
+Import PABoundedRawCodedRestrictedPAConsistencyShiftOrbit.
+
+Check RawRestrictedPAFormulaShiftOrbit.
+Check rawRestrictedPAShiftedRootContextCode.
+Check rawRestrictedPAShiftedWitnessContextCode.
+Check rawRestrictedPAShiftedProofContextCode.
+Check raw_restrictedPAExistentialDescentContexts_of_formulaShiftOrbit.
+Check raw_restrictedPAExistentialDescentContexts_exists_of_formulaShiftOrbit.
+
+Print Assumptions
+  raw_restrictedPAExistentialDescentContexts_of_formulaShiftOrbit.
+Print Assumptions
+  raw_restrictedPAExistentialDescentContexts_exists_of_formulaShiftOrbit.

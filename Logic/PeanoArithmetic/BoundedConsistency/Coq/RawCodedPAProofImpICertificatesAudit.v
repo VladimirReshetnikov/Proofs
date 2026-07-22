@@ -1,0 +1,15 @@
+(** Public surface and assumption audit for implication-introduction certificates. *)
+
+From BoundedPAConsistency Require Import RawCodedPAProofImpICertificates.
+
+Import PABoundedRawCodedPAProofImpICertificates.
+
+Check rawProofImpICertificate.
+Check raw_codedPAProofOf_impI_from_fields.
+Check raw_codedPAAxiomWitnessContext_context_realizable.
+Check rawProofIdentityCertificate.
+Check raw_codedPAProofOf_identity.
+
+Print Assumptions raw_codedPAProofOf_impI_from_fields.
+Print Assumptions raw_codedPAAxiomWitnessContext_context_realizable.
+Print Assumptions raw_codedPAProofOf_identity.

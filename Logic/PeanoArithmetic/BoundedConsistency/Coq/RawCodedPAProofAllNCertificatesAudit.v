@@ -1,0 +1,18 @@
+From BoundedPAConsistency Require Import
+  RawCodedPAProofAllNCertificates.
+
+Import PABoundedRawCodedPAProofAllNCertificates.
+
+Check rawProofCloseNRoot.
+Check raw_proofCloseNRoot_ruleCoverage.
+Check raw_proofCloseNRoot_endpoint.
+Check rawProofCloseNCertificate.
+Check raw_codedPAProofOf_closeN_empty_from_fields.
+Check rawProofSealedUniversalOpenNegationCertificate.
+Check raw_codedPAProofOf_sealed_universal_negation_of_open_bottom.
+
+Print Assumptions raw_proofCloseNRoot_ruleCoverage.
+Print Assumptions raw_proofCloseNRoot_endpoint.
+Print Assumptions raw_codedPAProofOf_closeN_empty_from_fields.
+Print Assumptions
+  raw_codedPAProofOf_sealed_universal_negation_of_open_bottom.

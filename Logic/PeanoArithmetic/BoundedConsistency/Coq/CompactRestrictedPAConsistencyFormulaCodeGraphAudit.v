@@ -1,0 +1,32 @@
+(** Public surface and assumption audit for the compact target-code graph. *)
+
+From BoundedPAConsistency Require Import
+  CompactRestrictedPAConsistencyFormulaCodeGraph.
+
+Import PABoundedCompactRestrictedPAConsistencyFormulaCodeGraph.
+
+Check compactQuotedTermCodeTerm.
+Check compactQuotedFormulaCodeTerm.
+Check raw_eval_compactQuotedTermCodeTerm.
+Check raw_eval_compactQuotedFormulaCodeTerm.
+Check compactRestrictedTargetTermContextCodeTerm.
+Check compactRestrictedTargetFormulaContextCodeTerm.
+Check raw_eval_compactRestrictedTargetTermContextCodeTerm.
+Check raw_eval_compactRestrictedTargetFormulaContextCodeTerm.
+Check compactRestrictedPAConsistencyFormulaCodeGraph.
+Check compactRestrictedPAConsistencyFormulaCodeGraph_representation.
+Check compactRestrictedPAConsistencyFormulaCodeGraph_raw_total.
+Check PA_proves_compactRestrictedPAConsistencyFormulaCodeGraph_totality.
+Check compactRestrictedPAConsistencyFormulaCodeGraph_standard.
+
+Print Assumptions raw_eval_compactQuotedTermCodeTerm.
+Print Assumptions raw_eval_compactQuotedFormulaCodeTerm.
+Print Assumptions
+  raw_eval_compactRestrictedTargetFormulaContextCodeTerm.
+Print Assumptions
+  compactRestrictedPAConsistencyFormulaCodeGraph_representation.
+Print Assumptions
+  compactRestrictedPAConsistencyFormulaCodeGraph_raw_total.
+Print Assumptions
+  PA_proves_compactRestrictedPAConsistencyFormulaCodeGraph_totality.
+Print Assumptions compactRestrictedPAConsistencyFormulaCodeGraph_standard.

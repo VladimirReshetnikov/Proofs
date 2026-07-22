@@ -1,0 +1,15 @@
+From BoundedPAConsistency Require Import
+  RawCodedFormulaShiftTreeRealization.
+
+Import PABoundedRawCodedFormulaShiftTreeRealization.
+
+Check RawFormulaShiftBinaryKind.
+Check RawFormulaShiftUnaryKind.
+Check RawFormulaShiftTree.
+Check RawFormulaShiftTreeValid.
+Check rawFormulaShiftTreeSchedule.
+Check raw_formulaShiftTree_segment_row.
+Check raw_codedFormulaShift_of_valid_tree.
+
+Print Assumptions raw_formulaShiftTree_segment_row.
+Print Assumptions raw_codedFormulaShift_of_valid_tree.

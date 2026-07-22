@@ -1,0 +1,18 @@
+(** Exact-interface and assumption audit for zero-closure induction. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedPAZeroClosureInductionCompiler.
+
+Import PABoundedRawCodedPAZeroClosureInductionCompiler.
+
+Check RawCodedPAZeroClosureInductionData.
+Check raw_codedPAZeroClosureInductionData_axiom.
+Check raw_codedPAZeroClosureInductionData_axiom_is_body.
+Check rawPAZeroClosureInductionPremiseProofRoot.
+Check rawPAZeroClosureInductionProofRoot.
+Check rawPAZeroClosureInductionCertificate.
+Check raw_codedPALocalProofOf_zeroClosure_induction.
+Check raw_codedPAProofOf_zeroClosure_induction.
+
+Print Assumptions raw_codedPALocalProofOf_zeroClosure_induction.
+Print Assumptions raw_codedPAProofOf_zeroClosure_induction.
