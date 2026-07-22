@@ -512,13 +512,29 @@ noncomputable def successorTruthFormulaCode
       successorTruthFormulaCode lower.val lowerLevel upperLevel := by
   simp [successorTruthFormula, successorTruthFormulaCode]
 
+/-- The inserted universal-record branch is a total represented syntax
+operation.  Naming this smaller graph prevents downstream formula-code proofs
+from repeatedly unfolding the entire dynamic successor constructor. -/
+instance universalRecordBranchCode_definable :
+    HierarchySymbol.sigmaOne.DefinableFunction₁ (V := V)
+      universalRecordBranchCode := by
+  unfold universalRecordBranchCode
+  definability
+
+/-- Local successor-record validity is a total represented syntax operation
+of the lower formula code and the two hierarchy levels. -/
+instance successorRecordValidCode_definable :
+    HierarchySymbol.sigmaOne.DefinableFunction₃ (V := V)
+      successorRecordValidCode := by
+  unfold successorRecordValidCode
+  definability
+
 /-- The code transformer is Sigma-one definable.  This is the part needed to
 put the formula field of a truth certificate into the package relation. -/
 instance successorTruthFormulaCode_definable :
     HierarchySymbol.sigmaOne.DefinableFunction₃ (V := V)
       successorTruthFormulaCode := by
-  unfold successorTruthFormulaCode successorRecordValidCode
-    universalRecordBranchCode
+  unfold successorTruthFormulaCode
   definability
 
 @[simp] theorem successorTruthFormula_isSemiformula

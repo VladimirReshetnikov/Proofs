@@ -68,6 +68,7 @@ theorem orbitCompiledLocalBundleProof_isPAProof (n : V) :
 
 /-! ## Representability of the bundled field code -/
 
+set_option maxHeartbeats 800000 in
 /-- The formula code of the bundled field has a Sigma-one graph.
 
 After exposing the three source-specialized formulas, every operation is a
@@ -76,16 +77,44 @@ represented syntax constructor.  The sole recursively varying subterm is
 theorem orbitCompiledLocalBundleCode_definable :
     HierarchySymbol.sigmaOne.DefinableFunction₁
       (fun n : V ↦ (orbitCompiledLocalBundle n).val) := by
-  simp only [orbitCompiledLocalBundle,
-    orbitLocalProjectionFormula, localProjectionFormula,
-    orbitMemberValidityFormula, memberValidityFormula,
-    acceptedCertificateAtRecordFormula,
-    orbitUniversalLeafProjectionFormula, universalLeafProjectionFormula,
-    decodedLeafWitnessFormula,
-    Semiformula.val_and, Semiformula.val_all, Semiformula.val_imp,
-    Semiformula.val_exs, Semiformula.val_neg,
-    Bootstrapping.Semiformula.val_substs,
-    LeanProofs.BoundedPAConsistency.DynamicTruthOrbit.truthFormula_val]
+  -- Prove the three component graphs separately.  Asking the definability
+  -- tactic to unfold and synthesize all three large syntax expressions in one
+  -- search is needlessly fragile and can exhaust Lean's default heartbeat
+  -- budget on a clean build.
+  have hprojection : HierarchySymbol.sigmaOne.DefinableFunction₁
+      (fun n : V ↦ (orbitLocalProjectionFormula n).val) := by
+    simp only [orbitLocalProjectionFormula,
+      Semiformula.val_all, Semiformula.val_imp,
+      LeanProofs.BoundedPAConsistency.DynamicTruthOrbit.truthFormula_val]
+    definability
+  have hmember : HierarchySymbol.sigmaOne.DefinableFunction₁
+      (fun n : V ↦ (orbitMemberValidityFormula n).val) := by
+    simp only [orbitMemberValidityFormula, memberValidityFormula,
+      acceptedCertificateAtRecordFormula,
+      Semiformula.val_and, Semiformula.val_all, Semiformula.val_imp,
+      Bootstrapping.Semiformula.val_substs,
+      DynamicTruthFormula.successorRecordValid_val_eq_code,
+      LeanProofs.BoundedPAConsistency.DynamicTruthOrbit.truthFormula_val]
+    definability
+  have hleaf : HierarchySymbol.sigmaOne.DefinableFunction₁
+      (fun n : V ↦ (orbitUniversalLeafProjectionFormula n).val) := by
+    simp only [orbitUniversalLeafProjectionFormula,
+      universalLeafProjectionFormula, decodedLeafWitnessFormula,
+      Semiformula.val_and, Semiformula.val_all, Semiformula.val_imp,
+      Semiformula.val_exs, Semiformula.val_neg,
+      Bootstrapping.Semiformula.val_substs,
+      DynamicTruthFormula.successorRecordValid_val_eq_code,
+      DynamicTruthFormula.universalRecordBranch_val_eq_code,
+      DynamicTruthFormula.apply₃_val,
+      LeanProofs.BoundedPAConsistency.DynamicTruthOrbit.truthFormula_val]
+    definability
+  letI : HierarchySymbol.sigmaOne.DefinableFunction₁
+      (fun n : V ↦ (orbitLocalProjectionFormula n).val) := hprojection
+  letI : HierarchySymbol.sigmaOne.DefinableFunction₁
+      (fun n : V ↦ (orbitMemberValidityFormula n).val) := hmember
+  letI : HierarchySymbol.sigmaOne.DefinableFunction₁
+      (fun n : V ↦ (orbitUniversalLeafProjectionFormula n).val) := hleaf
+  simp only [orbitCompiledLocalBundle, Semiformula.val_and]
   definability
 
 end LeanProofs.BoundedPAConsistency.DynamicTruthCompiledLocalBundle

@@ -12,6 +12,10 @@ open LeanProofs.BoundedPAConsistency.DynamicTruthFormula
 #check qfTruthDef
 #check baseTruthFormula
 #check successorTruthFormula
+#check universalRecordBranchCode
+#check universalRecordBranchCode_definable
+#check successorRecordValidCode
+#check successorRecordValidCode_definable
 #check successorTruthFormulaCode
 #check successorTruthFormulaCode_definable
 #check successorTruthFormula_val_eq_code
@@ -33,6 +37,8 @@ open LeanProofs.BoundedPAConsistency.DynamicTruthFormula
 #check exists_paProof_restrictedConsistency_zero
 
 #print axioms successorTruthFormula_shift_of_lower
+#print axioms universalRecordBranchCode_definable
+#print axioms successorRecordValidCode_definable
 #print axioms successorTruthFormulaCode_definable
 #print axioms typedQuote_standardSuccessorTruthFormula
 #print axioms eval_levelZeroTruthSyntax_iff

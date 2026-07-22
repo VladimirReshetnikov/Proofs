@@ -1,0 +1,33 @@
+import BoundedPAConsistency.DynamicTruthCompiledLocalOrbit
+
+/-!
+# Audit for the model-indexed compiled local truth bundle
+-/
+
+namespace LeanProofs.BoundedPAConsistency.DynamicTruthCompiledLocalOrbitAudit
+
+open LO FirstOrder
+open LO.FirstOrder.Arithmetic
+open LO.FirstOrder.Arithmetic.Bootstrapping
+open LeanProofs.BoundedPAConsistency.DynamicTruthCompiledLocalOrbit
+
+#check baseCompiledLocalBundle
+#check baseCompiledLocalBundleProof
+#check proveBaseCompiledLocalBundleFrom
+#check baseCompiledLocalBundleProof_isPAProof
+#check modelIndexedCompiledLocalBundle
+#check modelIndexedCompiledLocalBundle_zero
+#check modelIndexedCompiledLocalBundle_succ
+#check proveModelIndexedCompiledLocalBundleSuccFrom
+#check modelIndexedCompiledLocalBundleCode
+#check modelIndexedCompiledLocalBundleCode_zero
+#check modelIndexedCompiledLocalBundleCode_succ
+#check modelIndexedCompiledLocalBundleCode_definable
+
+#print axioms baseCompiledLocalBundleProof
+#print axioms baseCompiledLocalBundleProof_isPAProof
+#print axioms modelIndexedCompiledLocalBundle_succ
+#print axioms proveModelIndexedCompiledLocalBundleSuccFrom
+#print axioms modelIndexedCompiledLocalBundleCode_definable
+
+end LeanProofs.BoundedPAConsistency.DynamicTruthCompiledLocalOrbitAudit
