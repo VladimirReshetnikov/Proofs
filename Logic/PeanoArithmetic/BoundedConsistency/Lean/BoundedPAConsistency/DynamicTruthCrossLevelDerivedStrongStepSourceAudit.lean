@@ -1,0 +1,20 @@
+import BoundedPAConsistency.DynamicTruthCrossLevelDerivedStrongStepSource
+
+/-! Assumption audit for the literal derived-level cross-level source. -/
+
+namespace LeanProofs.BoundedPAConsistency.DynamicTruthCrossLevelDerivedStrongStepSourceAudit
+
+open LeanProofs.BoundedPAConsistency.DynamicTruthCrossLevelDerivedStrongStepSource
+
+#check sourceDerivedCurrentLevel
+#check sourceDerivedNextLevel
+#check sourceDerivedPredecessorSuccessorTruth
+#check sourceDerivedCurrentDefinition
+#check sourceDerivedTargetQuantifierFreeIntroduction
+#check sourceDerivedNextCrossLevelInvariant
+#check sourceDerivedStrongPrefix
+#check sourceDerivedStrongStepSentence
+
+#print axioms sourceDerivedStrongStepSentence
+
+end LeanProofs.BoundedPAConsistency.DynamicTruthCrossLevelDerivedStrongStepSourceAudit
