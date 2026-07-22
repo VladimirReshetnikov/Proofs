@@ -1,0 +1,13 @@
+From BoundedPAConsistency Require Import RawCodedFormulaOpeningAfterShift.
+
+Import PABoundedRawCodedFormulaOpeningAfterShift.
+
+Check rawStandardTermOpeningAfterShiftTree.
+Check rawStandardTermOpeningAfterShiftTree_valid.
+Check raw_codedTermOpening_after_standardShift_one.
+Check rawStandardFormulaOpeningAfterShiftTree.
+Check rawStandardFormulaOpeningAfterShiftTree_valid.
+Check raw_codedFormulaSubstitution_after_standardShift_one.
+
+Print Assumptions raw_codedTermOpening_after_standardShift_one.
+Print Assumptions raw_codedFormulaSubstitution_after_standardShift_one.
