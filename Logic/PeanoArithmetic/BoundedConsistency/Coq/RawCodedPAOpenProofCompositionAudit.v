@@ -1,0 +1,31 @@
+(** Public surface and assumption audit for one-assumption open proofs. *)
+
+From BoundedPAConsistency Require Import RawCodedPAOpenProofComposition.
+
+Import PABoundedRawCodedPAOpenProofComposition.
+
+Check RawCodedPAOpenProofOf.
+Check codedPAOpenProofOfTermAt.
+Check raw_sat_codedPAOpenProofOfTermAt_iff.
+Check RawCodedPAOpenProvability.
+Check codedPAOpenProvabilityTermAt.
+Check raw_sat_codedPAOpenProvabilityTermAt_iff.
+Check raw_codedPAOpenProofOf_assumption.
+Check raw_codedPAOpenProofOf_lem.
+Check raw_codedPAOpenProofOf_botE.
+Check raw_codedPAOpenProofOf_impE.
+Check raw_codedPAProofOf_implication_of_open.
+Check raw_codedPAProvability_implication_of_open.
+Check raw_codedPAProofOf_negation_of_open_bottom.
+Check raw_codedPAProvability_negation_of_open_bottom.
+
+Print Assumptions raw_sat_codedPAOpenProofOfTermAt_iff.
+Print Assumptions raw_sat_codedPAOpenProvabilityTermAt_iff.
+Print Assumptions raw_codedPAOpenProofOf_assumption.
+Print Assumptions raw_codedPAOpenProofOf_lem.
+Print Assumptions raw_codedPAOpenProofOf_botE.
+Print Assumptions raw_codedPAOpenProofOf_impE.
+Print Assumptions raw_codedPAProofOf_implication_of_open.
+Print Assumptions raw_codedPAProvability_implication_of_open.
+Print Assumptions raw_codedPAProofOf_negation_of_open_bottom.
+Print Assumptions raw_codedPAProvability_negation_of_open_bottom.
