@@ -1,0 +1,14 @@
+From BoundedPAConsistency Require Import
+  RawCodedRestrictedPAProofExclusion.
+
+Import PABoundedRawCodedRestrictedPAProofExclusion.
+
+Check RawCodedPAAxiomWitnessContextsSigmaTrue.
+Check raw_codedRestrictedPAProof_excluded_covered.
+Check RawRestrictedProofCoveredRuleTruthSoundInAllModels.
+Check RawCodedPAAxiomWitnessContextsSigmaTrueInAllModels.
+Check PA_BProv_restrictedPAConsistencyFormula_of_covered_soundness.
+
+Print Assumptions raw_codedRestrictedPAProof_excluded_covered.
+Print Assumptions
+  PA_BProv_restrictedPAConsistencyFormula_of_covered_soundness.

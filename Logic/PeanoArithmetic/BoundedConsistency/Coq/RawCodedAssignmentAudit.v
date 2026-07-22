@@ -1,0 +1,48 @@
+(** Public-surface and assumption audit for raw beta-coded assignments. *)
+
+From BoundedPAConsistency Require Import RawCodedAssignment.
+
+Import PABoundedRawCodedAssignment.
+
+Check RawCodedAssignmentLookup.
+Check RawCodedAssignmentDefinedThrough.
+Check RawCodedAssignmentPrepend.
+
+Check codedAssignmentLookupTermAt.
+Check codedAssignmentDefinedThroughTermAt.
+Check codedAssignmentPrependTermAt.
+Check codedAssignmentPrependExistsTermAt.
+Check codedAssignmentPrependExistsFormula.
+
+Check raw_sat_codedAssignmentLookupTermAt_iff.
+Check raw_sat_codedAssignmentDefinedThroughTermAt_iff.
+Check raw_sat_codedAssignmentPrependTermAt_iff.
+Check raw_sat_codedAssignmentPrependExistsTermAt_iff.
+Check raw_sat_codedAssignmentPrependExistsFormula_iff.
+
+Check raw_codedAssignmentLookup_functional.
+Check raw_sat_codedAssignmentLookupTermAt_functional.
+Check raw_codedAssignment_defined_unique.
+Check raw_codedAssignmentPrepend_lookup_zero_iff.
+Check raw_codedAssignmentPrepend_lookup_succ_iff.
+
+Check BProv_Ax_s_codedAssignmentPrependExistsTermAt.
+Check raw_codedAssignmentPrepend_exists.
+Check raw_codedAssignmentPrepend_restrict.
+Check raw_codedAssignmentPrepend_definedThrough.
+Check raw_codedAssignmentPrepend_target_definedThrough_bound.
+Check raw_codedAssignmentPrepend_defined_exists.
+Check raw_codedAssignment_empty_defined.
+
+Print Assumptions raw_sat_codedAssignmentLookupTermAt_iff.
+Print Assumptions raw_sat_codedAssignmentDefinedThroughTermAt_iff.
+Print Assumptions raw_sat_codedAssignmentPrependTermAt_iff.
+Print Assumptions raw_sat_codedAssignmentPrependExistsTermAt_iff.
+Print Assumptions raw_codedAssignmentLookup_functional.
+Print Assumptions raw_codedAssignmentPrepend_lookup_succ_iff.
+Print Assumptions BProv_Ax_s_codedAssignmentPrependExistsTermAt.
+Print Assumptions raw_codedAssignmentPrepend_exists.
+Print Assumptions raw_codedAssignmentPrepend_restrict.
+Print Assumptions raw_codedAssignmentPrepend_definedThrough.
+Print Assumptions raw_codedAssignmentPrepend_target_definedThrough_bound.
+Print Assumptions raw_codedAssignmentPrepend_defined_exists.

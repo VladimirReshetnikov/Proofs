@@ -1,0 +1,11 @@
+From BoundedPAConsistency Require Import RawCodedFixedLevelBottomLaws.
+
+Import PABoundedRawCodedFixedLevelBottomLaws.
+
+Check raw_formulaBot_neq_binary.
+Check raw_formulaBot_neq_unary.
+Check raw_rankZeroTruthCertificate_bot_output_zero.
+Check raw_fixedLevelSigmaBottomFalse_successor.
+
+Print Assumptions raw_rankZeroTruthCertificate_bot_output_zero.
+Print Assumptions raw_fixedLevelSigmaBottomFalse_successor.

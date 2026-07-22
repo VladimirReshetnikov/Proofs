@@ -1,0 +1,31 @@
+(** Kernel-assumption audit for canonical raw transition reflection. *)
+
+From BoundedPAConsistency Require Import
+  CanonicalCheckerRawTraceReflection.
+
+Import PABoundedCanonicalCheckerRawTraceReflection.
+
+Check RawCanonicalMachineState.
+Check RawRegistersEqualExcept.
+Check RawCanonicalInstructionStep.
+Check RawCanonicalProgramStep.
+Check raw_registersEqualExcept_iff.
+Check raw_incTransition_iff.
+Check raw_decTransition_iff.
+Check raw_instructionTransition_iff.
+Check raw_canonicalMachineTransition_iff.
+Check RawCanonicalTraceStateAt.
+Check raw_stepLocalEnv_time.
+Check raw_stepLocalEnv_sequenceCode.
+Check raw_stepLocalEnv_sequenceStep.
+Check raw_everyTraceStepCondition_reflects.
+Check RawCanonicalStepwiseTrace.
+Check raw_CanonicalRestrictedPAProofFormula_stepwise.
+
+Print Assumptions raw_registersEqualExcept_iff.
+Print Assumptions raw_incTransition_iff.
+Print Assumptions raw_decTransition_iff.
+Print Assumptions raw_instructionTransition_iff.
+Print Assumptions raw_canonicalMachineTransition_iff.
+Print Assumptions raw_everyTraceStepCondition_reflects.
+Print Assumptions raw_CanonicalRestrictedPAProofFormula_stepwise.

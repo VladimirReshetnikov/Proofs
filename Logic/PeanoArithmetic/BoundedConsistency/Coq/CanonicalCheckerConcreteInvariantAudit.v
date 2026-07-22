@@ -1,0 +1,34 @@
+(** Kernel-assumption audit for the concrete canonical-checker invariant. *)
+
+From BoundedPAConsistency Require Import
+  CanonicalCheckerConcreteInvariant.
+
+Import PABoundedCanonicalCheckerConcreteInvariant.
+
+Check canonicalCheckerNoAcceptingExitInvariant.
+Check RawCanonicalNoAcceptingExit.
+Check raw_canonicalCheckerNoAcceptingExitInvariant_iff.
+Check raw_noAcceptingExitInvariant_initial.
+Check raw_noAcceptingExitInvariant_excludes.
+Check RawCanonicalNoAcceptingExitStepClosed.
+Check raw_noAcceptingExitInvariant_preserved_iff.
+Check CanonicalCheckerNoAcceptingExitPreservation.
+Check raw_noAcceptingExit_safety_certificate.
+Check raw_rejection_of_noAcceptingExit_preservation.
+Check PA_BProv_NoCanonicalRestrictedPAProofFormula_of_concrete_invariant.
+Check RawCanonicalCurrentPCInCompiledCode.
+Check raw_programStep_currentPC_in_compiled_code.
+Check raw_accepting_trace_length_nonzero.
+Check raw_accepting_trace_has_compiled_exit_step.
+
+Print Assumptions raw_canonicalCheckerNoAcceptingExitInvariant_iff.
+Print Assumptions raw_noAcceptingExitInvariant_initial.
+Print Assumptions raw_noAcceptingExitInvariant_excludes.
+Print Assumptions raw_noAcceptingExitInvariant_preserved_iff.
+Print Assumptions raw_noAcceptingExit_safety_certificate.
+Print Assumptions raw_rejection_of_noAcceptingExit_preservation.
+Print Assumptions
+  PA_BProv_NoCanonicalRestrictedPAProofFormula_of_concrete_invariant.
+Print Assumptions raw_programStep_currentPC_in_compiled_code.
+Print Assumptions raw_accepting_trace_length_nonzero.
+Print Assumptions raw_accepting_trace_has_compiled_exit_step.

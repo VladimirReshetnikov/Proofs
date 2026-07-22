@@ -1,0 +1,24 @@
+(** Assumption audit for positive fixed-level truth schedules and the exact
+    PA input-certificate totality theorem. *)
+
+From BoundedPAConsistency Require Import RawCodedFixedLevelTruthSchedule.
+
+Import PABoundedRawCodedFixedLevelTruthSchedule.
+
+Check raw_fixedLevelPositiveTruthBelow_succ.
+Check raw_fixedLevelPositiveTruthBelow_all.
+Check raw_fixedLevelInputTruthCertificateTotalityAt_all.
+Check raw_fixedLevelInputTruthCertificate_totality.
+
+Check fixedLevelInputTruthCertificateTotalityFormula_raw_valid.
+Check fixedLevelInputTruthCertificateTotalityFormula_closed.
+Check fixedLevelInputTruthCertificateTotalityFormula_closed_sentence.
+Check fixedLevelInputTruthCertificateTotalityFormula_closed_raw_valid.
+Check PA_proves_fixedLevelInputTruthCertificateTotalityFormula_closed.
+Check PA_proves_fixedLevelInputTruthCertificateTotalityFormula.
+
+Print Assumptions raw_fixedLevelPositiveTruthBelow_succ.
+Print Assumptions raw_fixedLevelPositiveTruthBelow_all.
+Print Assumptions raw_fixedLevelInputTruthCertificateTotalityAt_all.
+Print Assumptions raw_fixedLevelInputTruthCertificate_totality.
+Print Assumptions PA_proves_fixedLevelInputTruthCertificateTotalityFormula.

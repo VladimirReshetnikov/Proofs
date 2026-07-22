@@ -1,0 +1,24 @@
+(** Assumption audit for adjacent-level fixed-truth transport. *)
+
+From BoundedPAConsistency Require Import RawCodedFixedLevelTruthCoherence.
+
+Import PABoundedRawCodedFixedLevelTruthCoherence.
+
+Check RawFixedLevelAdmissibleTruthCertificateCoherenceAt.
+Check fixedLevelAdmissibleTruthCertificateCoherenceFormula.
+Check raw_sat_fixedLevelAdmissibleTruthCertificateCoherenceFormula_iff.
+Check raw_fixedLevelClosedZeroRow_raise.
+Check raw_fixedLevelZeroTruthTraversal_raise.
+Check raw_fixedLevelTruthCertificate_zero_raise.
+Check raw_fixedLevelClosedSuccessorRow_raise.
+Check raw_fixedLevelSuccessorTruthTraversal_raise.
+Check raw_fixedLevelTruthCertificate_successor_raise.
+
+Print Assumptions
+  raw_sat_fixedLevelAdmissibleTruthCertificateCoherenceFormula_iff.
+Print Assumptions raw_fixedLevelClosedZeroRow_raise.
+Print Assumptions raw_fixedLevelZeroTruthTraversal_raise.
+Print Assumptions raw_fixedLevelTruthCertificate_zero_raise.
+Print Assumptions raw_fixedLevelClosedSuccessorRow_raise.
+Print Assumptions raw_fixedLevelSuccessorTruthTraversal_raise.
+Print Assumptions raw_fixedLevelTruthCertificate_successor_raise.

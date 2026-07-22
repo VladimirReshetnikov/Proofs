@@ -1,0 +1,23 @@
+(** Assumption audit for arbitrary-model formula-operation rank preservation. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedFormulaOperationRankPreservation.
+
+Import PABoundedRawCodedFormulaOperationRankPreservation.
+
+Check raw_formulaOperationRankAgreementBelow_succ.
+Check raw_formulaOperationRankAgreementBelow_all.
+Check raw_formulaOperationTrace_rankAgreement_all.
+Check raw_codedFormulaOperation_rank_preserving_all.
+Check raw_codedFormulaShift_rank_preserving_all.
+Check raw_codedFormulaSingleSubstitution_rank_preserving_all.
+Check raw_codedFormulaShift_rankAgreement_all.
+Check raw_codedFormulaSingleSubstitution_rankAgreement_all.
+
+Print Assumptions raw_formulaOperationRankAgreementBelow_all.
+Print Assumptions raw_formulaOperationTrace_rankAgreement_all.
+Print Assumptions raw_codedFormulaOperation_rank_preserving_all.
+Print Assumptions raw_codedFormulaShift_rank_preserving_all.
+Print Assumptions raw_codedFormulaSingleSubstitution_rank_preserving_all.
+Print Assumptions raw_codedFormulaShift_rankAgreement_all.
+Print Assumptions raw_codedFormulaSingleSubstitution_rankAgreement_all.

@@ -1,0 +1,12 @@
+(** Assumption audit for unconditional witnessed PA-axiom context truth. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedPAAxiomWitnessContextTruthComplete.
+
+Import PABoundedRawCodedPAAxiomWitnessContextTruthComplete.
+
+Check raw_codedPAAxiomWitnessContextsSigmaTrue_all.
+Check raw_codedPAAxiomWitnessContextsSigmaTrueInAllModels_all.
+
+Print Assumptions raw_codedPAAxiomWitnessContextsSigmaTrue_all.
+Print Assumptions raw_codedPAAxiomWitnessContextsSigmaTrueInAllModels_all.

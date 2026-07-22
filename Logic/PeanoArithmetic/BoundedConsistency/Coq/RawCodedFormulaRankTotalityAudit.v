@@ -1,0 +1,38 @@
+(** Audit surface for model-internal formula-rank realization. *)
+
+From BoundedPAConsistency Require Import RawCodedFormulaRankTotality.
+
+Import PABoundedRawCodedFormulaRankTotality.
+
+Check codedFormulaSyntaxTraversalRowTermAt.
+Check raw_sat_codedFormulaSyntaxTraversalRowTermAt_iff.
+Check codedFormulaSyntaxTraversalTermAt.
+Check raw_sat_codedFormulaSyntaxTraversalTermAt_iff.
+Check codedWellFormedFormulaTermAt.
+Check raw_sat_codedWellFormedFormulaTermAt_iff.
+
+Check codedFormulaRankPrefixTermAt.
+Check raw_sat_codedFormulaRankPrefixTermAt_iff.
+Check raw_formulaRankCodingStep_exists.
+Check raw_formulaRankTableCapacity_exists.
+Check raw_formulaSyntaxRow_rank_exists_bounded.
+Check raw_codedFormulaRankPrefix_succ.
+Check raw_codedFormulaRankPrefix_all.
+
+Check raw_formulaSyntaxTraversal_rankTraversal_exists.
+Check raw_formulaSyntaxTraversal_rank_exists.
+Check raw_codedWellFormedFormula_rank_exists.
+Check raw_codedWellFormedFormula_rank_exists_unique.
+
+Check codedWellFormedFormulaRankTotalFormula.
+Check codedWellFormedFormulaRankTotalFormula_sentence.
+Check codedWellFormedFormulaRankTotalFormula_raw_valid.
+Check PA_proves_codedWellFormedFormulaRankTotalFormula.
+
+Print Assumptions raw_sat_codedFormulaSyntaxTraversalTermAt_iff.
+Print Assumptions raw_formulaRankTableCapacity_exists.
+Print Assumptions raw_formulaSyntaxRow_rank_exists_bounded.
+Print Assumptions raw_codedFormulaRankPrefix_all.
+Print Assumptions raw_formulaSyntaxTraversal_rankTraversal_exists.
+Print Assumptions raw_codedWellFormedFormula_rank_exists_unique.
+Print Assumptions PA_proves_codedWellFormedFormulaRankTotalFormula.

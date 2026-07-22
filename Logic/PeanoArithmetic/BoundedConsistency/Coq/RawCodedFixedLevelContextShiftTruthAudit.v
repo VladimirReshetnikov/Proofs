@@ -1,0 +1,9 @@
+From BoundedPAConsistency Require Import
+  RawCodedFixedLevelContextShiftTruth.
+
+Import PABoundedRawCodedFixedLevelContextShiftTruth.
+
+Check RawContextShiftSigmaTransport.
+Check raw_contextAllSigmaTrue_shift_transport.
+
+Print Assumptions raw_contextAllSigmaTrue_shift_transport.

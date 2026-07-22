@@ -1,0 +1,28 @@
+(** Audit the represented assignment-locality lower layer. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedFixedLevelTruthAssignmentInvariance.
+
+Import PABoundedRawCodedFixedLevelTruthAssignmentInvariance.
+
+Check codedAssignmentsAgreeThroughTermAt.
+Check RawCodedAssignmentsAgreeThrough.
+Check raw_sat_codedAssignmentsAgreeThroughTermAt_iff.
+Check raw_codedAssignmentsAgreeThrough_refl.
+Check raw_codedAssignmentsAgreeThrough_sym.
+Check raw_codedAssignmentsAgreeThrough_restrict.
+Check raw_codedAssignmentPrepends_agree.
+Check raw_codedAssignmentPrepends_agree_common_prefix.
+
+Check raw_termEvaluationClosedStep_assignment_transport.
+Check raw_termEvaluationCertificate_assignment_transport.
+Check raw_termEvaluationCertificate_assignment_iff.
+Check raw_rankZeroTruthClosedStep_assignment_transport.
+Check raw_rankZeroTruthCertificate_assignment_transport.
+Check raw_rankZeroTruthCertificate_assignment_iff.
+
+Print Assumptions raw_sat_codedAssignmentsAgreeThroughTermAt_iff.
+Print Assumptions raw_codedAssignmentPrepends_agree.
+Print Assumptions raw_codedAssignmentPrepends_agree_common_prefix.
+Print Assumptions raw_termEvaluationCertificate_assignment_transport.
+Print Assumptions raw_rankZeroTruthCertificate_assignment_transport.

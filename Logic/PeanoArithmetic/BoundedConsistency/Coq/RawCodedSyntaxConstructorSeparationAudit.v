@@ -1,0 +1,25 @@
+(** Assumption audit for the constructor-separation boundary. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedSyntaxConstructorSeparation.
+
+Import PABoundedRawCodedSyntaxConstructorSeparation.
+
+Check raw_sat_polynomialPairInjectiveFormula_iff.
+Check PolynomialPairInjectivityProof.
+Check raw_pair_injective_of_proof.
+Check raw_listNode_injective_of_pair_injective.
+Check raw_codeList2_injective.
+Check raw_codeList3_injective.
+Check raw_codeList1_neq_codeList2.
+Check raw_codeList2_neq_codeList3.
+Check rawQuotedFormulaCode_injective.
+
+Print Assumptions raw_sat_polynomialPairInjectiveFormula_iff.
+Print Assumptions raw_pair_injective_of_proof.
+Print Assumptions raw_listNode_injective_of_pair_injective.
+Print Assumptions raw_codeList2_injective.
+Print Assumptions raw_codeList3_injective.
+Print Assumptions raw_codeList1_neq_codeList2.
+Print Assumptions raw_codeList2_neq_codeList3.
+Print Assumptions rawQuotedFormulaCode_injective.

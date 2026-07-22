@@ -1,0 +1,30 @@
+(** Assumption audit for local Sigma/Pi rank functionality. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedFormulaRankStepFunctionality.
+
+Import PABoundedRawCodedFormulaRankStepFunctionality.
+
+Check raw_max_relation_functional.
+Check raw_formulaRankZero_functional.
+Check raw_formulaRankImp_functional.
+Check raw_formulaRankAndOr_functional.
+Check raw_formulaRankAll_functional.
+Check raw_formulaRankEx_functional.
+
+Check raw_formulaEqRankStep_output_functional.
+Check raw_formulaBotRankStep_output_functional.
+Check raw_formulaImpRankStep_output_functional.
+Check raw_formulaAndRankStep_output_functional.
+Check raw_formulaOrRankStep_output_functional.
+Check raw_formulaAllRankStep_output_functional.
+Check raw_formulaExRankStep_output_functional.
+
+Print Assumptions raw_max_relation_functional.
+Print Assumptions raw_formulaRankZero_functional.
+Print Assumptions raw_formulaRankImp_functional.
+Print Assumptions raw_formulaRankAndOr_functional.
+Print Assumptions raw_formulaRankAll_functional.
+Print Assumptions raw_formulaRankEx_functional.
+Print Assumptions raw_formulaImpRankStep_output_functional.
+Print Assumptions raw_formulaAllRankStep_output_functional.

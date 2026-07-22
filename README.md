@@ -10,7 +10,7 @@ part of the trusted theorem boundary unless a proved checker connects them to
 the formal semantics.
 
 **Toolchains:** Lean `4.32.0` · mathlib `v4.32.0` · Rocq `>= 9.2`
-(developed against `9.0.1`) · [MIT-0](LICENSE)
+(developed against `9.0.1`) · MathComp boot `2.5.0` · [MIT-0](LICENSE)
 
 ## Repository map
 
@@ -57,6 +57,20 @@ is the broad Lean import surface.
 - A [constructive Lean/Coq proof](Logic/PeanoArithmetic/NoFiniteModel/README.md)
   that Peano arithmetic has no finite model, using only injectivity of
   successor and zero's absence from its image.
+- Independent Lean/Coq [natural-number codings of finite lists](Logic/PeanoArithmetic/ListCoding/README.md),
+  with genuine PA formulae defining validity, access, concatenation,
+  flattening, multiplicity, permutations, substrings, subsequences,
+  duplicate-freedom, numeric and lexicographic sorting, sum, product, extrema,
+  twice-median and unique-mode statistics, one-based nth primes, powers, prime
+  factorizations, canonical base digits and divisor lists, and the canonical
+  lexicographic enumeration of every distinct permutation.  The same project
+  proves in both Lean and Rocq that the full three-argument natural
+  hyperoperator—simultaneously covering exponentiation, tetration,
+  pentation, and every higher rank—is Diophantine via formalized
+  Matiyasevich constructions and finite evaluator traces.  It also gives a
+  shared natural coding of hereditary Cantor normal forms below
+  epsilon zero, PA formulae for validity, order, addition, multiplication, and
+  exponentiation, and checked natural laws for those operations.
 - An [executable Cooper quantifier eliminator](Logic/PresburgerArithmetic/README.md)
   deciding every Presburger sentence in Lean, with an independent constructive
   Coq proof and decision procedure for the normalized one-variable step.
@@ -92,6 +106,7 @@ lake build +ShefferStroke.Sheffer
 lake build +FirstOrder.Fol
 lake build +ClosureAxiomatization.Forward
 lake build +NoFiniteModel
+lake build +PAListCoding +PAListCoding.Audit
 lake build +PAFiniteBasisReduction
 lake build +PAUndecidable +PAUndecidable.Audit
 lake build +PowerTowers.Core
@@ -114,6 +129,7 @@ lake --dir Logic/FirstOrder/Lean build
 lake --dir Logic/FirstOrder/Compactness/Lean build
 lake --dir Logic/Interpretability/PAHF/Lean build
 lake --dir Logic/PeanoArithmetic/NoFiniteModel/Lean build
+lake --dir Logic/PeanoArithmetic/ListCoding/Lean build
 lake --dir Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Lean build
 lake --dir Logic/PeanoArithmetic/Undecidable/Lean build
 lake --dir Logic/PresburgerArithmetic/Lean build
@@ -129,7 +145,8 @@ mathlib compiler bridge; request those modules explicitly.
 ## Rocq/Coq workspace
 
 The root [`_CoqProject`](_CoqProject) contains all logical `-Q` mappings and a
-dependency-ordered source list, including the vendored certificates under
+registered source list whose dependency graph is resolved by `rocq makefile`,
+including the vendored certificates under
 `lib/Coq-BB5`:
 
 ```powershell

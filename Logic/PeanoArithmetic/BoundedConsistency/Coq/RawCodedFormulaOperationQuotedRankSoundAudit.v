@@ -1,0 +1,24 @@
+(** Assumption audit for arbitrary operation traces over quoted formulae. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedFormulaOperationQuotedRankSound.
+
+Import PABoundedRawCodedFormulaOperationQuotedRankSound.
+
+Check RawCodedFormulaOperationShapeRow.
+Check raw_formulaOperationTraversalRow_shapes.
+Check raw_formulaOperationTraversalRow_target_syntax.
+Check raw_formulaOperationTrace_target_syntax.
+Check RawCodedFormulaShapeRankEvidence.
+Check raw_codedFormulaRank_shape_evidence.
+Check raw_formulaOperationTrace_reroot.
+Check raw_codedFormulaOperation_quoted_rank_sound.
+Check raw_codedFormulaOperation_quoted_rank.
+Check raw_codedFormulaOperation_quoted_quantifier_bounded.
+
+Print Assumptions raw_formulaOperationTraversalRow_shapes.
+Print Assumptions raw_formulaOperationTrace_target_syntax.
+Print Assumptions raw_codedFormulaRank_shape_evidence.
+Print Assumptions raw_codedFormulaOperation_quoted_rank_sound.
+Print Assumptions raw_codedFormulaOperation_quoted_rank.
+Print Assumptions raw_codedFormulaOperation_quoted_quantifier_bounded.

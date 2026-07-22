@@ -1,0 +1,472 @@
+(**
+  Kernel audit for the PA finite-list coding development.
+
+  The list below is intentionally explicit: it records the canonical coding
+  boundary, every public PA formula, and every standard-model correctness
+  theorem.  [Print Assumptions] makes any future addition to the trusted base
+  visible in build output.
+*)
+
+From PAListCoding Require Import
+  ListCode ListFormulas NumberTheory NumberTheoryFormulas
+  NumberTheoryFactorization ExponentiationDiophantine
+  TetrationDiophantine HyperoperationDiophantine
+  EpsilonZero EpsilonZeroLaws EpsilonZeroPowerLaws
+  ComputableFormula EpsilonZeroFormulas.
+
+Check PAListCode.listCode.
+Check PAListCode.decode.
+Check PAListCode.decode_listCode.
+Check PAListCode.listCode_decode.
+Check PAListCode.listCode_injective.
+Check PAListCode.decode_functional.
+Check PAListCode.ValidCode_unique_list.
+
+Check PAListFormulas.validCodeFormula.
+Check PAListFormulas.hasLengthFormula.
+Check PAListFormulas.nthElementFormula.
+Check PAListFormulas.singletonFormula.
+Check PAListFormulas.concatenationFormula.
+Check PAListFormulas.flattenFormula.
+Check PAListFormulas.occurrencesFormula.
+Check PAListFormulas.permutationFormula.
+Check PAListFormulas.contiguousSubstringFormula.
+Check PAListFormulas.subsequenceFormula.
+Check PAListFormulas.noDuplicatesFormula.
+Check PAListFormulas.sortedFormula.
+Check PAListFormulas.lexSortedFormula.
+Check PAListFormulas.allPermutationsFormula.
+Check PAListFormulas.sumElementsFormula.
+Check PAListFormulas.productElementsFormula.
+Check PAListFormulas.greatestFormula.
+Check PAListFormulas.leastFormula.
+Check PAListFormulas.twiceMedianFormula.
+Check PAListFormulas.uniqueModeFormula.
+
+Check PAListNumberTheoryFormulas.nthPrimeFormula.
+Check PAListNumberTheoryFormulas.powerFormula.
+Check PAListNumberTheoryFormulas.primeFactorizationFormula.
+Check PAListNumberTheoryFormulas.baseDigitsFormula.
+Check PAListNumberTheoryFormulas.divisorListFormula.
+Check PAListNumberTheoryFormulas.positiveDivisorsFormula.
+
+Check PAListFormulas.validCodeFormula_correct.
+Check PAListFormulas.hasLengthFormula_correct.
+Check PAListFormulas.nthElementFormula_correct.
+Check PAListFormulas.singletonFormula_correct.
+Check PAListFormulas.concatenationFormula_correct.
+Check PAListFormulas.flattenFormula_correct.
+Check PAListFormulas.occurrencesFormula_correct.
+Check PAListFormulas.permutationFormula_correct.
+Check PAListFormulas.contiguousSubstringFormula_correct.
+Check PAListFormulas.subsequenceFormula_correct.
+Check PAListFormulas.noDuplicatesFormula_correct.
+Check PAListFormulas.sortedFormula_correct.
+Check PAListFormulas.lexSortedFormula_correct.
+Check PAListFormulas.allPermutationsFormula_correct.
+Check PAListFormulas.sumElementsFormula_correct.
+Check PAListFormulas.productElementsFormula_correct.
+Check PAListFormulas.greatestFormula_correct.
+Check PAListFormulas.leastFormula_correct.
+Check PAListFormulas.twiceMedianFormula_correct.
+Check PAListFormulas.uniqueModeFormula_correct.
+
+Check PAListNumberTheoryFormulas.nthPrimeFormula_correct.
+Check PAListNumberTheoryFormulas.powerFormula_correct.
+Check PAListNumberTheoryFormulas.primeFactorizationFormula_correct.
+Check PAListNumberTheoryFormulas.baseDigitsFormula_correct.
+Check PAListNumberTheoryFormulas.divisorListFormula_correct.
+Check PAListNumberTheoryFormulas.positiveDivisorsFormula_correct.
+
+Check PAListNumberTheory.PrimeNat.
+Check PAListNumberTheory.NthPrime.
+Check PAListNumberTheory.PowerNat.
+Check PAListExponentiationDiophantine.NatPowFunction.
+Check PAListExponentiationDiophantine.PowerNatVector.
+Check PAListExponentiationDiophantine.nat_pow_dio_fun.
+Check PAListExponentiationDiophantine.PowerNat_dio_rel.
+Check PAListExponentiationDiophantine.powerNatDiophantineFormula.
+Check PAListExponentiationDiophantine.powerNatDiophantineFormula_spec.
+Check PAListExponentiationDiophantine.powerNatDiophantineEquation.
+Check PAListExponentiationDiophantine.PowerNat_Diophantine.
+Check PAListTetrationDiophantine.tetration.
+Check PAListTetrationDiophantine.stateCode.
+Check PAListTetrationDiophantine.stateCode_injective.
+Check PAListTetrationDiophantine.TetrationStep.
+Check PAListTetrationDiophantine.TetrationStep_dio_rel.
+Check PAListTetrationDiophantine.rel_iter_TetrationStep.
+Check PAListTetrationDiophantine.tetration_rel_iter.
+Check PAListTetrationDiophantine.Tetration_dio_rel.
+Check PAListTetrationDiophantine.tetrationDiophantineFormula.
+Check PAListTetrationDiophantine.tetrationDiophantineFormula_spec.
+Check PAListTetrationDiophantine.tetrationDiophantineEquation.
+Check PAListTetrationDiophantine.TetrationVector.
+Check PAListTetrationDiophantine.Tetration_Diophantine.
+Check PAListHyperoperationDiophantine.iterateFromOne.
+Check PAListHyperoperationDiophantine.hyperoperationCore.
+Check PAListHyperoperationDiophantine.hyperoperator.
+Check PAListHyperoperationDiophantine.hyperoperator_rank_three.
+Check PAListHyperoperationDiophantine.hyperoperator_rank_four.
+Check PAListHyperoperationDiophantine.hyperoperator_rank_five.
+Check PAListHyperoperationDiophantine.hyperPair_injective.
+Check PAListHyperoperationDiophantine.HyperStep.
+Check PAListHyperoperationDiophantine.HyperStep_deterministic.
+Check PAListHyperoperationDiophantine.HyperStep_dio_rel.
+Check PAListHyperoperationDiophantine.rel_iter_terminal_unique.
+Check PAListHyperoperationDiophantine.hyperoperationCore_rel_iter.
+Check PAListHyperoperationDiophantine.hyperoperationCore_rel_iter_iff.
+Check PAListHyperoperationDiophantine.HyperoperationCore_dio_rel.
+Check PAListHyperoperationDiophantine.Hyperoperator_dio_rel.
+Check PAListHyperoperationDiophantine.hyperoperatorDiophantineFormula.
+Check PAListHyperoperationDiophantine.hyperoperatorDiophantineFormula_spec.
+Check PAListHyperoperationDiophantine.hyperoperatorDiophantineEquation.
+Check PAListHyperoperationDiophantine.HyperoperatorVector.
+Check PAListHyperoperationDiophantine.Hyperoperator_Diophantine.
+Check PAListNumberTheory.PrimeFactorizationCode.
+Check PAListNumberTheory.BaseDigitsCode.
+Check PAListNumberTheory.DivisorListCode.
+Check PAListNumberTheory.PositiveDivisorsCode.
+
+Check PAListNumberTheory.nthPrime_two_one.
+Check PAListNumberTheory.nthPrime_index_zero_false.
+Check PAListNumberTheory.NthPrime_list_certificate.
+Check PAListNumberTheory.nthPrime_index_functional.
+Check PAListNumberTheory.nthPrime_prime_functional.
+Check PAListNumberTheoryFactorization.mathcomp_prime_iff.
+Check PAListNumberTheoryFactorization.least_prime_above.
+Check PAListNumberTheoryFactorization.nthPrime_successor_exists.
+Check PAListNumberTheoryFactorization.nthPrime_positive_exists.
+Check PAListNumberTheoryFactorization.nthPrime_exists_unique.
+Check PAListNumberTheoryFactorization.nthPrime_index_exists_unique.
+Check PAListNumberTheory.power_exists_unique.
+Check PAListNumberTheory.power_zero_zero.
+Check PAListNumberTheory.primeFactorizationCode_valid.
+Check PAListNumberTheory.primeFactorizationCode_listCode.
+Check PAListNumberTheory.primeFactorization_zero_false.
+Check PAListNumberTheory.primeFactorization_one_empty.
+Check PAListNumberTheoryFactorization.primeFactorizationCode_typed.
+Check PAListNumberTheoryFactorization.typedPrimeFactorization_eq_prime_decomp.
+Check PAListNumberTheoryFactorization.primeFactorizationCode_exists.
+Check PAListNumberTheoryFactorization.primeFactorizationCode_functional.
+Check PAListNumberTheoryFactorization.primeFactorizationCode_exists_unique.
+Check PAListNumberTheory.baseDigitsCode_valid.
+Check PAListNumberTheory.baseDigitsCode_listCode.
+Check PAListNumberTheory.baseDigits_invalid_base_zero.
+Check PAListNumberTheory.baseDigits_invalid_base_one.
+Check PAListNumberTheory.baseDigits_zero.
+Check PAListNumberTheory.baseDigits_decimal_123.
+Check PAListNumberTheory.baseDigitsCode_exists.
+Check PAListNumberTheory.baseDigitsCode_functional.
+Check PAListNumberTheory.divisorListCode_valid.
+Check PAListNumberTheory.divisorListCode_listCode.
+Check PAListNumberTheory.positiveDivisorsCode_listCode.
+Check PAListNumberTheory.divisorList_zero_false.
+Check PAListNumberTheory.divisorList_one.
+Check PAListNumberTheory.divisorListCode_exists.
+Check PAListNumberTheory.divisorListCode_functional.
+Check PAListNumberTheory.positiveDivisorsCode_exists.
+Check PAListNumberTheory.positiveDivisorsCode_functional.
+
+Check PAListCode.SumElementsCode_functional.
+Check PAListCode.ProductElementsCode_functional.
+Check PAListCode.GreatestCode_functional.
+Check PAListCode.LeastCode_functional.
+Check PAListCode.TwiceMedianCode_functional.
+Check PAListCode.UniqueModeCode_functional.
+Check PAListCode.SumElementsCode_exists.
+Check PAListCode.ProductElementsCode_exists.
+Check PAListCode.GreatestCode_exists_nonempty.
+Check PAListCode.LeastCode_exists_nonempty.
+Check PAListCode.TwiceMedianCode_exists_nonempty.
+Check PAListCode.SumElementsCode_listCode.
+Check PAListCode.ProductElementsCode_listCode.
+Check PAListCode.GreatestCode_listCode.
+Check PAListCode.LeastCode_listCode.
+Check PAListCode.TwiceMedianCode_listCode.
+Check PAListCode.UniqueModeCode_listCode.
+
+Check PAListCode.SumElementsCode_empty.
+Check PAListCode.ProductElementsCode_empty.
+Check PAListCode.GreatestCode_empty_false.
+Check PAListCode.LeastCode_empty_false.
+Check PAListCode.TwiceMedianCode_empty_false.
+Check PAListCode.UniqueModeCode_empty_false.
+Check PAListCode.UniqueModeCode_tie_1_2_false.
+Check PAListCode.TwiceMedianCode_odd_example.
+Check PAListCode.TwiceMedianCode_even_example.
+
+Print Assumptions PAListCode.decode_listCode.
+Print Assumptions PAListCode.listCode_decode.
+Print Assumptions PAListCode.listCode_injective.
+Print Assumptions PAListCode.decode_functional.
+Print Assumptions PAListCode.ValidCode_unique_list.
+
+Print Assumptions PAListFormulas.validCodeFormula_correct.
+Print Assumptions PAListFormulas.hasLengthFormula_correct.
+Print Assumptions PAListFormulas.nthElementFormula_correct.
+Print Assumptions PAListFormulas.singletonFormula_correct.
+Print Assumptions PAListFormulas.concatenationFormula_correct.
+Print Assumptions PAListFormulas.flattenFormula_correct.
+Print Assumptions PAListFormulas.occurrencesFormula_correct.
+Print Assumptions PAListFormulas.permutationFormula_correct.
+Print Assumptions PAListFormulas.contiguousSubstringFormula_correct.
+Print Assumptions PAListFormulas.subsequenceFormula_correct.
+Print Assumptions PAListFormulas.noDuplicatesFormula_correct.
+Print Assumptions PAListFormulas.sortedFormula_correct.
+Print Assumptions PAListFormulas.lexSortedFormula_correct.
+Print Assumptions PAListFormulas.allPermutationsFormula_correct.
+Print Assumptions PAListFormulas.sumElementsFormula_correct.
+Print Assumptions PAListFormulas.productElementsFormula_correct.
+Print Assumptions PAListFormulas.greatestFormula_correct.
+Print Assumptions PAListFormulas.leastFormula_correct.
+Print Assumptions PAListFormulas.twiceMedianFormula_correct.
+Print Assumptions PAListFormulas.uniqueModeFormula_correct.
+
+Print Assumptions PAListNumberTheoryFormulas.nthPrimeFormula_correct.
+Print Assumptions PAListNumberTheoryFormulas.powerFormula_correct.
+Print Assumptions PAListNumberTheoryFormulas.primeFactorizationFormula_correct.
+Print Assumptions PAListNumberTheoryFormulas.baseDigitsFormula_correct.
+Print Assumptions PAListNumberTheoryFormulas.divisorListFormula_correct.
+Print Assumptions PAListNumberTheoryFormulas.positiveDivisorsFormula_correct.
+
+Print Assumptions PAListNumberTheory.nthPrime_two_one.
+Print Assumptions PAListNumberTheory.nthPrime_index_zero_false.
+Print Assumptions PAListNumberTheory.NthPrime_list_certificate.
+Print Assumptions PAListNumberTheory.nthPrime_index_functional.
+Print Assumptions PAListNumberTheory.nthPrime_prime_functional.
+Print Assumptions PAListNumberTheoryFactorization.mathcomp_prime_iff.
+Print Assumptions PAListNumberTheoryFactorization.least_prime_above.
+Print Assumptions PAListNumberTheoryFactorization.nthPrime_successor_exists.
+Print Assumptions PAListNumberTheoryFactorization.nthPrime_positive_exists.
+Print Assumptions PAListNumberTheoryFactorization.nthPrime_exists_unique.
+Print Assumptions PAListNumberTheoryFactorization.nthPrime_index_exists_unique.
+Print Assumptions PAListNumberTheory.power_exists_unique.
+Print Assumptions PAListExponentiationDiophantine.nat_pow_eq_mscal.
+Print Assumptions PAListExponentiationDiophantine.dio_rel_Diophantine.
+Print Assumptions PAListExponentiationDiophantine.nat_pow_dio_fun.
+Print Assumptions PAListExponentiationDiophantine.PowerNat_dio_rel.
+Print Assumptions PAListExponentiationDiophantine.powerNatDiophantineFormula_spec.
+Print Assumptions PAListExponentiationDiophantine.PowerNat_Diophantine.
+Print Assumptions PAListTetrationDiophantine.stateCode_injective.
+Print Assumptions PAListTetrationDiophantine.TetrationStep_dio_rel.
+Print Assumptions PAListTetrationDiophantine.rel_iter_TetrationStep.
+Print Assumptions PAListTetrationDiophantine.tetration_rel_iter.
+Print Assumptions PAListTetrationDiophantine.Tetration_dio_rel.
+Print Assumptions PAListTetrationDiophantine.tetrationDiophantineFormula_spec.
+Print Assumptions PAListTetrationDiophantine.Tetration_Diophantine.
+Print Assumptions PAListHyperoperationDiophantine.hyperPair_injective.
+Print Assumptions PAListHyperoperationDiophantine.HyperStep_deterministic.
+Print Assumptions PAListHyperoperationDiophantine.HyperStep_dio_rel.
+Print Assumptions PAListHyperoperationDiophantine.rel_iter_terminal_unique.
+Print Assumptions PAListHyperoperationDiophantine.hyperoperationCore_rel_iter.
+Print Assumptions
+  PAListHyperoperationDiophantine.hyperoperationCore_rel_iter_iff.
+Print Assumptions PAListHyperoperationDiophantine.HyperoperationCore_dio_rel.
+Print Assumptions PAListHyperoperationDiophantine.Hyperoperator_dio_rel.
+Print Assumptions
+  PAListHyperoperationDiophantine.hyperoperatorDiophantineFormula_spec.
+Print Assumptions PAListHyperoperationDiophantine.Hyperoperator_Diophantine.
+Print Assumptions PAListNumberTheory.primeFactorizationCode_listCode.
+Print Assumptions PAListNumberTheory.primeFactorization_one_empty.
+Print Assumptions PAListNumberTheoryFactorization.primeFactorizationCode_typed.
+Print Assumptions PAListNumberTheoryFactorization.typedPrimeFactorization_eq_prime_decomp.
+Print Assumptions PAListNumberTheoryFactorization.primeFactorizationCode_exists.
+Print Assumptions PAListNumberTheoryFactorization.primeFactorizationCode_functional.
+Print Assumptions PAListNumberTheoryFactorization.primeFactorizationCode_exists_unique.
+Print Assumptions PAListNumberTheory.baseDigitsCode_listCode.
+Print Assumptions PAListNumberTheory.baseDigits_decimal_123.
+Print Assumptions PAListNumberTheory.baseDigitsCode_exists.
+Print Assumptions PAListNumberTheory.baseDigitsCode_functional.
+Print Assumptions PAListNumberTheory.divisorListCode_listCode.
+Print Assumptions PAListNumberTheory.divisorList_one.
+Print Assumptions PAListNumberTheory.divisorListCode_exists.
+Print Assumptions PAListNumberTheory.divisorListCode_functional.
+Print Assumptions PAListNumberTheory.positiveDivisorsCode_exists.
+Print Assumptions PAListNumberTheory.positiveDivisorsCode_functional.
+
+Print Assumptions PAListCode.SumElementsCode_functional.
+Print Assumptions PAListCode.ProductElementsCode_functional.
+Print Assumptions PAListCode.GreatestCode_functional.
+Print Assumptions PAListCode.LeastCode_functional.
+Print Assumptions PAListCode.TwiceMedianCode_functional.
+Print Assumptions PAListCode.UniqueModeCode_functional.
+Print Assumptions PAListCode.SumElementsCode_exists.
+Print Assumptions PAListCode.ProductElementsCode_exists.
+Print Assumptions PAListCode.GreatestCode_exists_nonempty.
+Print Assumptions PAListCode.LeastCode_exists_nonempty.
+Print Assumptions PAListCode.TwiceMedianCode_exists_nonempty.
+Print Assumptions PAListCode.SumElementsCode_listCode.
+Print Assumptions PAListCode.ProductElementsCode_listCode.
+Print Assumptions PAListCode.GreatestCode_listCode.
+Print Assumptions PAListCode.LeastCode_listCode.
+Print Assumptions PAListCode.TwiceMedianCode_listCode.
+Print Assumptions PAListCode.UniqueModeCode_listCode.
+
+Print Assumptions PAListCode.SumElementsCode_empty.
+Print Assumptions PAListCode.ProductElementsCode_empty.
+Print Assumptions PAListCode.GreatestCode_empty_false.
+Print Assumptions PAListCode.LeastCode_empty_false.
+Print Assumptions PAListCode.TwiceMedianCode_empty_false.
+Print Assumptions PAListCode.UniqueModeCode_empty_false.
+Print Assumptions PAListCode.UniqueModeCode_tie_1_2_false.
+Print Assumptions PAListCode.TwiceMedianCode_odd_example.
+Print Assumptions PAListCode.TwiceMedianCode_even_example.
+
+(* Audit the non-obvious semantic bridges separately from their wrappers. *)
+Print Assumptions PAListFormulas.ListTrace_complete.
+Print Assumptions PAListFormulas.FlattenPosition_iff.
+Print Assumptions PAListFormulas.SubsequenceByChunks_iff.
+Print Assumptions PAListFormulas.LexSortedPosition_iff.
+Print Assumptions PAListFormulas.AllPermutationsPosition_iff.
+Print Assumptions PAListFormulas.AggregatePosition_iff.
+Print Assumptions PAListFormulas.SumElementsPosition_iff.
+Print Assumptions PAListFormulas.ProductElementsPosition_iff.
+Print Assumptions PAListFormulas.GreatestPosition_iff.
+Print Assumptions PAListFormulas.LeastPosition_iff.
+Print Assumptions PAListFormulas.TwiceMedianPosition_iff.
+Print Assumptions PAListFormulas.UniqueModePosition_iff.
+
+(* Audit the hard number-theory syntax/certificate bridges rather than only
+   their public wrappers. *)
+Print Assumptions PAListNumberTheoryFormulas.dividesTermAt_nat.
+Print Assumptions PAListNumberTheoryFormulas.primeTermAt_nat.
+Print Assumptions PAListNumberTheoryFormulas.strictlyIncreasingTermAt_nat.
+Print Assumptions PAListNumberTheoryFormulas.nthPrimeTermAt_nat.
+Print Assumptions PAListNumberTheoryFormulas.powerTermAt_position.
+Print Assumptions PAListNumberTheory.PowerPosition_iff.
+Print Assumptions PAListNumberTheoryFormulas.factorPairTermAt_nat.
+Print Assumptions PAListNumberTheoryFormulas.primeFactorizationTermAt_nat.
+Print Assumptions PAListNumberTheoryFormulas.digitEvaluationTermAt_nat.
+Print Assumptions PAListNumberTheory.DigitEvaluationPosition_iff.
+Print Assumptions PAListNumberTheoryFormulas.baseDigitsTermAt_nat.
+Print Assumptions PAListNumberTheoryFormulas.divisorListTermAt_nat.
+
+(** The independent Rocq coding of hereditary Cantor normal forms uses the
+    same concrete natural representation as the Lean development. *)
+Check PAEpsilonZero.squareUnpair_pair.
+Check PAEpsilonZero.squarePair_unpair.
+Check PAEpsilonZero.decode_encode.
+Check PAEpsilonZero.encode_decode.
+Check PAEpsilonZero.valid_encode_iff.
+Check PAEpsilonZero.onoteAdd_nf.
+Check PAEpsilonZero.ordinalAdd_exists_unique.
+Check PAEpsilonZero.ordinalMul_exists_unique.
+Check PAEpsilonZero.ordinalPow_exists_unique.
+Check PAEpsilonZeroLaws.onoteCompare_lt_irrefl.
+Check PAEpsilonZeroLaws.onoteCompare_lt_trans.
+Check PAEpsilonZeroLaws.onoteCompare_trichotomy.
+Check PAEpsilonZeroLaws.onoteSub_nf.
+Check PAEpsilonZeroLaws.onoteSplit_nf.
+Check PAEpsilonZeroLaws.onoteScale_nf.
+Check PAEpsilonZeroLaws.onoteMul_nf.
+Check PAEpsilonZeroLaws.onoteSplit'_nf.
+Check PAEpsilonZeroLaws.onotePow_nf.
+Check PAEpsilonZeroLaws.addCode_valid.
+Check PAEpsilonZeroLaws.mulCode_valid.
+Check PAEpsilonZeroLaws.powCode_valid.
+Check PAEpsilonZeroLaws.ordinalAdd_result_valid.
+Check PAEpsilonZeroLaws.ordinalMul_result_valid.
+Check PAEpsilonZeroLaws.ordinalPow_result_valid.
+Check PAEpsilonZeroPowerLaws.onotePow_succ_nf.
+Check PAEpsilonZeroPowerLaws.onotePow_add_nf.
+Check PAEpsilonZeroPowerLaws.onotePow_pow_nf.
+Check PAEpsilonZeroPowerLaws.powCode_succCode.
+Check PAEpsilonZeroPowerLaws.powCode_addCode.
+Check PAEpsilonZeroPowerLaws.powCode_mulCode.
+
+(** The executable-to-formula bridge first proves formula existence in
+    [Prop], then uses classical epsilon solely to expose a formula value. *)
+Check computable_unary_graph_has_PA_formula.
+Check computable_binary_graph_has_PA_formula.
+Check chosenGraphFormula.
+Check chosenGraphFormula_correct.
+Check unaryGraphFormula.
+Check binaryGraphFormula.
+Check unaryGraphFormula_correct.
+Check binaryGraphFormula_correct.
+
+(** Actual output-first PA formulae for epsilon-zero codes. *)
+Check PAEpsilonZeroFormulas.ValidOrdinalCodeFormula.
+Check PAEpsilonZeroFormulas.OrdinalLTFormula.
+Check PAEpsilonZeroFormulas.OrdinalAddFormula.
+Check PAEpsilonZeroFormulas.OrdinalMulFormula.
+Check PAEpsilonZeroFormulas.OrdinalPowFormula.
+
+Check PAEpsilonZeroFormulas.ValidOrdinalCodeFormula_spec.
+Check PAEpsilonZeroFormulas.OrdinalLTFormula_spec.
+Check PAEpsilonZeroFormulas.OrdinalAddFormula_spec.
+Check PAEpsilonZeroFormulas.OrdinalMulFormula_spec.
+Check PAEpsilonZeroFormulas.OrdinalPowFormula_spec.
+
+Check PAEpsilonZeroFormulas.ValidOrdinalCodeFormula_standard.
+Check PAEpsilonZeroFormulas.OrdinalLTFormula_standard.
+Check PAEpsilonZeroFormulas.OrdinalAddFormula_standard.
+Check PAEpsilonZeroFormulas.OrdinalMulFormula_standard.
+Check PAEpsilonZeroFormulas.OrdinalPowFormula_standard.
+
+Check PAEpsilonZeroFormulas.OrdinalAddFormula_result_valid.
+Check PAEpsilonZeroFormulas.OrdinalMulFormula_result_valid.
+Check PAEpsilonZeroFormulas.OrdinalPowFormula_result_valid.
+
+Print Assumptions PAEpsilonZero.squareUnpair_pair.
+Print Assumptions PAEpsilonZero.squarePair_unpair.
+Print Assumptions PAEpsilonZero.decode_encode.
+Print Assumptions PAEpsilonZero.encode_decode.
+Print Assumptions PAEpsilonZero.onoteAdd_nf.
+Print Assumptions PAEpsilonZero.ordinalAdd_exists_unique.
+Print Assumptions PAEpsilonZero.ordinalMul_exists_unique.
+Print Assumptions PAEpsilonZero.ordinalPow_exists_unique.
+Print Assumptions PAEpsilonZeroLaws.onoteCompare_lt_irrefl.
+Print Assumptions PAEpsilonZeroLaws.onoteCompare_lt_trans.
+Print Assumptions PAEpsilonZeroLaws.onoteCompare_trichotomy.
+Print Assumptions PAEpsilonZeroLaws.onoteSub_nf.
+Print Assumptions PAEpsilonZeroLaws.onoteSplit_nf.
+Print Assumptions PAEpsilonZeroLaws.onoteScale_nf.
+Print Assumptions PAEpsilonZeroLaws.onoteMul_nf.
+Print Assumptions PAEpsilonZeroLaws.onoteSplit'_nf.
+Print Assumptions PAEpsilonZeroLaws.onotePow_nf.
+Print Assumptions PAEpsilonZeroLaws.addCode_valid.
+Print Assumptions PAEpsilonZeroLaws.mulCode_valid.
+Print Assumptions PAEpsilonZeroLaws.powCode_valid.
+Print Assumptions PAEpsilonZeroLaws.ordinalAdd_result_valid.
+Print Assumptions PAEpsilonZeroLaws.ordinalMul_result_valid.
+Print Assumptions PAEpsilonZeroLaws.ordinalPow_result_valid.
+Print Assumptions PAEpsilonZeroPowerLaws.onotePow_succ_nf.
+Print Assumptions PAEpsilonZeroPowerLaws.onotePow_add_nf.
+Print Assumptions PAEpsilonZeroPowerLaws.onotePow_pow_nf.
+Print Assumptions PAEpsilonZeroPowerLaws.powCode_succCode.
+Print Assumptions PAEpsilonZeroPowerLaws.powCode_addCode.
+Print Assumptions PAEpsilonZeroPowerLaws.powCode_mulCode.
+
+(* Keep the constructive existence results and the classical selector visible
+   separately, so the audit records the exact choice boundary. *)
+Print Assumptions computable_unary_graph_has_PA_formula.
+Print Assumptions computable_binary_graph_has_PA_formula.
+Print Assumptions chosenGraphFormula.
+Print Assumptions chosenGraphFormula_correct.
+Print Assumptions unaryGraphFormula.
+Print Assumptions binaryGraphFormula.
+Print Assumptions unaryGraphFormula_correct.
+Print Assumptions binaryGraphFormula_correct.
+
+Print Assumptions PAEpsilonZeroFormulas.ValidOrdinalCodeFormula.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalLTFormula.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalAddFormula.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalMulFormula.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalPowFormula.
+
+Print Assumptions PAEpsilonZeroFormulas.ValidOrdinalCodeFormula_spec.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalLTFormula_spec.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalAddFormula_spec.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalMulFormula_spec.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalPowFormula_spec.
+
+Print Assumptions PAEpsilonZeroFormulas.ValidOrdinalCodeFormula_standard.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalLTFormula_standard.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalAddFormula_standard.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalMulFormula_standard.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalPowFormula_standard.
+
+Print Assumptions PAEpsilonZeroFormulas.OrdinalAddFormula_result_valid.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalMulFormula_result_valid.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalPowFormula_result_valid.

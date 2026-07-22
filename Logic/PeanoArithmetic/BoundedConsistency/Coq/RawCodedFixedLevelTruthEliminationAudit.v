@@ -1,0 +1,17 @@
+(** Assumption audit for the positive fixed-truth root views. *)
+From BoundedPAConsistency Require Import
+  RawCodedFixedLevelTruthElimination.
+
+Import PABoundedRawCodedFixedLevelTruthElimination.
+
+Check RawFixedLevelSigmaSuccessorRootView.
+Check RawFixedLevelPiSuccessorRootView.
+Check raw_fixedLevelSuccessorTruthTraversal_earlier_sigma.
+Check raw_fixedLevelSuccessorTruthTraversal_earlier_pi.
+Check raw_fixedLevelSigmaTruthCertificate_successor_view.
+Check raw_fixedLevelPiFalsityCertificate_successor_view.
+
+Print Assumptions raw_fixedLevelSuccessorTruthTraversal_earlier_sigma.
+Print Assumptions raw_fixedLevelSuccessorTruthTraversal_earlier_pi.
+Print Assumptions raw_fixedLevelSigmaTruthCertificate_successor_view.
+Print Assumptions raw_fixedLevelPiFalsityCertificate_successor_view.

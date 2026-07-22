@@ -1,0 +1,17 @@
+(** Assumption audit for offset reindexing of fixed-truth rows. *)
+
+From BoundedPAConsistency Require Import RawCodedFixedLevelTruthReindexing.
+
+Import PABoundedRawCodedFixedLevelTruthReindexing.
+
+Check raw_lt_add_left_fixedTruth.
+Check RawFixedLevelStateOffsetEmbedding.
+Check fixedLevelStateOffsetEmbeddingTermAt.
+Check raw_sat_fixedLevelStateOffsetEmbeddingTermAt_iff.
+Check raw_fixedLevelEarlierState_offset.
+Check raw_fixedLevelClosedSuccessorRow_offset.
+
+Print Assumptions raw_lt_add_left_fixedTruth.
+Print Assumptions raw_sat_fixedLevelStateOffsetEmbeddingTermAt_iff.
+Print Assumptions raw_fixedLevelEarlierState_offset.
+Print Assumptions raw_fixedLevelClosedSuccessorRow_offset.

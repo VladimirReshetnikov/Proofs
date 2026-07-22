@@ -1,0 +1,39 @@
+(** Kernel-assumption audit for canonical raw-trace coherence/boundaries. *)
+
+From BoundedPAConsistency Require Import CanonicalCheckerRawTraceCoherence.
+
+Import PABoundedCanonicalCheckerRawTraceCoherence.
+
+Check RawCanonicalStateAgreement.
+Check raw_trace_state_functional.
+Check RawCanonicalTraceStepAt.
+Check raw_trace_steps_chain.
+Check RawCanonicalCoherentTrace.
+Check raw_stepwise_trace_coherent.
+Check raw_initialTraceConditions_reflect.
+Check RawCanonicalAcceptingOutput.
+Check raw_finalOutputOneCondition_iff.
+Check RawCanonicalFinalPCBoundary.
+Check raw_finalPCCondition_iff.
+Check raw_zero_or_successor_coherence.
+Check raw_lt_self_succ_coherence.
+Check raw_stepwise_trace_has_final_state.
+Check RawCanonicalAcceptingFinalState.
+Check raw_final_state_accepting.
+Check raw_CanonicalRestrictedPAProofFormula_boundary_coherent.
+Check raw_CanonicalRestrictedPAProofFormula_accepting_final_state.
+
+Print Assumptions raw_trace_state_functional.
+Print Assumptions raw_trace_steps_chain.
+Print Assumptions raw_stepwise_trace_coherent.
+Print Assumptions raw_initialTraceConditions_reflect.
+Print Assumptions raw_finalOutputOneCondition_iff.
+Print Assumptions raw_finalPCCondition_iff.
+Print Assumptions raw_zero_or_successor_coherence.
+Print Assumptions raw_lt_self_succ_coherence.
+Print Assumptions raw_stepwise_trace_has_final_state.
+Print Assumptions raw_final_state_accepting.
+Print Assumptions
+  raw_CanonicalRestrictedPAProofFormula_boundary_coherent.
+Print Assumptions
+  raw_CanonicalRestrictedPAProofFormula_accepting_final_state.

@@ -1,0 +1,45 @@
+(** Assumption audit for admissibility-guarded fixed-level truth laws. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedFixedLevelTruthLaws.
+
+Import PABoundedRawCodedFixedLevelTruthLaws.
+
+Check RawFixedLevelSigmaSuccessorShapeView.
+Check RawFixedLevelPiSuccessorShapeView.
+Check raw_fixedLevelSigmaTruthCertificate_successor_shape_view.
+Check raw_fixedLevelPiFalsityCertificate_successor_shape_view.
+
+Check RawFixedLevelTruthCertificateExclusiveBelow.
+Check raw_sat_fixedLevelTruthCertificateExclusiveBelowTermAt_iff.
+Check raw_fixedLevelTruthCertificateExclusiveBelow_succ.
+Check raw_fixedLevelTruthCertificateExclusiveBelow_all.
+Check raw_fixedLevelAdmissibleTruthCertificate_exclusive.
+
+Check fixedLevelAdmissibleTruthCertificateExclusiveFormula.
+Check raw_sat_fixedLevelAdmissibleTruthCertificateExclusiveFormula_iff.
+Check PA_proves_fixedLevelAdmissibleTruthCertificateExclusiveFormula.
+
+Check raw_fixedLevelImp_sigma_modus_ponens.
+Check raw_fixedLevelImp_sigma_iff.
+Check raw_fixedLevelAnd_sigma_elim.
+Check raw_fixedLevelAnd_sigma_iff.
+Check raw_fixedLevelOr_sigma_elim.
+Check raw_fixedLevelOr_sigma_iff.
+
+Check raw_fixedLevelEx_sigma_witness.
+Check raw_fixedLevelEx_sigma_iff.
+Check raw_fixedLevelAll_sigma_instantiate.
+Check raw_fixedLevelAll_pi_witness.
+Check raw_fixedLevelEx_pi_instantiate.
+
+Print Assumptions raw_fixedLevelSigmaTruthCertificate_successor_shape_view.
+Print Assumptions raw_fixedLevelPiFalsityCertificate_successor_shape_view.
+Print Assumptions raw_fixedLevelTruthCertificateExclusiveBelow_all.
+Print Assumptions raw_fixedLevelAdmissibleTruthCertificate_exclusive.
+Print Assumptions PA_proves_fixedLevelAdmissibleTruthCertificateExclusiveFormula.
+Print Assumptions raw_fixedLevelImp_sigma_modus_ponens.
+Print Assumptions raw_fixedLevelAnd_sigma_iff.
+Print Assumptions raw_fixedLevelOr_sigma_iff.
+Print Assumptions raw_fixedLevelEx_sigma_witness.
+Print Assumptions raw_fixedLevelAll_sigma_instantiate.

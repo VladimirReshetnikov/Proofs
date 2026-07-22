@@ -1,0 +1,112 @@
+(** Assumption audit for fixed-level truth totality's honest boundary.
+
+    The rank-gap induction, atomic-payload domain, and step-parametric
+    arbitrary-value beta append are theorems.  Adjacent-level certificate
+    coherence is exposed as a formula with exact semantics, but is not
+    asserted.  The final endpoint visibly takes the still-unproved positive
+    schedule as an argument. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedFixedLevelTruthTotality.
+
+Import PABoundedRawCodedFixedLevelTruthTotality.
+
+Check fixedLevelRankGapTermAt.
+Check RawFixedLevelRankGap.
+Check raw_sat_fixedLevelRankGapTermAt_iff.
+Check raw_codedFormulaRankTraversalRow_gap.
+Check codedFormulaRankGapRowsTermAt.
+Check RawCodedFormulaRankGapRows.
+Check raw_sat_codedFormulaRankGapRowsTermAt_iff.
+Check codedFormulaRankGapRowsWithinTermAt.
+Check RawCodedFormulaRankGapRowsWithin.
+Check raw_sat_codedFormulaRankGapRowsWithinTermAt_iff.
+Check raw_codedFormulaRankGapRows_all.
+Check raw_codedFormulaRankTraversal_gap.
+Check raw_codedFormulaRank_gap.
+Check raw_fixedLevel_rank_bound_both_at_successor.
+
+Check fixedTruthTotalityAll6.
+Check codedFormulaAtomicTermAdequateTermAt.
+Check RawCodedFormulaAtomicTermAdequate.
+Check raw_sat_codedFormulaAtomicTermAdequateTermAt_iff.
+Check codedFormulaAtomicallyAdequateTermAt.
+Check RawCodedFormulaAtomicallyAdequate.
+Check raw_sat_codedFormulaAtomicallyAdequateTermAt_iff.
+Check fixedLevelTruthAdmissibleTermAt.
+Check RawFixedLevelTruthAdmissible.
+Check raw_sat_fixedLevelTruthAdmissibleTermAt_iff.
+Check raw_fixedLevelTruthAdmissible_wellFormed.
+Check raw_fixedLevelTruthAdmissible_successor_domains.
+
+Check RawCodedAssignmentAppendPrefix.
+Check codedAssignmentAppendPrefixTermAt.
+Check raw_sat_codedAssignmentAppendPrefixTermAt_iff.
+Check RawCodedAssignmentAppendTraceCapacity.
+Check codedAssignmentAppendTraceCapacityTermAt.
+Check raw_sat_codedAssignmentAppendTraceCapacityTermAt_iff.
+Check RawCodedAssignmentAppendTraceCapacityThrough.
+Check codedAssignmentAppendTraceCapacityThroughTermAt.
+Check raw_sat_codedAssignmentAppendTraceCapacityThroughTermAt_iff.
+Check raw_codedAssignmentAppendTraceCapacity_zero.
+Check raw_codedAssignmentAppendTraceCapacity_succ.
+Check raw_codedAssignmentAppendTraceCapacity_through_all.
+Check raw_codedAssignmentAppend_defined_exists.
+Check RawCodedAssignmentAppendLaw.
+Check codedAssignmentAppendFormula.
+Check raw_sat_codedAssignmentAppendFormula_iff.
+Check codedAssignmentAppendFormula_sentence.
+Check codedAssignmentAppendFormula_raw_valid.
+Check PA_proves_codedAssignmentAppendFormula.
+Check RawFixedLevelStateTablesAppendProperty.
+Check raw_fixedLevelStateTablesAppend.
+Check RawFixedLevelStateTablePrefixExtension.
+Check raw_fixedLevelStateLookup_prefix_extend.
+Check raw_fixedLevelStateLookup_prefix_reflect.
+Check raw_fixedLevelClosedSuccessorRow_prefix_extend.
+Check raw_fixedLevelClosedSuccessorRow_append_traversal.
+
+(** This deliberately checks only the false-in-general diagnostic candidate;
+    guarded coherence lives in [RawCodedFixedLevelTruthCoherence]. *)
+Check RawFixedLevelDomainOnlyTruthCertificateAgreementAt.
+Check fixedLevelDomainOnlyTruthCertificateAgreementFormula.
+Check raw_sat_fixedLevelDomainOnlyTruthCertificateAgreementFormula_iff.
+Check RawFixedLevelDomainOnlyTruthCertificateAgreement.
+Check RawFixedLevelShiftedTruthAdmissible.
+Check RawFixedLevelInputTruthCertificateTotalityFor.
+Check raw_fixedLevelInputTruthCertificate_totality_from_schedule.
+
+Print Assumptions raw_sat_fixedLevelRankGapTermAt_iff.
+Print Assumptions raw_codedFormulaRankTraversalRow_gap.
+Print Assumptions raw_codedFormulaRankGapRows_all.
+Print Assumptions raw_codedFormulaRankTraversal_gap.
+Print Assumptions raw_codedFormulaRank_gap.
+Print Assumptions raw_fixedLevel_rank_bound_both_at_successor.
+
+Print Assumptions raw_sat_codedFormulaAtomicTermAdequateTermAt_iff.
+Print Assumptions raw_sat_codedFormulaAtomicallyAdequateTermAt_iff.
+Print Assumptions raw_sat_fixedLevelTruthAdmissibleTermAt_iff.
+Print Assumptions raw_fixedLevelTruthAdmissible_wellFormed.
+Print Assumptions raw_fixedLevelTruthAdmissible_successor_domains.
+
+Print Assumptions raw_sat_codedAssignmentAppendPrefixTermAt_iff.
+Print Assumptions raw_sat_codedAssignmentAppendTraceCapacityTermAt_iff.
+Print Assumptions
+  raw_sat_codedAssignmentAppendTraceCapacityThroughTermAt_iff.
+Print Assumptions raw_codedAssignmentAppendTraceCapacity_succ.
+Print Assumptions raw_codedAssignmentAppendTraceCapacity_through_all.
+Print Assumptions raw_codedAssignmentAppend_defined_exists.
+Print Assumptions raw_sat_codedAssignmentAppendFormula_iff.
+Print Assumptions codedAssignmentAppendFormula_sentence.
+Print Assumptions codedAssignmentAppendFormula_raw_valid.
+Print Assumptions PA_proves_codedAssignmentAppendFormula.
+Print Assumptions raw_fixedLevelStateTablesAppend.
+Print Assumptions raw_fixedLevelStateLookup_prefix_extend.
+Print Assumptions raw_fixedLevelStateLookup_prefix_reflect.
+Print Assumptions raw_fixedLevelClosedSuccessorRow_prefix_extend.
+Print Assumptions raw_fixedLevelClosedSuccessorRow_append_traversal.
+
+Print Assumptions
+  raw_sat_fixedLevelDomainOnlyTruthCertificateAgreementFormula_iff.
+Print Assumptions
+  raw_fixedLevelInputTruthCertificate_totality_from_schedule.

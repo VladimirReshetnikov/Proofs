@@ -1,0 +1,17 @@
+(** Assumption audit for standard raw-proof syntax realization. *)
+
+From BoundedPAConsistency Require Import RawCodedProofStandardSyntax.
+
+Import PABoundedRawCodedProofStandardSyntax.
+
+Check raw_quotedProof_constructor_occurs.
+Check raw_quotedProof_recursive_payload_child.
+Check raw_quotedProof_syntax_step.
+Check raw_quotedProof_syntax_certificate.
+Check raw_quotedProof_syntax_realizable.
+
+Print Assumptions raw_quotedProof_constructor_occurs.
+Print Assumptions raw_quotedProof_recursive_payload_child.
+Print Assumptions raw_quotedProof_syntax_step.
+Print Assumptions raw_quotedProof_syntax_certificate.
+Print Assumptions raw_quotedProof_syntax_realizable.

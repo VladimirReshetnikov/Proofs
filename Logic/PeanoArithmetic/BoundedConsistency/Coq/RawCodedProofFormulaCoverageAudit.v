@@ -1,0 +1,21 @@
+From BoundedPAConsistency Require Import RawCodedProofFormulaCoverage.
+
+Import PABoundedRawCodedProofFormulaCoverage.
+
+Check RawContextAllCodesBelow.
+Check raw_sat_contextAllCodesBelowTermAt_iff.
+Check RawProofEndpointFormulaCoverage.
+Check raw_sat_proofEndpointFormulaCoverageTermAt_iff.
+Check RawProofFormulaCoverageWithSupport.
+Check raw_sat_proofFormulaCoverageWithSupportTermAt_iff.
+Check RawProofFormulaCoverage.
+Check raw_sat_proofFormulaCoverageTermAt_iff.
+Check raw_proofFormulaCoverage_root_endpoint.
+Check raw_proofFormulaCoverage_public_root_endpoint.
+Check raw_proofFormulaCoverage_recursive_child.
+Check raw_proofFormulaCoverage_public_recursive_child.
+
+Print Assumptions raw_sat_proofFormulaCoverageTermAt_iff.
+Print Assumptions raw_proofFormulaCoverage_root_endpoint.
+Print Assumptions raw_proofFormulaCoverage_recursive_child.
+Print Assumptions raw_proofFormulaCoverage_public_recursive_child.

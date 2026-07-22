@@ -1,0 +1,58 @@
+(** Assumption audit for restricted-proof standard quotation adequacy. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedRestrictedProofStandardAdequacy.
+
+Import PABoundedRawCodedRestrictedProofStandardAdequacy.
+
+Check rawQuotedContextCode.
+Check rawQuotedContextCode_standard.
+Check raw_quotedContext_realizable.
+Check raw_quotedContext_member.
+Check RawStandardFormulaRankQuotation.
+Check raw_quotedFormula_wellformed.
+Check raw_standardFormulaRankQuotation.
+Check raw_quotedFormula_quantifier_bounded.
+Check raw_quotedContext_all_bounded.
+Check raw_quotedContext_shift.
+Check RawStandardSingleSubstitutionBounded.
+Check raw_standardSingleSubstitutionBounded.
+
+Check raw_quotedProof_endpoint.
+Check raw_quotedProof_rule_valid.
+Check rawProofValid_child.
+Check rawProofOccurrenceRank_child_le.
+Check raw_quotedProof_constructor_occurrences_bounded.
+Check raw_quotedProof_endpoint_occurrences_bounded.
+
+Check canonicalRawRestrictedProofCodeb.
+Check canonicalRawRestrictedProofCodeb_spec.
+Check RawStandardRestrictedProofSupportTable.
+Check raw_standardRestrictedProofSupportTable_exists.
+Check raw_standardRestrictedProofSupportTable_for_quotation.
+Check raw_standardRestrictedProofSupportTable_child.
+
+Check raw_quotedProof_syntax_step_of_children.
+Check raw_quotedProof_restricted_node.
+Check raw_restrictedProof_of_quoted_rawProof_of_formula_properties.
+Check raw_restrictedProof_of_quoted_rawProof.
+Check raw_restrictedProvTree_quotation_adequacy.
+Check raw_restrictedProof_of_quoted_provTree.
+
+Print Assumptions rawQuotedContextCode_standard.
+Print Assumptions raw_quotedFormula_wellformed.
+Print Assumptions raw_standardFormulaRankQuotation.
+Print Assumptions raw_quotedContext_member.
+Print Assumptions raw_quotedFormula_quantifier_bounded.
+Print Assumptions raw_quotedContext_all_bounded.
+Print Assumptions raw_quotedContext_shift.
+Print Assumptions raw_standardSingleSubstitutionBounded.
+Print Assumptions raw_quotedProof_endpoint.
+Print Assumptions raw_quotedProof_rule_valid.
+Print Assumptions raw_quotedProof_constructor_occurrences_bounded.
+Print Assumptions raw_quotedProof_endpoint_occurrences_bounded.
+Print Assumptions raw_standardRestrictedProofSupportTable_exists.
+Print Assumptions raw_quotedProof_restricted_node.
+Print Assumptions raw_restrictedProof_of_quoted_rawProof_of_formula_properties.
+Print Assumptions raw_restrictedProof_of_quoted_rawProof.
+Print Assumptions raw_restrictedProvTree_quotation_adequacy.

@@ -1,0 +1,7 @@
+From BoundedPAConsistency Require Import
+  RawCodedFixedLevelEqualityLaws.
+
+Import PABoundedRawCodedFixedLevelEqualityLaws.
+
+Check raw_fixedLevelEq_refl_sigma.
+Print Assumptions raw_fixedLevelEq_refl_sigma.

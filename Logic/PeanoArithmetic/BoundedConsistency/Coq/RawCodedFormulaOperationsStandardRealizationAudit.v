@@ -1,0 +1,37 @@
+(** Assumption audit for finite occurrence realization of formula operations. *)
+
+From PAHF Require Import PAHF.
+From BoundedPAConsistency Require Import
+  RawCodedFormulaOperationsStandardRealization.
+
+Import PA.
+Import PABoundedRawCodedFormulaOperationsStandardRealization.
+
+Check StandardFormulaOperationOccurrence.
+Check standardFormulaOperationSchedule.
+Check standardFormulaOperationSchedule_root.
+Check StandardFormulaOperationShape.
+Check RawStandardFormulaOperationSegmentLookup.
+
+Check raw_standardFormulaOperation_segment_row.
+Check raw_standardFormulaOperation_realization.
+Check raw_standardFormulaShift_eq_row.
+Check raw_standardFormulaSingleSubstitution_eq_row.
+Check raw_codedFormulaShift_standard.
+Check raw_codedFormulaShift_standard_rename.
+Check raw_codedFormulaShift_standard_zero_one.
+Check raw_standardFormulaSingleSubstitution_at.
+Check raw_codedFormulaSingleSubstitution_standard_recursive.
+Check raw_codedFormulaSingleSubstitution_standard.
+
+Print Assumptions standardFormulaOperationSchedule_root.
+Print Assumptions raw_standardFormulaOperation_segment_row.
+Print Assumptions raw_standardFormulaOperation_realization.
+Print Assumptions raw_standardFormulaShift_eq_row.
+Print Assumptions raw_standardFormulaSingleSubstitution_eq_row.
+Print Assumptions raw_codedFormulaShift_standard.
+Print Assumptions raw_codedFormulaShift_standard_rename.
+Print Assumptions raw_codedFormulaShift_standard_zero_one.
+Print Assumptions raw_standardFormulaSingleSubstitution_at.
+Print Assumptions raw_codedFormulaSingleSubstitution_standard_recursive.
+Print Assumptions raw_codedFormulaSingleSubstitution_standard.

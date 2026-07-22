@@ -1,0 +1,50 @@
+(** Assumption and API audit for restricted-proof soundness induction. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedRestrictedProofSoundness.
+
+Import PABoundedRawCodedRestrictedProofSoundness.
+
+(** The local, constructor-sensitive semantic seam. *)
+Check RawRestrictedProofRecursiveChildrenSigmaSound.
+Check RawRestrictedProofRuleTruthSound.
+
+(** Represented prefix invariant and nonstandard induction. *)
+Check raw_restrictedProofSoundness_eval_liftTerm_five.
+Check restrictedProofSigmaSoundBelowTermAt.
+Check RawRestrictedProofSigmaSoundBelow.
+Check raw_sat_restrictedProofSigmaSoundBelowTermAt_iff.
+Check raw_restrictedProofSigmaSoundBelow_zero.
+Check raw_restrictedProofSigmaSoundBelow_succ.
+Check raw_restrictedProofSigmaSoundBelow_all.
+
+(** Root soundness and explicit falsity/context premises. *)
+Check raw_restrictedProof_root_sigma_sound.
+Check RawFixedLevelTruthCertificateExclusive.
+Check RawFixedLevelBottomPiFalsity.
+Check RawFixedLevelSigmaBottomFalse.
+Check raw_fixedLevelSigmaBottomFalse_of_exclusive_pi.
+Check raw_restrictedProof_bottom_exclusion.
+Check RawRestrictedPAProofTruthInputs.
+Check raw_codedRestrictedPAProof_excluded.
+
+(** Closed generic induction implication and its PA proof. *)
+Check restrictedProofSigmaSoundInductionBodyFormula.
+Check raw_sat_restrictedProofSigmaSoundInductionBodyFormula_iff.
+Check restrictedProofSigmaSoundInductionFormula.
+Check restrictedProofSigmaSoundInductionFormula_sentence.
+Check restrictedProofSigmaSoundInductionFormula_raw_valid.
+Check PA_proves_restrictedProofSigmaSoundInductionFormula.
+
+Print Assumptions raw_sat_restrictedProofSigmaSoundBelowTermAt_iff.
+Print Assumptions raw_restrictedProofSigmaSoundBelow_zero.
+Print Assumptions raw_restrictedProofSigmaSoundBelow_succ.
+Print Assumptions raw_restrictedProofSigmaSoundBelow_all.
+Print Assumptions raw_restrictedProof_root_sigma_sound.
+Print Assumptions raw_fixedLevelSigmaBottomFalse_of_exclusive_pi.
+Print Assumptions raw_restrictedProof_bottom_exclusion.
+Print Assumptions raw_codedRestrictedPAProof_excluded.
+Print Assumptions raw_sat_restrictedProofSigmaSoundInductionBodyFormula_iff.
+Print Assumptions restrictedProofSigmaSoundInductionFormula_sentence.
+Print Assumptions restrictedProofSigmaSoundInductionFormula_raw_valid.
+Print Assumptions PA_proves_restrictedProofSigmaSoundInductionFormula.

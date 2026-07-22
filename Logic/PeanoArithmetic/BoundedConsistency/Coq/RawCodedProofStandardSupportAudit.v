@@ -1,0 +1,19 @@
+(** Assumption audit for standard-bound proof support tables. *)
+
+From BoundedPAConsistency Require Import RawCodedProofStandardSupport.
+
+Import PABoundedRawCodedProofStandardSupport.
+
+Check canonicalRawProofCodeb.
+Check canonicalRawProofCodeb_spec.
+Check canonicalRawProofCodeb_quoted.
+Check rawStandardProofSupportValue.
+Check RawStandardProofSupportTable.
+Check raw_standardProofSupportTable_exists.
+Check raw_standardProofSupportTable_for_quotation.
+Check raw_standardProofSupportTable_child.
+
+Print Assumptions canonicalRawProofCodeb_spec.
+Print Assumptions raw_standardProofSupportTable_exists.
+Print Assumptions raw_standardProofSupportTable_for_quotation.
+Print Assumptions raw_standardProofSupportTable_child.

@@ -1,5 +1,13 @@
 name = "Proofs"
-defaultTargets = ["Proofs", "PAUndecidable", "PAUndecidable.Audit"]
+defaultTargets = [
+  "Proofs",
+  "PAListCoding",
+  "PAListCoding.Audit",
+  "PAUndecidable",
+  "PAUndecidable.Audit",
+  "BoundedPAConsistency",
+  "BoundedPAConsistency.Audit",
+]
 
 [[require]]
 name = "mathlib"
@@ -88,6 +96,14 @@ srcDir = "Logic/Interpretability/PAHF/Lean"
 [[lean_lib]]
 name = "NoFiniteModel"
 srcDir = "Logic/PeanoArithmetic/NoFiniteModel/Lean"
+
+[[lean_lib]]
+name = "BoundedPAConsistency"
+srcDir = "Logic/PeanoArithmetic/BoundedConsistency/Lean"
+
+[[lean_lib]]
+name = "PAListCoding"
+srcDir = "Logic/PeanoArithmetic/ListCoding/Lean"
 
 [[lean_lib]]
 name = "PAFiniteBasisReduction"

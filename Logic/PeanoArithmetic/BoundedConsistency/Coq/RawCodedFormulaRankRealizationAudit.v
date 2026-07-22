@@ -1,0 +1,32 @@
+(** Assumption audit for model-internal coded formula-rank functionality. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedFormulaRankRealization.
+
+Import PABoundedRawCodedFormulaRankRealization.
+
+Check codedFormulaRankIndexFunctionalBelowTermAt.
+Check RawCodedFormulaRankIndexFunctionalBelow.
+Check raw_sat_codedFormulaRankIndexFunctionalBelowTermAt_iff.
+Check raw_rank_child_certificate.
+Check raw_codedFormulaRankIndexFunctionalBelow_succ.
+Check raw_codedFormulaRankIndexFunctionalBelow_all.
+Check raw_codedFormulaRank_functional.
+Check codedFormulaRankFunctionalFormula.
+Check raw_sat_codedFormulaRankFunctionalFormula_iff.
+Check codedFormulaRankFunctionalFormula_sentence.
+Check codedFormulaRankFunctionalFormula_raw_valid.
+Check PA_proves_codedFormulaRankFunctionalFormula.
+
+Check codedFormulaRankRealizableTermAt.
+Check RawCodedFormulaRankRealizable.
+Check raw_sat_codedFormulaRankRealizableTermAt_iff.
+Check raw_codedFormulaRank_exists_unique_of_realizable.
+
+Print Assumptions raw_sat_codedFormulaRankIndexFunctionalBelowTermAt_iff.
+Print Assumptions raw_codedFormulaRankIndexFunctionalBelow_succ.
+Print Assumptions raw_codedFormulaRankIndexFunctionalBelow_all.
+Print Assumptions raw_codedFormulaRank_functional.
+Print Assumptions PA_proves_codedFormulaRankFunctionalFormula.
+Print Assumptions raw_sat_codedFormulaRankRealizableTermAt_iff.
+Print Assumptions raw_codedFormulaRank_exists_unique_of_realizable.

@@ -1,0 +1,14 @@
+name = "PAListCoding"
+defaultTargets = ["PAListCoding", "PAListCoding.Audit"]
+
+[[lean_lib]]
+name = "PAListCoding"
+
+[[lean_lib]]
+name = "Foundation"
+srcDir = "../../../../lib/FormalizedFormalLogic-Foundation"
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "v4.32.0"

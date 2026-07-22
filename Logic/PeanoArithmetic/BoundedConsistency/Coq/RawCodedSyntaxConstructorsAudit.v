@@ -1,0 +1,21 @@
+(** Assumption audit for transparent polynomial syntax constructors. *)
+
+From BoundedPAConsistency Require Import RawCodedSyntaxConstructors.
+
+Import PABoundedRawCodedSyntaxConstructors.
+
+Check raw_sat_listConsCodeTermAt_iff.
+Check raw_sat_termAddCodeTermAt_iff.
+Check raw_sat_formulaImpCodeTermAt_iff.
+Check raw_sat_formulaAllCodeTermAt_iff.
+Check rawListCode_standard.
+Check rawQuotedTermCode_standard.
+Check rawQuotedFormulaCode_standard.
+
+Print Assumptions raw_sat_listConsCodeTermAt_iff.
+Print Assumptions raw_sat_termAddCodeTermAt_iff.
+Print Assumptions raw_sat_formulaImpCodeTermAt_iff.
+Print Assumptions raw_sat_formulaAllCodeTermAt_iff.
+Print Assumptions rawListCode_standard.
+Print Assumptions rawQuotedTermCode_standard.
+Print Assumptions rawQuotedFormulaCode_standard.

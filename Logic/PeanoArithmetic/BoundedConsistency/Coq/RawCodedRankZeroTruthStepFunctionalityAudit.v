@@ -1,0 +1,29 @@
+(** Assumption audit for functional local rank-zero truth. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedRankZeroTruthStepFunctionality.
+
+Import PABoundedRawCodedRankZeroTruthStepFunctionality.
+
+Check raw_zero_neq_truthOne.
+Check raw_equalityTruth_functional.
+Check raw_impTruth_functional.
+Check raw_andTruth_functional.
+Check raw_orTruth_functional.
+Check raw_codeList3_numeral_tags_eq.
+
+Check raw_formulaEqTruthRows_value_functional.
+Check raw_formulaImpTruthRows_value_functional.
+Check raw_formulaAndTruthRows_value_functional.
+Check raw_formulaOrTruthRows_value_functional.
+Check raw_rankZeroTruthStep_functional.
+Check raw_sat_rankZeroTruthStepTermAt_functional.
+
+Print Assumptions raw_zero_neq_truthOne.
+Print Assumptions raw_equalityTruth_functional.
+Print Assumptions raw_impTruth_functional.
+Print Assumptions raw_codeList3_numeral_tags_eq.
+Print Assumptions raw_formulaEqTruthRows_value_functional.
+Print Assumptions raw_formulaImpTruthRows_value_functional.
+Print Assumptions raw_rankZeroTruthStep_functional.
+Print Assumptions raw_sat_rankZeroTruthStepTermAt_functional.

@@ -1,0 +1,62 @@
+(** Assumption audit for nonstandard canonical-context functionality. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedContextFunctionality.
+
+Import PABoundedRawCodedContextFunctionality.
+
+Check RawContextTableAgreeBelow.
+Check contextTableAgreeBelowTermAt.
+Check raw_sat_contextTableAgreeBelowTermAt_iff.
+
+Check RawContextTraversalTablesAgreePrefix.
+Check contextTraversalTablesAgreePrefixTermAt.
+Check raw_sat_contextTraversalTablesAgreePrefixTermAt_iff.
+Check RawContextTraversalTablesAgreeThrough.
+Check contextTraversalTablesAgreeThroughTermAt.
+Check raw_sat_contextTraversalTablesAgreeThroughTermAt_iff.
+
+Check raw_contextTraversalTablesAgreePrefix_zero.
+Check raw_contextTraversalTablesAgreePrefix_succ.
+Check raw_contextListTraversals_agree_prefix.
+Check raw_contextListTraversal_bound_functional.
+Check RawContextListTraversalsCoherent.
+Check raw_contextListTraversals_coherent.
+
+Check raw_contextListMemberWithTables_transport.
+Check raw_contextListMemberWithTables_iff_of_traversals.
+Check raw_contextListMember_iff_with_traversal.
+Check raw_contextList_zero_traversal_exists.
+Check raw_contextListMember_zero_false.
+Check raw_contextListMember_cons_iff.
+
+Check raw_contextAllBoundedWithTables_transport.
+Check raw_contextAllBounded_iff_with_traversal.
+Check raw_contextAllBounded_member.
+Check raw_contextAllBounded_cons_head.
+Check raw_contextAllBounded_cons_tail.
+
+Print Assumptions raw_sat_contextTableAgreeBelowTermAt_iff.
+Print Assumptions
+  raw_sat_contextTraversalTablesAgreePrefixTermAt_iff.
+Print Assumptions
+  raw_sat_contextTraversalTablesAgreeThroughTermAt_iff.
+
+Print Assumptions raw_contextTraversalTablesAgreePrefix_zero.
+Print Assumptions raw_contextTraversalTablesAgreePrefix_succ.
+Print Assumptions raw_contextListTraversals_agree_prefix.
+Print Assumptions raw_contextListTraversal_bound_functional.
+Print Assumptions raw_contextListTraversals_coherent.
+
+Print Assumptions raw_contextListMemberWithTables_transport.
+Print Assumptions raw_contextListMemberWithTables_iff_of_traversals.
+Print Assumptions raw_contextListMember_iff_with_traversal.
+Print Assumptions raw_contextList_zero_traversal_exists.
+Print Assumptions raw_contextListMember_zero_false.
+Print Assumptions raw_contextListMember_cons_iff.
+
+Print Assumptions raw_contextAllBoundedWithTables_transport.
+Print Assumptions raw_contextAllBounded_iff_with_traversal.
+Print Assumptions raw_contextAllBounded_member.
+Print Assumptions raw_contextAllBounded_cons_head.
+Print Assumptions raw_contextAllBounded_cons_tail.

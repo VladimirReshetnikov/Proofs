@@ -1,0 +1,17 @@
+(** Assumption audit for universal beta-coded assignment definedness. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedAssignmentUniversalDefinedness.
+
+Import PABoundedRawCodedAssignmentUniversalDefinedness.
+
+Check raw_sat_betaEntryExistsTermAt_iff.
+Check raw_betaEntry_code_successor.
+Check raw_betaEntry_exists_all.
+Check raw_codedAssignmentLookup_exists_all.
+Check raw_codedAssignment_definedThrough_all.
+
+Print Assumptions raw_betaEntry_code_successor.
+Print Assumptions raw_betaEntry_exists_all.
+Print Assumptions raw_codedAssignmentLookup_exists_all.
+Print Assumptions raw_codedAssignment_definedThrough_all.

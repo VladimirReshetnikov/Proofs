@@ -1,0 +1,32 @@
+(** Assumption audit for PA-visible recursive proof-code descent. *)
+
+From BoundedPAConsistency Require Import RawCodedProofDescent.
+
+Import PABoundedRawCodedProofDescent.
+
+Check raw_proof_self_le_square.
+Check rawPolynomialPair_left_le_descent.
+Check rawPolynomialPair_right_le_descent.
+Check rawListNode_head_lt.
+Check rawListNode_tail_lt.
+Check rawProofListCode_member_lt.
+
+Check proofAllBelowTermAt.
+Check raw_sat_proofAllBelowTermAt_iff.
+Check RawProofChildrenBelowCase.
+Check raw_sat_proofChildrenBelowCaseTermAt_iff.
+Check rawProofConstructorDescentTermAt.
+Check RawProofConstructorDescent.
+Check raw_sat_rawProofConstructorDescentTermAt_iff.
+Check raw_proofConstructorCode_descent.
+
+Check rawProofConstructorDescentFormula.
+Check rawProofConstructorDescentFormula_sentence.
+Check rawProofConstructorDescentFormula_raw_valid.
+Check PA_proves_rawProofConstructorDescentFormula.
+
+Print Assumptions raw_proof_self_le_square.
+Print Assumptions rawProofListCode_member_lt.
+Print Assumptions raw_sat_rawProofConstructorDescentTermAt_iff.
+Print Assumptions raw_proofConstructorCode_descent.
+Print Assumptions PA_proves_rawProofConstructorDescentFormula.

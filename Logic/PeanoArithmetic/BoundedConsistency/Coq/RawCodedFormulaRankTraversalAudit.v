@@ -1,0 +1,61 @@
+(** Assumption audit for the beta-coded global formula-rank traversal.
+
+    The checks below cover both the exact formula/raw-model interface and the
+    strongest unconditional structural and standard-code theorems.  The two
+    final predicates are deliberately checks rather than assumptions: they
+    name the remaining nonstandard-code totality and cross-certificate
+    functionality obligations without asserting either one. *)
+
+From BoundedPAConsistency Require Import RawCodedFormulaRankTraversal.
+
+Import PABoundedRawCodedFormulaRankTraversal.
+
+Check codedFormulaRankTripleLookupTermAt.
+Check codedFormulaRankTraversalRowTermAt.
+Check codedFormulaRankTraversalRowsTermAt.
+Check codedFormulaRankTraversalTermAt.
+Check codedFormulaRankTermAt.
+
+Check raw_sat_codedFormulaRankTripleLookupTermAt_iff.
+Check raw_sat_codedFormulaRankTraversalRowTermAt_iff.
+Check raw_sat_codedFormulaRankTraversalRowsTermAt_iff.
+Check raw_sat_codedFormulaRankTraversalTermAt_iff.
+Check raw_sat_codedFormulaRankTermAt_iff.
+
+Check raw_codedFormulaRankTripleLookup_functional.
+Check raw_codedFormulaRankTraversal_row_exists_unique.
+Check raw_codedFormulaRankTraversal_root_row.
+Check raw_codedFormulaRankTraversal_root_output_functional.
+Check raw_codedFormulaRankTraversal_restrict_to_row.
+Check raw_codedFormulaRank_of_traversal_row.
+
+Check raw_codedFormulaRankTraversalRow_shape_iff.
+Check rawCodedFormulaShapeCode_injective.
+Check rawQuotedFormulaShape_code.
+Check raw_formulaRankImp_numerals.
+Check raw_formulaRankAndOr_numerals.
+Check raw_formulaRankAll_numerals.
+Check raw_formulaRankEx_numerals.
+Check raw_codedFormulaRank_standard_sound.
+Check raw_codedFormulaRank_standard_functional.
+
+Check RawCodedFormulaRankTotal.
+Check RawCodedFormulaRankFunctional.
+Check raw_codedFormulaRank_exists_unique_of_total_functional.
+
+Print Assumptions raw_sat_codedFormulaRankTripleLookupTermAt_iff.
+Print Assumptions raw_sat_codedFormulaRankTraversalRowTermAt_iff.
+Print Assumptions raw_sat_codedFormulaRankTraversalRowsTermAt_iff.
+Print Assumptions raw_sat_codedFormulaRankTraversalTermAt_iff.
+Print Assumptions raw_sat_codedFormulaRankTermAt_iff.
+
+Print Assumptions raw_codedFormulaRankTripleLookup_functional.
+Print Assumptions raw_codedFormulaRankTraversal_row_exists_unique.
+Print Assumptions raw_codedFormulaRankTraversal_root_output_functional.
+Print Assumptions raw_codedFormulaRankTraversal_restrict_to_row.
+Print Assumptions raw_codedFormulaRank_of_traversal_row.
+Print Assumptions raw_codedFormulaRankTraversalRow_shape_iff.
+Print Assumptions rawCodedFormulaShapeCode_injective.
+Print Assumptions raw_codedFormulaRank_standard_sound.
+Print Assumptions raw_codedFormulaRank_standard_functional.
+Print Assumptions raw_codedFormulaRank_exists_unique_of_total_functional.

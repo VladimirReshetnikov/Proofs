@@ -1,0 +1,18 @@
+From BoundedPAConsistency Require Import RawCodedProofRuleCoverage.
+
+Import PABoundedRawCodedProofRuleCoverage.
+
+Check RawProofEndpointRuleComplete.
+Check raw_sat_proofEndpointRuleCompleteTermAt_iff.
+Check RawProofRuleCoverageWithSupport.
+Check raw_sat_proofRuleCoverageWithSupportTermAt_iff.
+Check RawProofRuleCoverage.
+Check raw_sat_proofRuleCoverageTermAt_iff.
+Check raw_proofRuleCoverage_public_root_complete.
+Check raw_proofRuleCoverage_public_recursive_child.
+
+Print Assumptions raw_sat_proofEndpointRuleCompleteTermAt_iff.
+Print Assumptions raw_sat_proofRuleCoverageWithSupportTermAt_iff.
+Print Assumptions raw_sat_proofRuleCoverageTermAt_iff.
+Print Assumptions raw_proofRuleCoverage_public_root_complete.
+Print Assumptions raw_proofRuleCoverage_public_recursive_child.

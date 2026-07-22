@@ -1,0 +1,19 @@
+(** Assumption audit for the PA-definable canonical-trace invariant layer. *)
+
+From BoundedPAConsistency Require Import
+  CanonicalCheckerDefinableInvariant.
+
+Import PABoundedCanonicalCheckerDefinableInvariant.
+
+Check raw_canonicalTraceInvariantAt_iff.
+Check raw_canonicalTraceInvariantThrough_iff.
+Check raw_coherent_trace_preserves_definable_invariant.
+Check raw_rejection_of_definable_safety_certificate.
+Check PA_BProv_NoCanonicalRestrictedPAProofFormula_of_definable_invariant.
+
+Print Assumptions raw_canonicalTraceInvariantAt_iff.
+Print Assumptions raw_canonicalTraceInvariantThrough_iff.
+Print Assumptions raw_coherent_trace_preserves_definable_invariant.
+Print Assumptions raw_rejection_of_definable_safety_certificate.
+Print Assumptions
+  PA_BProv_NoCanonicalRestrictedPAProofFormula_of_definable_invariant.

@@ -1,0 +1,25 @@
+(** Assumption audit for all-occurrences context bounds. *)
+
+From BoundedPAConsistency Require Import RawCodedContextBounds.
+
+Import PABoundedRawCodedContextBounds.
+
+Check RawFormulaQuantifierBounded.
+Check formulaQuantifierBoundedTermAt.
+Check raw_sat_formulaQuantifierBoundedTermAt_iff.
+
+Check RawContextAllBoundedWithTables.
+Check contextAllBoundedWithTablesTermAt.
+Check raw_sat_contextAllBoundedWithTablesTermAt_iff.
+
+Check RawContextAllBounded.
+Check contextAllBoundedTermAt.
+Check raw_sat_contextAllBoundedTermAt_iff.
+Check raw_contextAllBounded_realizable.
+Check raw_contextAllBoundedWithTables_member.
+
+Print Assumptions raw_sat_formulaQuantifierBoundedTermAt_iff.
+Print Assumptions raw_sat_contextAllBoundedWithTablesTermAt_iff.
+Print Assumptions raw_sat_contextAllBoundedTermAt_iff.
+Print Assumptions raw_contextAllBounded_realizable.
+Print Assumptions raw_contextAllBoundedWithTables_member.

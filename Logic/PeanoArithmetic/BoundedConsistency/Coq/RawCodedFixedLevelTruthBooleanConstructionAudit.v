@@ -1,0 +1,27 @@
+(** Assumption audit for Boolean fixed-truth certificate construction. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedFixedLevelTruthBooleanConstruction.
+
+Import PABoundedRawCodedFixedLevelTruthBooleanConstruction.
+
+Check RawFixedLevelSuccessorTruthDecision.
+Check raw_fixedLevelImp_sigma_of_left_pi.
+Check raw_fixedLevelImp_sigma_of_right_sigma.
+Check raw_fixedLevelImp_pi_of_left_sigma_right_pi.
+Check raw_fixedLevelImp_decides.
+Check raw_fixedLevelAnd_sigma_of_both.
+Check raw_fixedLevelAnd_pi_of_left_pi.
+Check raw_fixedLevelAnd_pi_of_right_pi.
+Check raw_fixedLevelAnd_decides.
+Check raw_fixedLevelOr_sigma_of_left_sigma.
+Check raw_fixedLevelOr_sigma_of_right_sigma.
+Check raw_fixedLevelOr_pi_of_both.
+Check raw_fixedLevelOr_decides.
+
+Print Assumptions raw_fixedLevelImp_sigma_of_left_pi.
+Print Assumptions raw_fixedLevelImp_sigma_of_right_sigma.
+Print Assumptions raw_fixedLevelImp_pi_of_left_sigma_right_pi.
+Print Assumptions raw_fixedLevelImp_decides.
+Print Assumptions raw_fixedLevelAnd_decides.
+Print Assumptions raw_fixedLevelOr_decides.

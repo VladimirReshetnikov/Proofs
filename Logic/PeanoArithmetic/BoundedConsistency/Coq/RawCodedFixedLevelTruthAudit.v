@@ -1,0 +1,85 @@
+(** Assumption audit for externally indexed fixed-level local truth rows.
+
+    The positive-level formulae are genuine PA formula constructors and have
+    exact arbitrary-raw-model semantics.  [RawFixedLevelGlobalAssemblyFor]
+    is only the explicitly named remaining assembly proposition; no theorem
+    below assumes or proves it. *)
+
+From BoundedPAConsistency Require Import RawCodedFixedLevelTruth.
+
+Import PABoundedRawCodedFixedLevelTruth.
+
+Check fixedLevelSigmaDomainTermAt.
+Check fixedLevelPiDomainTermAt.
+Check RawFixedLevelSigmaDomain.
+Check RawFixedLevelPiDomain.
+Check raw_sat_fixedLevelSigmaDomainTermAt_iff.
+Check raw_sat_fixedLevelPiDomainTermAt_iff.
+Check raw_fixedLevelSigmaDomain_mono.
+Check raw_fixedLevelPiDomain_mono.
+
+Check fixedLevelStateLookupTermAt.
+Check RawFixedLevelStateLookup.
+Check raw_sat_fixedLevelStateLookupTermAt_iff.
+Check fixedLevelEarlierStateTermAt.
+Check RawFixedLevelEarlierState.
+Check raw_sat_fixedLevelEarlierStateTermAt_iff.
+
+Check fixedLevelSigmaZeroTermAt.
+Check fixedLevelPiZeroTermAt.
+Check raw_sat_fixedLevelSigmaZeroTermAt_iff.
+Check raw_sat_fixedLevelPiZeroTermAt_iff.
+
+Check raw_fixedLevel_eval_liftTerm_three.
+Check fixedLevelNoBinderCounterexampleTermAt.
+Check RawFixedLevelNoBinderCounterexample.
+Check raw_fixedLevel_noBinderCounterexample_expanded_iff.
+Check raw_sat_fixedLevelNoBinderCounterexampleTermAt_iff.
+
+Check fixedLevelSigmaSuccessorWitnessRowTermAt.
+Check fixedLevelPiSuccessorWitnessRowTermAt.
+Check RawFixedLevelSigmaSuccessorWitnessRow.
+Check RawFixedLevelPiSuccessorWitnessRow.
+Check raw_sat_fixedLevelSigmaSuccessorWitnessRowTermAt_iff.
+Check raw_sat_fixedLevelPiSuccessorWitnessRowTermAt_iff.
+
+Check fixedLevelSigmaLocalTermAt.
+Check fixedLevelPiLocalTermAt.
+Check RawFixedLevelSigmaLocal.
+Check RawFixedLevelPiLocal.
+Check raw_sat_fixedLevelLocalTermAt_iff.
+Check raw_sat_fixedLevelSigmaLocalTermAt_iff.
+Check raw_sat_fixedLevelPiLocalTermAt_iff.
+Check raw_fixedLevelSigmaLocal_domain.
+Check raw_fixedLevelPiLocal_domain.
+
+Check raw_fixedLevelSigmaLocal_qf_successor.
+Check raw_fixedLevelPiLocal_qf_successor.
+Check raw_fixedLevelSigmaLocal_existential.
+Check raw_fixedLevelPiLocal_universal_counterexample.
+Check raw_fixedLevelSigmaLocal_universal_complement.
+Check raw_fixedLevelPiLocal_existential_complement.
+Check RawFixedLevelGlobalAssemblyFor.
+
+Print Assumptions raw_sat_fixedLevelSigmaDomainTermAt_iff.
+Print Assumptions raw_sat_fixedLevelPiDomainTermAt_iff.
+Print Assumptions raw_fixedLevelSigmaDomain_mono.
+Print Assumptions raw_fixedLevelPiDomain_mono.
+Print Assumptions raw_sat_fixedLevelStateLookupTermAt_iff.
+Print Assumptions raw_sat_fixedLevelEarlierStateTermAt_iff.
+Print Assumptions raw_sat_fixedLevelSigmaZeroTermAt_iff.
+Print Assumptions raw_sat_fixedLevelPiZeroTermAt_iff.
+Print Assumptions raw_fixedLevel_eval_liftTerm_three.
+Print Assumptions raw_fixedLevel_noBinderCounterexample_expanded_iff.
+Print Assumptions raw_sat_fixedLevelNoBinderCounterexampleTermAt_iff.
+Print Assumptions raw_sat_fixedLevelSigmaSuccessorWitnessRowTermAt_iff.
+Print Assumptions raw_sat_fixedLevelPiSuccessorWitnessRowTermAt_iff.
+Print Assumptions raw_sat_fixedLevelLocalTermAt_iff.
+Print Assumptions raw_sat_fixedLevelSigmaLocalTermAt_iff.
+Print Assumptions raw_sat_fixedLevelPiLocalTermAt_iff.
+Print Assumptions raw_fixedLevelSigmaLocal_domain.
+Print Assumptions raw_fixedLevelPiLocal_domain.
+Print Assumptions raw_fixedLevelSigmaLocal_existential.
+Print Assumptions raw_fixedLevelPiLocal_universal_counterexample.
+Print Assumptions raw_fixedLevelSigmaLocal_universal_complement.
+Print Assumptions raw_fixedLevelPiLocal_existential_complement.

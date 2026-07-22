@@ -1,0 +1,45 @@
+(**
+  Assumption audit for unconditional rank-zero truth totality.
+
+  In particular, the last four entries expose the exact semantics of the
+  closed totality sentence, its closedness, its validity in every raw PA
+  model, and the resulting PA derivation.
+*)
+
+From BoundedPAConsistency Require Import
+  RawCodedRankZeroTruthTotality.
+
+Import PABoundedRawCodedRankZeroTruthTotality.
+
+Check raw_rankZeroAtomicTermCapacity_of_adequate.
+Check raw_rankZeroAtomicTermCapacity_all.
+
+Check raw_rankZeroTruthCertificateWithTables_exists_of_syntax.
+Check raw_rankZeroTruthCertificate_exists_of_syntax.
+Check raw_rankZeroTruthCertificate_exists_unique_of_syntax.
+Check raw_rankZeroTruthCertificate_exists_of_realizable_syntax.
+Check raw_rankZeroTruthCertificate_exists_unique_of_realizable_syntax.
+Check raw_rankZeroTruthCertificate_totality_for_syntax.
+
+Check rankZeroTruthTotalityOnSyntaxFormula.
+Check raw_sat_rankZeroTruthTotalityOnSyntaxFormula_iff.
+Check rankZeroTruthTotalityOnSyntaxFormula_sentence.
+Check rankZeroTruthTotalityOnSyntaxFormula_raw_valid.
+Check PA_proves_rankZeroTruthTotalityOnSyntaxFormula.
+
+Print Assumptions raw_rankZeroAtomicTermCapacity_of_adequate.
+Print Assumptions raw_rankZeroAtomicTermCapacity_all.
+Print Assumptions
+  raw_rankZeroTruthCertificateWithTables_exists_of_syntax.
+Print Assumptions raw_rankZeroTruthCertificate_exists_of_syntax.
+Print Assumptions raw_rankZeroTruthCertificate_exists_unique_of_syntax.
+Print Assumptions
+  raw_rankZeroTruthCertificate_exists_of_realizable_syntax.
+Print Assumptions
+  raw_rankZeroTruthCertificate_exists_unique_of_realizable_syntax.
+Print Assumptions raw_rankZeroTruthCertificate_totality_for_syntax.
+
+Print Assumptions raw_sat_rankZeroTruthTotalityOnSyntaxFormula_iff.
+Print Assumptions rankZeroTruthTotalityOnSyntaxFormula_sentence.
+Print Assumptions rankZeroTruthTotalityOnSyntaxFormula_raw_valid.
+Print Assumptions PA_proves_rankZeroTruthTotalityOnSyntaxFormula.

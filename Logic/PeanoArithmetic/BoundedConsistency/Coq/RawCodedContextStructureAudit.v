@@ -1,0 +1,22 @@
+(** Assumption audit for structural operations on coded contexts. *)
+
+From BoundedPAConsistency Require Import RawCodedContextStructure.
+
+Import PABoundedRawCodedContextStructure.
+
+Check raw_contextListTraversal_tail_defined.
+Check RawContextListConsExtension.
+Check raw_contextListConsExtension_exists.
+Check raw_contextList_empty_realizable.
+Check raw_contextList_cons_realizable.
+Check raw_contextList_cons_head_member.
+Check raw_contextList_cons_tail_member.
+Check raw_contextAllBounded_cons.
+
+Print Assumptions raw_contextListTraversal_tail_defined.
+Print Assumptions raw_contextListConsExtension_exists.
+Print Assumptions raw_contextList_empty_realizable.
+Print Assumptions raw_contextList_cons_realizable.
+Print Assumptions raw_contextList_cons_head_member.
+Print Assumptions raw_contextList_cons_tail_member.
+Print Assumptions raw_contextAllBounded_cons.
