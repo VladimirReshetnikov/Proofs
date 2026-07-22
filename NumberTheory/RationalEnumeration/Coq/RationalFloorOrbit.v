@@ -514,51 +514,6 @@ Qed.
 
 Local Open Scope Q_scope.
 
-Theorem qOfNat_den_expr (a b k : nat)
-    (hle : (a <= (2 * k + 1) * b)%nat) :
-    qOfNat ((2 * k + 1) * b - a) ==
-      (2 * qOfNat k + 1) * qOfNat b - qOfNat a.
-Proof.
-  unfold qOfNat, Qeq, Qplus, Qminus, Qopp, Qmult, inject_Z.
-  cbn.
-  rewrite Nat2Z.inj_sub by lia.
-  rewrite Nat2Z.inj_mul.
-  repeat rewrite Nat2Z.inj_add.
-  replace
-    (match Z.of_nat k with
-     | 0%Z => 0%Z
-     | Z.pos y' => Z.pos y'~0
-     | Z.neg y' => Z.neg y'~0
-     end) with (2 * Z.of_nat k)%Z.
-  - ring.
-  - destruct k; reflexivity.
-Qed.
-
-Theorem rationalNext_pairRat (a b : nat) (hb : (0 < b)%nat) :
-    rationalNext (pairRat (a, b)) == pairRat (pairNext (a, b)).
-Proof.
-  unfold rationalNext.
-  rewrite qfloorNat_pairRat by lia.
-  setoid_rewrite (pairRat_eq_div a b hb).
-  unfold pairNext.
-  cbn [fst snd].
-  rewrite (pairRat_eq_div b ((2 * (a / b) + 1) * b - a))
-    by (apply pairNext_den_pos; lia).
-  change (/ (1 - qOfNat a / qOfNat b + 2 * qOfNat (a / b)) ==
-    qOfNat b / qOfNat ((2 * (a / b) + 1) * b - a)).
-  pose proof (div_lt_mul_add a b hb) as hlt.
-  assert (hle : (a <= (2 * (a / b) + 1) * b)%nat) by lia.
-  assert (hdpos : (0 < (2 * (a / b) + 1) * b - a)%nat) by lia.
-  pose proof (qOfNat_den_expr a b (a / b) hle) as hden.
-  rewrite hden.
-  field.
-  split.
-  - intro hzero.
-    apply (qOfNat_nonzero ((2 * (a / b) + 1) * b - a) hdpos).
-    eapply Qeq_trans; [exact hden | exact hzero].
-  - apply qOfNat_nonzero; lia.
-Qed.
-
 Theorem rationalNext_pairRat_eq (a b : nat) (hb : (0 < b)%nat) :
     rationalNext (pairRat (a, b)) = pairRat (pairNext (a, b)).
 Proof.
@@ -593,6 +548,14 @@ Proof.
   repeat rewrite Pos.mul_1_l.
   repeat rewrite Pos.mul_1_r.
   rewrite Zpos_positiveDenOfNat by exact hb.
+  reflexivity.
+Qed.
+
+(** The setoid form is a direct consequence of the syntactic identity. *)
+Theorem rationalNext_pairRat (a b : nat) (hb : (0 < b)%nat) :
+    rationalNext (pairRat (a, b)) == pairRat (pairNext (a, b)).
+Proof.
+  rewrite rationalNext_pairRat_eq by exact hb.
   reflexivity.
 Qed.
 
