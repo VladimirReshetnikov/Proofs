@@ -18,13 +18,19 @@ open LeanProofs.BoundedPAConsistency.AbstractSoundness
 #check Laws
 #check SequentTrue
 #check RestrictedDerivationInduction
+#check restrictedDerivation_sequent_step
+#check restrictedDerivation_sequent_strongStep
 #check restrictedDerivation_sound_of_induction
 #check restrictedDerivation_sound
+#check restrictedConsistent_of_soundness
 #check restrictedConsistent_of_laws_of_induction
 #check restrictedConsistent_of_laws
 
+#print axioms restrictedDerivation_sequent_step
+#print axioms restrictedDerivation_sequent_strongStep
 #print axioms restrictedDerivation_sound_of_induction
 #print axioms restrictedDerivation_sound
+#print axioms restrictedConsistent_of_soundness
 #print axioms restrictedConsistent_of_laws_of_induction
 #print axioms restrictedConsistent_of_laws
 
