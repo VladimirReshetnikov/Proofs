@@ -14,6 +14,7 @@ open LO FirstOrder
 open LO.FirstOrder.Arithmetic
 open LO.FirstOrder.Arithmetic.Bootstrapping
 open LeanProofs.BoundedPAConsistency.DynamicTruthCompiledLocalBundle
+open LeanProofs.BoundedPAConsistency.DynamicTruthQuantifierFreeAnchor
 open LeanProofs.BoundedPAConsistency.DynamicTruthCrossLevelFormula
 open LeanProofs.BoundedPAConsistency.DynamicTruthOrbit
 open LeanProofs.BoundedPAConsistency.DynamicTruthShiftInvariantFormula
@@ -52,7 +53,7 @@ shift-invariance induction kernel. -/
 example (previous : TruthCertificateFields (V := V)) (n : V) :
     Peano.internalize V ⊢!
       crossContext previous
-          (orbitCompiledLocalBundle n)
+          (orbitCompiledLocalBundleWithQuantifierFreeIntroduction n)
           (orbitSuccessorCrossLevelFormula n) 🡒
         (shiftInvariantPredicateFormula
           (truthFormula n) (n + 1) (n + 1 + 1)).subst

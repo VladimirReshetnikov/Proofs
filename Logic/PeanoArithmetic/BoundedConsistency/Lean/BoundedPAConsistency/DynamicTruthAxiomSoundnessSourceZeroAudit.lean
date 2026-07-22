@@ -16,6 +16,7 @@ open LO.FirstOrder.Arithmetic.Bootstrapping
 open LeanProofs.BoundedPAConsistency.DynamicTruthAxiomSoundnessFormula
 open LeanProofs.BoundedPAConsistency.DynamicTruthAxiomSoundnessSourceZero
 open LeanProofs.BoundedPAConsistency.DynamicTruthCompiledLocalBundle
+open LeanProofs.BoundedPAConsistency.DynamicTruthQuantifierFreeAnchor
 open LeanProofs.BoundedPAConsistency.DynamicTruthCrossLevelFormula
 open LeanProofs.BoundedPAConsistency.DynamicTruthOrbit
 open LeanProofs.BoundedPAConsistency.DynamicTruthShiftInvariantFormula
@@ -48,7 +49,7 @@ noncomputable section
 example (previous : TruthCertificateFields (V := V)) (n : V) :
     Peano.internalize V ⊢!
       substitutionContext previous
-          (orbitCompiledLocalBundle n)
+          (orbitCompiledLocalBundleWithQuantifierFreeIntroduction n)
           (orbitSuccessorCrossLevelFormula n)
           (orbitSuccessorShiftInvariantFormula n)
           (orbitSuccessorSubstitutionInvariantFormula n) 🡒

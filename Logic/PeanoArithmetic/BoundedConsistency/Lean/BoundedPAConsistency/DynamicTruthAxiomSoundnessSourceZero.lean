@@ -1,6 +1,7 @@
 import BoundedPAConsistency.DynamicTruthAxiomSoundnessFormula
 import BoundedPAConsistency.DynamicTruthShiftInvariantSourceZero
 import BoundedPAConsistency.DynamicTruthCompiledLocalBundle
+import BoundedPAConsistency.DynamicTruthQuantifierFreeAnchor
 import BoundedPAConsistency.DynamicTruthCrossLevelFormula
 import BoundedPAConsistency.DynamicTruthSubstitutionInvariantFormula
 import BoundedPAConsistency.StagedTruthCertificateProofCompiler
@@ -179,7 +180,7 @@ noncomputable def orbitAxiomSoundnessZeroProofFromSubstitutionContext
     (previous : TruthCertificateFields (V := V)) (n : V) :
     Peano.internalize V ⊢!
       substitutionContext previous
-          (LeanProofs.BoundedPAConsistency.DynamicTruthCompiledLocalBundle.orbitCompiledLocalBundle n)
+          (LeanProofs.BoundedPAConsistency.DynamicTruthQuantifierFreeAnchor.orbitCompiledLocalBundleWithQuantifierFreeIntroduction n)
           (LeanProofs.BoundedPAConsistency.DynamicTruthCrossLevelFormula.orbitSuccessorCrossLevelFormula n)
           (LeanProofs.BoundedPAConsistency.DynamicTruthShiftInvariantFormula.orbitSuccessorShiftInvariantFormula n)
           (LeanProofs.BoundedPAConsistency.DynamicTruthSubstitutionInvariantFormula.orbitSuccessorSubstitutionInvariantFormula n) 🡒

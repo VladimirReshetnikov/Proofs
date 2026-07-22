@@ -17,6 +17,7 @@ open LO.FirstOrder.Arithmetic.Bootstrapping
 open LeanProofs.BoundedPAConsistency.DynamicTruthFormula
 open LeanProofs.BoundedPAConsistency.DynamicTruthOrbit
 open LeanProofs.BoundedPAConsistency.DynamicTruthCompiledLocalBundle
+open LeanProofs.BoundedPAConsistency.DynamicTruthQuantifierFreeAnchor
 open LeanProofs.BoundedPAConsistency.DynamicTruthCrossLevelFormula
 open LeanProofs.BoundedPAConsistency.DynamicTruthShiftInvariantFormula
 open LeanProofs.BoundedPAConsistency.DynamicTruthSubstitutionInvariantFormula
@@ -43,6 +44,7 @@ open LeanProofs.BoundedPAConsistency.TruthCertificateProofCompiler
 #check orbitSubstitutionInvariantZeroProof
 #check proveAvailableFromShiftContext
 #check proveOrbitAvailableFromShiftContext
+#check proveOrbitAvailableFromAugmentedShiftContext
 #check orbitSubstitutionInvariantZeroProofFromShiftContext
 
 #print axioms arithmeticZeroSemiformulaProof
@@ -50,6 +52,7 @@ open LeanProofs.BoundedPAConsistency.TruthCertificateProofCompiler
 #print axioms translate_sourceZeroSentence
 #print axioms compiledSubstitutionInvariantZeroProof
 #print axioms proveAvailableFromShiftContext
+#print axioms proveOrbitAvailableFromAugmentedShiftContext
 #print axioms orbitSubstitutionInvariantZeroProofFromShiftContext
 
 variable {V : Type*} [ORingStructure V]
@@ -63,7 +66,7 @@ induction kernel under the staged substitution context. -/
 example (previous : TruthCertificateFields (V := V)) (n : V) :
     Peano.internalize V ⊢!
       shiftContext previous
-          (orbitCompiledLocalBundle n)
+          (orbitCompiledLocalBundleWithQuantifierFreeIntroduction n)
           (orbitSuccessorCrossLevelFormula n)
           (orbitSuccessorShiftInvariantFormula n) 🡒
         (substitutionInvariantPredicateFormula

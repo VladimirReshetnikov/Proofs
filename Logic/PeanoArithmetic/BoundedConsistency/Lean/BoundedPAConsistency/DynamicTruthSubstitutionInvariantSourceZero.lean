@@ -1,4 +1,5 @@
 import BoundedPAConsistency.DynamicTruthCompiledLocalBundle
+import BoundedPAConsistency.DynamicTruthQuantifierFreeAnchor
 import BoundedPAConsistency.DynamicTruthCrossLevelFormula
 import BoundedPAConsistency.DynamicTruthShiftInvariantFormula
 import BoundedPAConsistency.DynamicTruthSubstitutionInvariantFormula
@@ -30,6 +31,7 @@ open LeanProofs.BoundedPAConsistency.DynamicTruthTemplateFormula
 open LeanProofs.BoundedPAConsistency.DynamicTruthFormula
 open LeanProofs.BoundedPAConsistency.DynamicTruthOrbit
 open LeanProofs.BoundedPAConsistency.DynamicTruthCompiledLocalBundle
+open LeanProofs.BoundedPAConsistency.DynamicTruthQuantifierFreeAnchor
 open LeanProofs.BoundedPAConsistency.DynamicTruthLocalProjectionTemplate
 open LeanProofs.BoundedPAConsistency.DynamicTruthMemberValidityTemplate
 open LeanProofs.BoundedPAConsistency.DynamicTruthUniversalLeafTemplate
@@ -300,6 +302,28 @@ noncomputable def proveOrbitAvailableFromShiftContext
       (orbitSuccessorCrossLevelFormula n)
       (orbitSuccessorShiftInvariantFormula n))
 
+/-- The production local field contains the three structural eliminators as
+its left conjunct and the quantifier-free introduction anchor as its right
+conjunct.  Project the older source antecedent from that larger field without
+discarding the anchor from the staged certificate itself. -/
+noncomputable def proveOrbitAvailableFromAugmentedShiftContext
+    (previous : TruthCertificateFields (V := V)) (n : V) :
+    Peano.internalize V ⊢!
+      shiftContext previous
+          (orbitCompiledLocalBundleWithQuantifierFreeIntroduction n)
+          (orbitSuccessorCrossLevelFormula n)
+          (orbitSuccessorShiftInvariantFormula n) 🡒
+        orbitAvailableContext n := by
+  unfold shiftContext crossContext localContext orbitAvailableContext
+  unfold orbitCompiledLocalBundleWithQuantifierFreeIntroduction
+  exact Entailment.CK_of_C_of_C
+    (Entailment.C_trans Entailment.and₁ <|
+      Entailment.C_trans Entailment.and₁ <|
+        Entailment.C_trans Entailment.and₂ Entailment.and₁)
+    (Entailment.CK_of_C_of_C
+      (Entailment.C_trans Entailment.and₁ Entailment.and₂)
+      Entailment.and₂)
+
 /-- The exact zero premise under the complete staged substitution context.
 This term can be installed directly as `PAInductionKernel.proveZero` once the
 matching successor premise has been constructed. -/
@@ -307,7 +331,7 @@ noncomputable def orbitSubstitutionInvariantZeroProofFromShiftContext
     (previous : TruthCertificateFields (V := V)) (n : V) :
     Peano.internalize V ⊢!
       shiftContext previous
-          (orbitCompiledLocalBundle n)
+          (orbitCompiledLocalBundleWithQuantifierFreeIntroduction n)
           (orbitSuccessorCrossLevelFormula n)
           (orbitSuccessorShiftInvariantFormula n) 🡒
         (substitutionInvariantPredicateFormula
@@ -315,7 +339,7 @@ noncomputable def orbitSubstitutionInvariantZeroProofFromShiftContext
           ![(⌜(‘0’ : ArithmeticSemiterm ℕ 0)⌝ :
             Bootstrapping.Semiterm V ℒₒᵣ 0)] :=
   Entailment.C_trans
-    (proveOrbitAvailableFromShiftContext previous n)
+    (proveOrbitAvailableFromAugmentedShiftContext previous n)
     (orbitSubstitutionInvariantZeroProof n)
 
 end LeanProofs.BoundedPAConsistency.DynamicTruthSubstitutionInvariantSourceZero

@@ -1,5 +1,6 @@
 import BoundedPAConsistency.DynamicTruthShiftInvariantFormula
 import BoundedPAConsistency.DynamicTruthCompiledLocalBundle
+import BoundedPAConsistency.DynamicTruthQuantifierFreeAnchor
 import BoundedPAConsistency.DynamicTruthCrossLevelFormula
 import BoundedPAConsistency.StagedTruthCertificateProofCompiler
 import Foundation.FirstOrder.Completeness
@@ -200,7 +201,7 @@ noncomputable def orbitShiftInvariantZeroProofFromCrossContext
     (previous : TruthCertificateFields (V := V)) (n : V) :
     Peano.internalize V ⊢!
       crossContext previous
-          (LeanProofs.BoundedPAConsistency.DynamicTruthCompiledLocalBundle.orbitCompiledLocalBundle n)
+          (LeanProofs.BoundedPAConsistency.DynamicTruthQuantifierFreeAnchor.orbitCompiledLocalBundleWithQuantifierFreeIntroduction n)
           (LeanProofs.BoundedPAConsistency.DynamicTruthCrossLevelFormula.orbitSuccessorCrossLevelFormula n) 🡒
         (shiftInvariantPredicateFormula
           (truthFormula n) (n + 1) (n + 1 + 1)).subst
