@@ -1,4 +1,4 @@
-import BoundedPAConsistency.DynamicTruthCompiledLocalOrbit
+import BoundedPAConsistency.DynamicTruthAugmentedLocalOrbit
 import BoundedPAConsistency.DynamicTruthCrossLevelOrbit
 import BoundedPAConsistency.DynamicTruthShiftInvariantOrbit
 import BoundedPAConsistency.DynamicTruthSubstitutionInvariantOrbit
@@ -13,11 +13,12 @@ one `PATruthCertificateFamily`.  Its final coordinate is not chosen here:
 `PATruthCertificateFamily.fields` inserts the exact restricted-consistency
 target by construction.
 
-The local coordinate currently contains the three fixed-source elimination
-laws compiled in `DynamicTruthCompiledLocalBundle`.  This module therefore
-establishes the concrete family shape and its represented master-code graph;
-it does not claim that the still-outstanding staged soundness derivations can
-already be constructed from those three local laws alone.
+The local coordinate contains the three fixed-source certificate eliminators
+and the independently compiled quantifier-free introduction anchor.  The
+fourth law is essential for the valid-domain base cases of cross-level
+structural induction.  This module establishes the concrete family shape and
+its represented master-code graph; the remaining constructor-wise structural
+derivations are supplied in later proof-producing layers.
 -/
 
 namespace LeanProofs.BoundedPAConsistency.DynamicTruthCertificateFieldFamily
@@ -26,7 +27,7 @@ open LO FirstOrder
 open LO.FirstOrder.Arithmetic
 open LO.FirstOrder.Arithmetic.Bootstrapping
 open LeanProofs.BoundedPAConsistency.PrimitiveRecursiveTruthCertificate
-open LeanProofs.BoundedPAConsistency.DynamicTruthCompiledLocalOrbit
+open LeanProofs.BoundedPAConsistency.DynamicTruthAugmentedLocalOrbit
 open LeanProofs.BoundedPAConsistency.DynamicTruthCrossLevelOrbit
 open LeanProofs.BoundedPAConsistency.DynamicTruthShiftInvariantOrbit
 open LeanProofs.BoundedPAConsistency.DynamicTruthSubstitutionInvariantOrbit
@@ -36,10 +37,12 @@ variable {V : Type*} [ORingStructure V]
 variable [V↓[ℒₒᵣ] ⊧* ISigma 1]
 
 /-- The five concrete, total model-indexed fields currently available for the
-dynamic truth hierarchy. -/
+dynamic truth hierarchy.  The local coordinate includes the quantifier-free
+introduction law as well as the three certificate eliminators; this anchor is
+required by the cross-level structural argument. -/
 noncomputable def compiledDynamicTruthCertificateFamily :
     PATruthCertificateFamily (V := V) where
-  localStep := modelIndexedCompiledLocalBundle
+  localStep := modelIndexedAugmentedLocalBundle
   crossLevel := modelIndexedCrossLevelFormula
   shiftInvariant := modelIndexedShiftInvariantFormula
   substitutionInvariant := modelIndexedSubstitutionInvariantFormula
@@ -47,7 +50,7 @@ noncomputable def compiledDynamicTruthCertificateFamily :
 
 @[simp] theorem compiledDynamicTruthCertificateFamily_localStep (n : V) :
     (compiledDynamicTruthCertificateFamily (V := V)).localStep n =
-      modelIndexedCompiledLocalBundle n := rfl
+      modelIndexedAugmentedLocalBundle n := rfl
 
 @[simp] theorem compiledDynamicTruthCertificateFamily_crossLevel (n : V) :
     (compiledDynamicTruthCertificateFamily (V := V)).crossLevel n =
@@ -70,12 +73,12 @@ noncomputable def compiledDynamicTruthCertificateFamily :
 
 @[simp] theorem compiledDynamicTruthCertificateFamily_localStep_zero :
     (compiledDynamicTruthCertificateFamily (V := V)).localStep 0 =
-      baseCompiledLocalBundle := by
+      baseAugmentedLocalBundle := by
   simp
 
 @[simp] theorem compiledDynamicTruthCertificateFamily_localStep_succ (n : V) :
     (compiledDynamicTruthCertificateFamily (V := V)).localStep (n + 1) =
-      DynamicTruthCompiledLocalBundle.orbitCompiledLocalBundle n := by
+      DynamicTruthQuantifierFreeAnchor.orbitCompiledLocalBundleWithQuantifierFreeIntroduction n := by
   simp
 
 @[simp] theorem compiledDynamicTruthCertificateFamily_crossLevel_zero :
@@ -131,8 +134,8 @@ theorem compiledDynamicTruthCertificateFamily_code_definable :
       (compiledDynamicTruthCertificateFamily (V := V)).code := by
   apply LeanProofs.BoundedPAConsistency.TruthCertificateCodeDefinability.PATruthCertificateFamily.code_definable_of_fields
   · change HierarchySymbol.sigmaOne.DefinableFunction₁
-      (modelIndexedCompiledLocalBundleCode (V := V))
-    exact modelIndexedCompiledLocalBundleCode_definable
+      (modelIndexedAugmentedLocalBundleCode (V := V))
+    exact modelIndexedAugmentedLocalBundleCode_definable
   · change HierarchySymbol.sigmaOne.DefinableFunction₁
       (modelIndexedCrossLevelFormulaCode (V := V))
     exact modelIndexedCrossLevelFormulaCode_definable

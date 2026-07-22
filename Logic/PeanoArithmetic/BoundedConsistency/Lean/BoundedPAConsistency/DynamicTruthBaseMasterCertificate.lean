@@ -23,7 +23,7 @@ open LO FirstOrder
 open LO.FirstOrder.Arithmetic
 open LO.FirstOrder.Arithmetic.Bootstrapping
 open LeanProofs.BoundedPAConsistency.DynamicTruthFormula
-open LeanProofs.BoundedPAConsistency.DynamicTruthCompiledLocalOrbit
+open LeanProofs.BoundedPAConsistency.DynamicTruthAugmentedLocalOrbit
 open LeanProofs.BoundedPAConsistency.DynamicTruthCrossLevelFormula
 open LeanProofs.BoundedPAConsistency.DynamicTruthShiftInvariantFormula
 open LeanProofs.BoundedPAConsistency.DynamicTruthSubstitutionInvariantFormula
@@ -60,7 +60,7 @@ noncomputable def compiledDynamicTruthBaseCertificateProof :
     (by
       simpa only [PATruthCertificateFamily.fields,
         compiledDynamicTruthCertificateFamily_localStep_zero] using
-        (baseCompiledLocalBundleProof (V := V)))
+        (baseAugmentedLocalBundleProof (V := V)))
     (by
       simpa only [PATruthCertificateFamily.fields,
         compiledDynamicTruthCertificateFamily_crossLevel_zero] using
