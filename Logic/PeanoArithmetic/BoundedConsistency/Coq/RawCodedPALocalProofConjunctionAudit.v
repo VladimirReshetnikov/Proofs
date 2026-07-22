@@ -1,0 +1,11 @@
+From BoundedPAConsistency Require Import RawCodedPALocalProofConjunction.
+
+Import PABoundedRawCodedPALocalProofConjunction.
+
+Check raw_codedPALocalProofOf_andE.
+Check raw_codedPALocalProofOf_andE1.
+Check raw_codedPALocalProofOf_andE2.
+
+Print Assumptions raw_codedPALocalProofOf_andE.
+Print Assumptions raw_codedPALocalProofOf_andE1.
+Print Assumptions raw_codedPALocalProofOf_andE2.

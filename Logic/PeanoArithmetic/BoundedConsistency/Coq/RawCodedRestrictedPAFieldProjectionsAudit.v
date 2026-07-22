@@ -1,0 +1,20 @@
+From BoundedPAConsistency Require Import
+  RawCodedRestrictedPAFieldProjections.
+
+Import PABoundedRawCodedRestrictedPAFieldProjections.
+
+Check rawRestrictedPAProofFieldsSuffix5Code.
+Check rawRestrictedPAProofFieldsSuffix4Code.
+Check rawRestrictedPAProofFieldsSuffix3Code.
+Check rawRestrictedPAProofFieldsSuffix2Code.
+Check rawRestrictedPACertificateTupleProjectionRoot.
+Check rawRestrictedPAAxiomContextProjectionRoot.
+Check rawRestrictedPAOccurrenceBoundProjectionRoot.
+Check rawRestrictedPAAtomicAdequacyProjectionRoot.
+Check rawRestrictedPAFormulaCoverageProjectionRoot.
+Check rawRestrictedPARuleCoverageProjectionRoot.
+Check rawRestrictedPABottomEndpointProjectionRoot.
+Check RawRestrictedPAFieldProjectionPackage.
+Check raw_restrictedPAFieldProjectionPackage.
+
+Print Assumptions raw_restrictedPAFieldProjectionPackage.
