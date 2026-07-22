@@ -1,0 +1,26 @@
+(** Public surface and assumption audit for unary support extension. *)
+
+From BoundedPAConsistency Require Import RawCodedProofSupportExtension.
+
+Import PABoundedRawCodedProofSupportExtension.
+
+Check RawProofSupportExtensionDesired.
+Check proofSupportExtensionDesiredTermAt.
+Check raw_sat_proofSupportExtensionDesiredTermAt_iff.
+Check RawProofSupportExtensionPrefix.
+Check proofSupportExtensionPrefixTermAt.
+Check raw_sat_proofSupportExtensionPrefixTermAt_iff.
+Check RawProofSupportExtensionExists.
+Check proofSupportExtensionExistsTermAt.
+Check raw_sat_proofSupportExtensionExistsTermAt_iff.
+Check raw_proofSupportExtension_zero.
+Check raw_proofSupportExtension_append_old_iff.
+Check raw_proofSupportExtension_succ.
+Check raw_proofSupportExtension_all.
+Check raw_proofSupportExtension_to_parent.
+
+Print Assumptions raw_sat_proofSupportExtensionPrefixTermAt_iff.
+Print Assumptions raw_proofSupportExtension_append_old_iff.
+Print Assumptions raw_proofSupportExtension_succ.
+Print Assumptions raw_proofSupportExtension_all.
+Print Assumptions raw_proofSupportExtension_to_parent.
