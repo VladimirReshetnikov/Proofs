@@ -1,0 +1,9 @@
+From BoundedPAConsistency Require Import RawCodedNumeralTermShift.
+
+Import PABoundedRawCodedNumeralTermShift.
+
+Check raw_codedTermShift_numeral_identity.
+Check raw_codedTermShift_numeral_zero_one.
+
+Print Assumptions raw_codedTermShift_numeral_identity.
+Print Assumptions raw_codedTermShift_numeral_zero_one.
