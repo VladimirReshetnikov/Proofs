@@ -1,0 +1,21 @@
+From BoundedPAConsistency Require Import
+  RawCodedRestrictedPAConsistencyOpenDescent.
+
+Import PABoundedRawCodedRestrictedPAConsistencyOpenDescent.
+
+Check rawRestrictedPACertificateTupleFieldCode.
+Check rawRestrictedPAAxiomContextFieldCode.
+Check rawRestrictedPAOccurrenceBoundFieldCode.
+Check rawRestrictedPAAtomicAdequacyFieldCode.
+Check rawRestrictedPAFormulaCoverageFieldCode.
+Check rawRestrictedPARuleCoverageFieldCode.
+Check rawRestrictedPABottomEndpointFieldCode.
+Check rawRestrictedPAProofFieldsSuffix6Code.
+Check rawRestrictedPAProofFieldsCode.
+Check rawRestrictedPAProofAfterWitnessCode.
+Check rawRestrictedPAProofAfterProofCode.
+Check raw_restrictedPAProofAssumptionCode_view.
+Check raw_codedPAOpenProofOf_restrictedPAProof_assumption.
+
+Print Assumptions raw_restrictedPAProofAssumptionCode_view.
+Print Assumptions raw_codedPAOpenProofOf_restrictedPAProof_assumption.
