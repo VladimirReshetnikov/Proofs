@@ -1,0 +1,26 @@
+(** Public surface and assumption audit for binary support-table union. *)
+
+From BoundedPAConsistency Require Import RawCodedProofBinarySupportUnion.
+
+Import PABoundedRawCodedProofBinarySupportUnion.
+
+Check RawProofBinarySupportDesired.
+Check proofBinarySupportDesiredTermAt.
+Check raw_sat_proofBinarySupportDesiredTermAt_iff.
+Check RawProofBinarySupportPrefix.
+Check proofBinarySupportPrefixTermAt.
+Check raw_sat_proofBinarySupportPrefixTermAt_iff.
+Check RawProofBinarySupportExists.
+Check proofBinarySupportExistsTermAt.
+Check raw_sat_proofBinarySupportExistsTermAt_iff.
+Check raw_proofBinarySupport_zero.
+Check raw_proofBinarySupport_append_old_iff.
+Check raw_proofBinarySupport_succ.
+Check raw_proofBinarySupport_all.
+Check raw_proofBinarySupport_to_parent.
+
+Print Assumptions raw_sat_proofBinarySupportPrefixTermAt_iff.
+Print Assumptions raw_proofBinarySupport_append_old_iff.
+Print Assumptions raw_proofBinarySupport_succ.
+Print Assumptions raw_proofBinarySupport_all.
+Print Assumptions raw_proofBinarySupport_to_parent.

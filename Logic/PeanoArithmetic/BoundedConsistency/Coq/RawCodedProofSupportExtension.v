@@ -341,6 +341,41 @@ Proof.
   exact hraw.
 Qed.
 
+(** Constructor syntax itself is independent of a support table.  A local
+    row can therefore be moved to a new table whenever every recursive child
+    supported by the old row is supported by the new one.  Keeping this
+    lemma table-agnostic makes it reusable for both unary extensions and
+    binary support unions. *)
+Lemma raw_proofSyntaxStep_change_support : forall
+    (M : RawPAModel) code oldCode oldStep newCode newStep,
+  RawProofSyntaxStep M code oldCode oldStep ->
+  (forall child,
+    rawLt M child code ->
+    rawProofCodeSupported M oldCode oldStep child ->
+    rawProofCodeSupported M newCode newStep child) ->
+  RawProofSyntaxStep M code newCode newStep.
+Proof.
+  intros M code oldCode oldStep newCode newStep
+    [hexists holdClosed] hpreserved.
+  split; [exact hexists |].
+  intros context a b c t child1 child2 child3 hconstructor.
+  destruct (holdClosed context a b c t child1 child2 child3
+    hconstructor) as [hdescent holdCases].
+  split; [exact hdescent |].
+  rewrite Forall_forall in holdCases |- *.
+  intros [fields children] hentry.
+  pose proof (holdCases (fields, children) hentry) as holdCase.
+  unfold RawProofChildrenClosedCase in holdCase |- *.
+  intro hfields.
+  pose proof (holdCase hfields) as holdChildren.
+  rewrite Forall_forall in holdChildren |- *.
+  intros child hchild.
+  destruct (holdChildren child hchild)
+    as [hchildSupported hchildBelow].
+  split; [| exact hchildBelow].
+  exact (hpreserved child hchildBelow hchildSupported).
+Qed.
+
 (** A syntax row for an old supported node can be replayed against the
     rebuilt table.  Its constructor witnesses and descent facts are
     table-independent.  Every recursive child is below the old node, so the
@@ -358,24 +393,11 @@ Lemma raw_proofSyntaxStep_support_extension : forall
   RawProofSyntaxStep M code newCode newStep.
 Proof.
   intros M hPA childRoot oldCode oldStep parent newCode newStep code
-    [_ hnewExact] [hexists holdClosed] hcodeOldBound hcodeNewBound.
-  split; [exact hexists |].
-  intros context a b c t child1 child2 child3 hconstructor.
-  destruct (holdClosed context a b c t child1 child2 child3
-    hconstructor) as [hdescent holdCases].
-  split; [exact hdescent |].
-  rewrite Forall_forall in holdCases |- *.
-  intros [fields children] hentry.
-  pose proof (holdCases (fields, children) hentry) as holdCase.
-  unfold RawProofChildrenClosedCase in holdCase |- *.
-  intro hfields.
-  pose proof (holdCase hfields) as holdChildren.
-  rewrite Forall_forall in holdChildren |- *.
-  intros child hchild.
-  destruct (holdChildren child hchild)
-    as [hchildOldSupported hchildBelowCode].
-  assert (hchildOldBound :
-      rawLt M child (raw_succ M childRoot)).
+    [_ hnewExact] holdStep hcodeOldBound hcodeNewBound.
+  apply (raw_proofSyntaxStep_change_support M
+    code oldCode oldStep newCode newStep holdStep).
+  intros child hchildBelowCode hchildOldSupported.
+  assert (hchildOldBound : rawLt M child (raw_succ M childRoot)).
   {
     exact (raw_assignment_lt_trans M hPA
       child code (raw_succ M childRoot)
@@ -387,7 +409,6 @@ Proof.
       child code (raw_succ M parent)
       hchildBelowCode hcodeNewBound).
   }
-  split; [| exact hchildBelowCode].
   apply (proj2 (hnewExact child hchildNewBound)).
   left. split; assumption.
 Qed.

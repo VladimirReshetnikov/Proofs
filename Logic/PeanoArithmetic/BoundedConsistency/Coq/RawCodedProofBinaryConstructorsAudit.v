@@ -1,0 +1,22 @@
+(** Public surface and assumption audit for binary raw-proof constructors. *)
+
+From BoundedPAConsistency Require Import RawCodedProofBinaryConstructors.
+
+Import PABoundedRawCodedProofBinaryConstructors.
+
+Check rawProofImpERoot.
+Check raw_proofImpERoot_imp_child_lt.
+Check raw_proofImpERoot_antecedent_child_lt.
+Check raw_proofImpERoot_list_view.
+Check raw_proofImpERoot_recursive_children.
+Check raw_proofImpE_syntax_step.
+Check raw_proofImpE_endpoint_rule_complete.
+Check raw_proofImpE_endpoint.
+Check raw_proofImpE_ruleCoverage.
+
+Print Assumptions raw_proofImpERoot_list_view.
+Print Assumptions raw_proofImpERoot_recursive_children.
+Print Assumptions raw_proofImpE_syntax_step.
+Print Assumptions raw_proofImpE_endpoint_rule_complete.
+Print Assumptions raw_proofImpE_endpoint.
+Print Assumptions raw_proofImpE_ruleCoverage.
