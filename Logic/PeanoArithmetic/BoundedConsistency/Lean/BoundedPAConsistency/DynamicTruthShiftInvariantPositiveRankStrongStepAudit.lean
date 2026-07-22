@@ -1,0 +1,21 @@
+import BoundedPAConsistency.DynamicTruthShiftInvariantPositiveRankStrongStep
+
+/-! Audit surface for the completed constructor-wise shift strong step. -/
+
+namespace LeanProofs.BoundedPAConsistency.DynamicTruthShiftInvariantPositiveRankStrongStepAudit
+
+open LO FirstOrder
+open LO.FirstOrder.Arithmetic
+open LeanProofs.BoundedPAConsistency.DynamicTruthCrossLevelStrongStepSource
+open LeanProofs.BoundedPAConsistency.DynamicTruthShiftInvariantPositiveRankStrongStep
+
+#check ShiftInvariantAt
+#check SuccessorTruth.all_intro_of_domain
+#check SuccessorTruth.all_iff_of_domain
+#check SuccessorTruth.shift_strongStep
+
+#print axioms SuccessorTruth.all_intro_of_domain
+#print axioms SuccessorTruth.all_iff_of_domain
+#print axioms SuccessorTruth.shift_strongStep
+
+end LeanProofs.BoundedPAConsistency.DynamicTruthShiftInvariantPositiveRankStrongStepAudit
