@@ -14,6 +14,7 @@ import BoundedPAConsistency.FixedLevelTruthLaws
 import BoundedPAConsistency.FixedLevelTruthSubstitution
 import BoundedPAConsistency.FixedLevelTruthTarski
 import BoundedPAConsistency.Internal
+import BoundedPAConsistency.ModelCodedInductionAxiom
 import BoundedPAConsistency.ModelFormulaInduction
 import BoundedPAConsistency.OrientedHierarchy
 import BoundedPAConsistency.QuantifierFreeTruth
@@ -23,6 +24,7 @@ import BoundedPAConsistency.QuantifierFreeSoundness
 import BoundedPAConsistency.QuantifierFreePAAxioms
 import BoundedPAConsistency.RestrictedConsistency
 import BoundedPAConsistency.TermEvaluationTransport
+import BoundedPAConsistency.TruthCertificateProofCompiler
 import BoundedPAConsistency.UniformInternalProvability
 import BoundedPAConsistency.UniformProofPackage
 
