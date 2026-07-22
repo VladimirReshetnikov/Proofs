@@ -1,0 +1,38 @@
+import BoundedPAConsistency.DynamicTruthQuantifierFreeAnchor
+
+/-!
+# Audit: quantifier-free anchor for the dynamic successor
+
+This file keeps the theorem-producing surface visible and records the axiom
+footprint of the source, compiled, orbit, and augmented-bundle proofs.
+-/
+
+namespace LeanProofs.BoundedPAConsistency.DynamicTruthQuantifierFreeAnchorAudit
+
+open LO FirstOrder
+open LO.FirstOrder.Arithmetic
+open LeanProofs.BoundedPAConsistency.DynamicTruthQuantifierFreeAnchor
+
+#check arithmeticPositiveSuccessorTruthProof
+#check liftedArithmeticPositiveSuccessorTruthProof
+#check sourceQuantifierFreeIntroductionProof
+#check translate_sourceMissingQuantifierFreeAnchor
+#check compiledQuantifierFreeIntroductionProof
+#check compiledQuantifierFreeIntroductionProof_isPAProof
+#check orbitQuantifierFreeIntroductionProof
+#check orbitQuantifierFreeIntroductionProof_isPAProof
+#check orbitCompiledLocalBundleWithQuantifierFreeIntroductionProof
+#check orbitCompiledLocalBundleWithQuantifierFreeIntroductionProof_isPAProof
+
+#print axioms arithmeticPositiveSuccessorTruthProof
+#print axioms liftedArithmeticPositiveSuccessorTruthProof
+#print axioms sourceQuantifierFreeIntroductionProof
+#print axioms translate_sourceMissingQuantifierFreeAnchor
+#print axioms compiledQuantifierFreeIntroductionProof
+#print axioms compiledQuantifierFreeIntroductionProof_isPAProof
+#print axioms orbitQuantifierFreeIntroductionProof
+#print axioms orbitQuantifierFreeIntroductionProof_isPAProof
+#print axioms orbitCompiledLocalBundleWithQuantifierFreeIntroductionProof
+#print axioms orbitCompiledLocalBundleWithQuantifierFreeIntroductionProof_isPAProof
+
+end LeanProofs.BoundedPAConsistency.DynamicTruthQuantifierFreeAnchorAudit
