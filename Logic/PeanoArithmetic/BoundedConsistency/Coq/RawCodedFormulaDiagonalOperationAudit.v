@@ -1,0 +1,18 @@
+(** Assumption audit for diagonal formula-operation composition. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedFormulaDiagonalOperation.
+
+Import PABoundedRawCodedFormulaDiagonalOperation.
+
+Check RawCodedFormulaDiagonalOperation.
+Check raw_codedFormulaOperation_of_diagonal.
+Check raw_codedFormulaDiagonalOperation_unary.
+Check raw_codedFormulaDiagonalOperation_all.
+Check RawCodedFormulaDiagonalSubstitution.
+Check raw_codedFormulaDiagonalSubstitution_all.
+Check raw_codedFormulaSingleSubstitution_of_diagonal.
+
+Print Assumptions raw_codedFormulaDiagonalOperation_all.
+Print Assumptions raw_codedFormulaDiagonalSubstitution_all.
+Print Assumptions raw_codedFormulaSingleSubstitution_of_diagonal.
