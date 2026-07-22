@@ -26,7 +26,7 @@ From BoundedPAConsistency Require Import
   RawCodedSyntaxConstructors RawCodedAssignment RawCodedAssignmentTotality
   RawCodedProofDescent RawCodedFormulaRankStep RawCodedFormulaRankTraversal
   RawCodedFormulaRankTotality
-  RawCodedFormulaOperations
+  RawCodedFormulaOperations RawCodedFormulaOperationsStandardRealization
   RawCodedPAAxiomWitness RawCodedContextLists RawCodedContextShift
   RawCodedRestrictedPAProof RawCodedFixedLevelTruthTotality
   RawCodedFixedLevelTruthReindexing.
@@ -51,6 +51,7 @@ Import PABoundedRawCodedFormulaRankStep.
 Import PABoundedRawCodedFormulaRankTraversal.
 Import PABoundedRawCodedFormulaRankTotality.
 Import PABoundedRawCodedFormulaOperations.
+Import PABoundedRawCodedFormulaOperationsStandardRealization.
 Import PABoundedRawCodedPAAxiomWitness.
 Import PABoundedRawCodedContextLists.
 Import PABoundedRawCodedContextShift.
@@ -3067,12 +3068,12 @@ Proof.
   cbn [raw_term_eval scons] in hcurrent. exact hcurrent.
 Qed.
 
-Theorem raw_codedFormulaShift_identity_above_bound : forall
+Theorem raw_codedFormulaDiagonalShift_identity_above_bound : forall
     (M : RawPAModel), RawPASatisfies M -> forall input inputBound,
   RawCodedFormulaBound M input inputBound ->
   forall cutoff amount,
   rawLe M inputBound cutoff ->
-  RawCodedFormulaShift M cutoff amount input input.
+  RawCodedFormulaDiagonalShift M cutoff amount input.
 Proof.
   intros M hPA input inputBound
     (sourceCode & sourceStep & boundCode & boundStep & htrace)
@@ -3087,9 +3088,261 @@ Proof.
     sourceCode sourceStep boundCode boundStep input inputBound
     htraceAgain (raw_succ M input)) as hall.
   specialize (hall (raw_rank_le_refl M hPA (raw_succ M input))).
-  apply (raw_codedFormulaShift_of_diagonal M hPA cutoff amount input).
   exact (hall input input inputBound cutoff amount
     (raw_assignment_lt_self_succ M hPA input) hrootLookup hbound).
+Qed.
+
+Corollary raw_codedFormulaShift_identity_above_bound : forall
+    (M : RawPAModel), RawPASatisfies M -> forall input inputBound,
+  RawCodedFormulaBound M input inputBound ->
+  forall cutoff amount,
+  rawLe M inputBound cutoff ->
+  RawCodedFormulaShift M cutoff amount input input.
+Proof.
+  intros M hPA input inputBound hformulaBound cutoff amount hbound.
+  apply (raw_codedFormulaShift_of_diagonal M hPA cutoff amount input).
+  exact (raw_codedFormulaDiagonalShift_identity_above_bound M hPA
+    input inputBound hformulaBound cutoff amount hbound).
+Qed.
+
+(** ------------------------------------------------------------------
+    Universal closure lowers the diagonal cutoff one binder at a time.
+
+    The invariant quantifies over the starting cutoff rather than fixing it.
+    Its successor case can therefore instantiate the induction hypothesis at
+    [S base], exactly matching the depth required below one new binder. *)
+
+Definition RawUniversalClosureDiagonalShiftAt (M : RawPAModel)
+    (current body : M) : Prop :=
+  forall base output amount,
+    RawCodedUniversalClosure M current body output ->
+    RawCodedFormulaDiagonalShift M
+      (raw_add M base current) amount body ->
+    RawCodedFormulaDiagonalShift M base amount output.
+
+Arguments RawUniversalClosureDiagonalShiftAt M current body
+  : clear implicits.
+
+Definition universalClosureDiagonalShiftAtTermAt
+    (current body : term) : formula :=
+  pAll (pAll (pAll
+    (pImp
+      (codedUniversalClosureTermAt
+        (liftTerm 3 current) (liftTerm 3 body) (tVar 1))
+      (pImp
+        (codedFormulaDiagonalShiftTermAt
+          (tAdd (tVar 2) (liftTerm 3 current))
+          (tVar 0) (liftTerm 3 body))
+        (codedFormulaDiagonalShiftTermAt
+          (tVar 2) (tVar 0) (tVar 1)))))).
+
+Lemma raw_sat_universalClosureDiagonalShiftAtTermAt_iff : forall
+    (M : RawPAModel) e current body,
+  raw_formula_sat M e
+    (universalClosureDiagonalShiftAtTermAt current body) <->
+  RawUniversalClosureDiagonalShiftAt M
+    (raw_term_eval M e current) (raw_term_eval M e body).
+Proof.
+  intros. unfold universalClosureDiagonalShiftAtTermAt,
+    RawUniversalClosureDiagonalShiftAt.
+  cbn [raw_formula_sat].
+  setoid_rewrite raw_sat_codedUniversalClosureTermAt_iff.
+  setoid_rewrite raw_sat_codedFormulaDiagonalShiftTermAt_iff.
+  repeat setoid_rewrite raw_operation_eval_liftTerm_three.
+  cbn [raw_term_eval scons]. reflexivity.
+Qed.
+
+Lemma raw_universalClosureDiagonalShiftAt_zero : forall
+    (M : RawPAModel), RawPASatisfies M -> forall body,
+  RawUniversalClosureDiagonalShiftAt M (raw_zero M) body.
+Proof.
+  intros M hPA body base output amount hclosure hshift.
+  pose proof (raw_codedUniversalClosure_zero M hPA
+    body output hclosure) as ->.
+  rewrite raw_assignmentTotality_add_zero_right in hshift by exact hPA.
+  exact hshift.
+Qed.
+
+Lemma raw_universalClosureDiagonalShiftAt_succ : forall
+    (M : RawPAModel), RawPASatisfies M -> forall current body,
+  RawUniversalClosureDiagonalShiftAt M current body ->
+  RawUniversalClosureDiagonalShiftAt M (raw_succ M current) body.
+Proof.
+  intros M hPA current body hcurrent base output amount
+    hclosure hshift.
+  destruct (raw_codedUniversalClosure_succ_inversion M hPA
+    current body output hclosure) as [previous [hprevious ->]].
+  apply (raw_codedFormulaDiagonalShift_all_identity M hPA
+    amount base previous).
+  apply (hcurrent (raw_succ M base) previous amount hprevious).
+  assert (hcutoff :
+      raw_add M (raw_succ M base) current =
+      raw_add M base (raw_succ M current)).
+  {
+    rewrite raw_succ_add_pair by exact hPA.
+    rewrite raw_add_succ by exact hPA.
+    reflexivity.
+  }
+  rewrite hcutoff. exact hshift.
+Qed.
+
+Theorem raw_universalClosure_diagonalShift_all : forall
+    (M : RawPAModel), RawPASatisfies M -> forall body count,
+  RawUniversalClosureDiagonalShiftAt M count body.
+Proof.
+  intros M hPA body.
+  set (parameterEnv := scons M body (fun _ : nat => raw_zero M)).
+  set (phi := universalClosureDiagonalShiftAtTermAt (tVar 0) (tVar 1)).
+  assert (hall : forall current,
+      raw_formula_sat M (scons M current parameterEnv) phi).
+  {
+    apply (raw_definable_induction M hPA phi parameterEnv).
+    - unfold phi.
+      apply (proj2 (raw_sat_universalClosureDiagonalShiftAtTermAt_iff M
+        (scons M (raw_zero M) parameterEnv) (tVar 0) (tVar 1))).
+      cbn [raw_term_eval scons].
+      exact (raw_universalClosureDiagonalShiftAt_zero M hPA body).
+    - intros current hcurrentSat.
+      unfold phi in hcurrentSat |- *.
+      pose proof (proj1
+        (raw_sat_universalClosureDiagonalShiftAtTermAt_iff M
+          (scons M current parameterEnv) (tVar 0) (tVar 1))
+        hcurrentSat) as hcurrent.
+      apply (proj2 (raw_sat_universalClosureDiagonalShiftAtTermAt_iff M
+        (scons M (raw_succ M current) parameterEnv)
+        (tVar 0) (tVar 1))).
+      cbn [raw_term_eval scons] in hcurrent |- *.
+      exact (raw_universalClosureDiagonalShiftAt_succ M hPA
+        current body hcurrent).
+  }
+  intro count. unfold phi in hall.
+  pose proof (proj1
+    (raw_sat_universalClosureDiagonalShiftAtTermAt_iff M
+      (scons M count parameterEnv) (tVar 0) (tVar 1))
+    (hall count)) as hcount.
+  cbn [raw_term_eval scons] in hcount. exact hcount.
+Qed.
+
+Theorem raw_codedUniversalClosure_shift_identity : forall
+    (M : RawPAModel), RawPASatisfies M -> forall count body output,
+  RawCodedUniversalClosure M count body output ->
+  RawCodedFormulaDiagonalShift M count (rawNumeralValue M 1) body ->
+  RawCodedFormulaShift M (raw_zero M) (rawNumeralValue M 1)
+    output output.
+Proof.
+  intros M hPA count body output hclosure hbody.
+  apply (raw_codedFormulaShift_of_diagonal M hPA
+    (raw_zero M) (rawNumeralValue M 1) output).
+  pose proof (raw_universalClosure_diagonalShift_all M hPA body count)
+    as hdescent.
+  apply (hdescent (raw_zero M) output (rawNumeralValue M 1) hclosure).
+  rewrite raw_zero_add. exact hbody.
+Qed.
+
+(** ------------------------------------------------------------------
+    Every witnessed PA axiom is fixed by the context eigenvariable shift. *)
+
+Lemma raw_codedPAAxiomFiniteWitness_axiom_selfShift : forall
+    (M : RawPAModel), RawPASatisfies M -> forall tag axiomFormula
+      witness axiom,
+  RawCodedPAAxiomFiniteWitness M tag axiomFormula witness axiom ->
+  RawCodedFormulaShift M (raw_zero M) (rawNumeralValue M 1)
+    axiom axiom.
+Proof.
+  intros M hPA tag axiomFormula witness axiom [_ haxiom].
+  subst axiom.
+  pose proof (raw_codedFormulaShift_standard_zero_one M hPA
+    (Formula.sealPA axiomFormula)) as hshift.
+  rewrite (Formula.rename_eq_of_sentence
+    (Formula.sealPA axiomFormula)
+    (Formula.sealPA_sentence axiomFormula) S) in hshift.
+  rewrite !rawQuotedFormulaCode_standard in hshift by exact hPA.
+  exact hshift.
+Qed.
+
+Theorem raw_codedPAAxiomWitness_axiom_selfShift : forall
+    (M : RawPAModel), RawPASatisfies M -> forall witness axiom,
+  RawCodedPAAxiomWitness M witness axiom ->
+  RawCodedFormulaShift M (raw_zero M) (rawNumeralValue M 1)
+    axiom axiom.
+Proof.
+  intros M hPA witness axiom haxiom.
+  destruct haxiom as
+    [hfinite | [hfinite | [hfinite | [hfinite | [hfinite |
+      [hfinite | hinduction]]]]]].
+  - exact (raw_codedPAAxiomFiniteWitness_axiom_selfShift M hPA
+      0 Formula.succInj witness axiom hfinite).
+  - exact (raw_codedPAAxiomFiniteWitness_axiom_selfShift M hPA
+      1 Formula.zeroNotSucc witness axiom hfinite).
+  - exact (raw_codedPAAxiomFiniteWitness_axiom_selfShift M hPA
+      2 Formula.addZero witness axiom hfinite).
+  - exact (raw_codedPAAxiomFiniteWitness_axiom_selfShift M hPA
+      3 Formula.addSucc witness axiom hfinite).
+  - exact (raw_codedPAAxiomFiniteWitness_axiom_selfShift M hPA
+      4 Formula.mulZero witness axiom hfinite).
+  - exact (raw_codedPAAxiomFiniteWitness_axiom_selfShift M hPA
+      5 Formula.mulSucc witness axiom hfinite).
+  - destruct hinduction as [source [_ hinduction]].
+    destruct hinduction as
+      (shifted & successorInstance & zeroInstance & sourceAll &
+       stepImp & stepAll & premise & body & closureCount &
+       _ & _ & _ & _ & _ & _ & _ & _ & hbodyBound & hclosure).
+    apply (raw_codedUniversalClosure_shift_identity M hPA
+      closureCount body axiom hclosure).
+    apply (raw_codedFormulaDiagonalShift_identity_above_bound M hPA
+      body closureCount hbodyBound closureCount (rawNumeralValue M 1)).
+    apply raw_rank_le_refl. exact hPA.
+Qed.
+
+Theorem raw_codedPAAxiomWitnessContextWithTables_selfShift : forall
+    (M : RawPAModel), RawPASatisfies M -> forall
+      witnessList context bound
+      witnessTailCode witnessTailStep witnessHeadCode witnessHeadStep
+      axiomTailCode axiomTailStep axiomHeadCode axiomHeadStep,
+  RawCodedPAAxiomWitnessContextWithTables M witnessList context bound
+    witnessTailCode witnessTailStep witnessHeadCode witnessHeadStep
+    axiomTailCode axiomTailStep axiomHeadCode axiomHeadStep ->
+  RawContextShiftWithTables M context context bound
+    axiomTailCode axiomTailStep axiomHeadCode axiomHeadStep
+    axiomTailCode axiomTailStep axiomHeadCode axiomHeadStep.
+Proof.
+  intros M hPA witnessList context bound
+    witnessTailCode witnessTailStep witnessHeadCode witnessHeadStep
+    axiomTailCode axiomTailStep axiomHeadCode axiomHeadStep
+    [hwitnessTraversal [haxiomTraversal hrows]].
+  split; [exact haxiomTraversal |]. split; [exact haxiomTraversal |].
+  intros index hindex sourceFormula targetFormula hsource htarget.
+  assert (htargetEq : targetFormula = sourceFormula).
+  {
+    exact (raw_codedAssignmentLookup_functional M hPA
+      axiomHeadCode axiomHeadStep index targetFormula sourceFormula
+      htarget hsource).
+  }
+  subst targetFormula.
+  destruct hwitnessTraversal as [_ [_ [hwitnessDefined _]]].
+  destruct (hwitnessDefined index hindex) as [witness hwitness].
+  apply (raw_codedPAAxiomWitness_axiom_selfShift M hPA
+    witness sourceFormula).
+  exact (hrows index witness sourceFormula hindex hwitness hsource).
+Qed.
+
+Theorem raw_codedPAAxiomWitnessContext_selfShift : forall
+    (M : RawPAModel), RawPASatisfies M -> forall witnessList baseContext,
+  RawCodedPAAxiomWitnessContext M witnessList baseContext ->
+  RawContextShift M baseContext baseContext.
+Proof.
+  intros M hPA witnessList baseContext
+    (bound & witnessTailCode & witnessTailStep &
+     witnessHeadCode & witnessHeadStep &
+     axiomTailCode & axiomTailStep & axiomHeadCode & axiomHeadStep &
+     hcontext).
+  exists bound,
+    axiomTailCode, axiomTailStep, axiomHeadCode, axiomHeadStep,
+    axiomTailCode, axiomTailStep, axiomHeadCode, axiomHeadStep.
+  exact (raw_codedPAAxiomWitnessContextWithTables_selfShift M hPA
+    witnessList baseContext bound
+    witnessTailCode witnessTailStep witnessHeadCode witnessHeadStep
+    axiomTailCode axiomTailStep axiomHeadCode axiomHeadStep hcontext).
 Qed.
 
 End PABoundedRawCodedPAAxiomContextSelfShift.
