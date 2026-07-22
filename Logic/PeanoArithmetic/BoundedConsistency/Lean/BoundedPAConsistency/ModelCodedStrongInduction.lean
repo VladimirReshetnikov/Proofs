@@ -301,6 +301,18 @@ variable [hPA : V↓[ℒₒᵣ] ⊧* Peano]
 
 local instance : V↓[ℒₒᵣ] ⊧* ISigma 1 := models_of_subtheory hPA
 
+/-- The translated bounded-prefix formula `forall y < x, predicate(y)`.
+
+The dummy context is harmless because `sourcePrefixPredicate` contains only
+the unary predicate placeholder.  Naming this formula gives structural truth
+arguments a stable syntactic target when they compile their own fixed source
+language into the generic strong-induction adapter. -/
+noncomputable def strongPrefixFormula
+    (predicate : Bootstrapping.Semiformula V ℒₒᵣ 1) :
+    Bootstrapping.Semiformula V ℒₒᵣ 1 :=
+  translateFormula (⊤ : Bootstrapping.Formula V ℒₒᵣ) predicate ![]
+    (Rewriting.emb sourcePrefixPredicate)
+
 /-- The represented strong-step premise after substituting the actual
 closed context and unary formula. -/
 noncomputable def strongStepFormula
@@ -309,6 +321,44 @@ noncomputable def strongStepFormula
     Bootstrapping.Formula V ℒₒᵣ :=
   translateFormula context predicate ![]
     (Rewriting.emb sourceStrongStepContext)
+
+/-- Friendly expansion of the generic represented strong-step premise.
+
+This equality is deliberately syntactic.  It lets a caller prove the same
+formula in a richer fixed source language and then rewrite that proof into the
+generic compiler without appealing to semantic extensionality. -/
+@[simp] theorem strongStepFormula_eq
+    (context : Bootstrapping.Formula V ℒₒᵣ)
+    (predicate : Bootstrapping.Semiformula V ℒₒᵣ 1) :
+    strongStepFormula context predicate =
+      Arrow.arrow context
+        (∀⁰ Arrow.arrow (strongPrefixFormula predicate) predicate) := by
+  have hcontext :
+      translateFormula context predicate ![]
+          (Rewriting.emb (sourceContextAtom (n := 0))) = context := by
+    simp [sourceContextAtom, firstAtom, translateFormula]
+  have hprefix :
+      translateFormula context predicate ![]
+          (Rewriting.emb sourcePrefixPredicate) =
+        translateFormula (⊤ : Bootstrapping.Formula V ℒₒᵣ)
+          predicate ![] (Rewriting.emb sourcePrefixPredicate) := by
+    rfl
+  have hpredicate :
+      predicate.subst ![Semiterm.bvar (0 : Fin 1)] = predicate := by
+    apply Bootstrapping.Semiformula.subst_eq_self
+    intro i
+    simp
+  unfold strongStepFormula sourceStrongStepContext strongPrefixFormula
+  change
+    translateFormula context predicate ![]
+        (∼(Rewriting.emb (sourceContextAtom (n := 0)))) ⋎
+      (∀⁰
+        (translateFormula context predicate ![]
+            (∼(Rewriting.emb sourcePrefixPredicate)) ⋎
+          predicate.subst ![Semiterm.bvar (0 : Fin 1)])) = _
+  rw [translateFormula_neg, translateFormula_neg,
+    hcontext, hprefix, hpredicate]
+  rfl
 
 /-- The equality-replacement law specialized to the unary formula. -/
 noncomputable def predicateCongruenceFormula

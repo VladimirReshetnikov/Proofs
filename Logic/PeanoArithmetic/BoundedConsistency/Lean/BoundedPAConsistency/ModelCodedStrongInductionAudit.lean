@@ -20,6 +20,8 @@ open LeanProofs.BoundedPAConsistency.ModelCodedStrongInduction
 #check sourcePrefixZeroProof
 #check sourcePrefixSuccessorProof
 #check sourcePrefixExtractionProof
+#check strongPrefixFormula
+#check strongStepFormula_eq
 #check predicateCongruenceProof
 #check prefixInductionKernel
 #check strongStepToInductionContextProof
@@ -31,6 +33,7 @@ open LeanProofs.BoundedPAConsistency.ModelCodedStrongInduction
 #print axioms sourcePrefixZeroProof
 #print axioms sourcePrefixSuccessorProof
 #print axioms sourcePrefixExtractionProof
+#print axioms strongStepFormula_eq
 #print axioms predicateCongruenceProof
 #print axioms prefixInductionKernel
 #print axioms strongStepToInductionContextProof
