@@ -1,0 +1,13 @@
+From BoundedPAConsistency Require Import RawCodedFormulaShiftTreeStandard.
+
+Import PABoundedRawCodedFormulaShiftTreeStandard.
+
+Check rawStandardFormulaShiftTree.
+Check rawStandardFormulaShiftTree_depth.
+Check rawStandardFormulaShiftTree_source.
+Check rawStandardFormulaShiftTree_target.
+Check rawStandardFormulaShiftTree_valid.
+Check raw_codedFormulaShift_standard_via_tree.
+
+Print Assumptions rawStandardFormulaShiftTree_valid.
+Print Assumptions raw_codedFormulaShift_standard_via_tree.

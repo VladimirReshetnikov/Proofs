@@ -1,0 +1,22 @@
+From BoundedPAConsistency Require Import
+  RawCodedRestrictedTargetFormulaShift.
+
+Import PABoundedRawCodedRestrictedTargetFormulaShift.
+
+Check RestrictedTargetTermContextShiftSupported.
+Check RestrictedTargetFormulaContextShiftSupported.
+Check rawRestrictedTargetTermContextIteratedShiftCode.
+Check rawRestrictedTargetFormulaContextIteratedShiftCode.
+Check raw_codedTermShift_restrictedTargetTermContext_iterated.
+Check rawRestrictedTargetFormulaShiftTree.
+Check rawRestrictedTargetFormulaShiftTree_valid.
+Check raw_codedFormulaShift_restrictedTargetContext_iterated.
+Check raw_codedFormulaShift_restrictedTargetContext_zero_one.
+
+Print Assumptions
+  raw_codedTermShift_restrictedTargetTermContext_iterated.
+Print Assumptions rawRestrictedTargetFormulaShiftTree_valid.
+Print Assumptions
+  raw_codedFormulaShift_restrictedTargetContext_iterated.
+Print Assumptions
+  raw_codedFormulaShift_restrictedTargetContext_zero_one.
