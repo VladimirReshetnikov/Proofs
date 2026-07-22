@@ -1,0 +1,12 @@
+(** Assumption audit for compact-selector induction syntax and data. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedCompactSelectorInductionSyntax
+  RawCodedCompactSelectorInductionData.
+
+Import PABoundedRawCodedCompactSelectorInductionSyntax.
+Import PABoundedRawCodedCompactSelectorInductionData.
+
+Print Assumptions compactSelectorInductionBodyFormula_closed.
+Print Assumptions raw_codedCompactSelectorInductionBody_diagonal.
+Print Assumptions raw_codedCompactSelectorClosureInductionData.
