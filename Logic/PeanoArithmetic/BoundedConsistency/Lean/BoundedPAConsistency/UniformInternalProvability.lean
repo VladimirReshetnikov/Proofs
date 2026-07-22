@@ -62,22 +62,51 @@ variable [hISigma : V↓[ℒₒᵣ] ⊧* ISigma 1]
           (substNumeral (⌜paRestrictedConsistencyTemplate⌝ : V) n) := by
   simp [paUniformRestrictedConsistencyProvabilitySentence]
 
+/-- Substitution of a standard numeral into a quoted unary formula computes
+the quotation of its syntactic numeral instance.
+
+Using `substNumerals_app_quote` here avoids normalizing the concrete (and
+large) bounded-consistency formula merely to compare two quotation paths. -/
+private theorem substNumeral_quote_numeral
+    (sigma : ArithmeticSemisentence 1) (n : ℕ) :
+    substNumeral (⌜sigma⌝ : V) (ORingStructure.numeral n : V) =
+      (⌜(sigma/[n] : ArithmeticSentence)⌝ : V) := by
+  simpa [substNumeral, substNumerals, numeral_eq_natCast,
+    Matrix.vecHead, Matrix.vecTail, Matrix.constant_eq_singleton] using
+    (substNumerals_app_quote (V := V) sigma (fun _ : Fin 1 ↦ n))
+
+/-- The canonical syntactic instance computed by `ssnum` has exactly the
+intended bounded-consistency semantics at every standard numeral. -/
+@[simp] theorem eval_paRestrictedConsistencyTemplate_instance_iff (n : ℕ) :
+    ((paRestrictedConsistencyTemplate/[n] : ArithmeticSentence).Evalb
+        (M := V) ![]) ↔
+      RestrictedConsistent Peano (ORingStructure.numeral n : V) := by
+  simpa [FirstOrder.Semiformula.eval_substs,
+    paRestrictedConsistencyTemplate, numeral_eq_natCast,
+    Matrix.constant_eq_singleton] using
+    (RestrictedConsistent.defined (V := V) Peano).iff
+      (v := ![(ORingStructure.numeral n : V)])
+
+/-- PA proves the canonical syntactic instance computed by the uniform
+substitution graph. This is the same fixed-level semantic argument as for
+`paRestrictedConsistencySentence`, without an expensive normalization-based
+comparison between the two host-language formula constructions. -/
+theorem pa_proves_paRestrictedConsistencyTemplate_instance (n : ℕ) :
+    Peano ⊢ (paRestrictedConsistencyTemplate/[n] : ArithmeticSentence) := by
+  apply LO.FirstOrder.Arithmetic.complete.{0} Peano _
+  intro M _ hPA
+  letI : M↓[ℒₒᵣ] ⊧* ISigma 1 := models_of_subtheory hPA
+  simpa [models_iff] using
+    (eval_paRestrictedConsistencyTemplate_instance_iff (V := M) n).mpr
+      (restrictedConsistent_pa_fixedLevel (V := M) n)
+
 /-- At a standard numeral, the code used by the uniform sentence is exactly
-the quotation of the already defined external instance `Con_n(PA)`. -/
+the quotation of the canonical syntactic instance of `Con_n(PA)`. -/
 theorem substNumeral_paRestrictedConsistencyTemplate_eq_quote (n : ℕ) :
     substNumeral (⌜paRestrictedConsistencyTemplate⌝ : V)
         (ORingStructure.numeral n : V) =
-      (⌜(paRestrictedConsistencySentence n : ArithmeticSentence)⌝ : V) := by
-  change
-    (Bootstrapping.Semiformula.subst
-      ![typedNumeral (ORingStructure.numeral n : V)]
-      (⌜paRestrictedConsistencyTemplate⌝ :
-        Bootstrapping.Semiformula V ℒₒᵣ 1)).val =
-      (⌜paRestrictedConsistencyTemplate/[n]⌝ :
-        Bootstrapping.Semiformula V ℒₒᵣ 0).val
-  congr 1
-  rw [← FirstOrder.Semiformula.typed_quote_substs]
-  simp
+      (⌜(paRestrictedConsistencyTemplate/[n] : ArithmeticSentence)⌝ : V) :=
+  substNumeral_quote_numeral paRestrictedConsistencyTemplate n
 
 /-- Every standard point of the literal uniform predicate follows from the
 fixed-level theorem by Hilbert--Bernays derivability condition D1.  This is
@@ -88,7 +117,7 @@ theorem provable_paRestrictedConsistency_standard_point (n : ℕ) :
         (ORingStructure.numeral n : V)) := by
   rw [substNumeral_paRestrictedConsistencyTemplate_eq_quote]
   exact internalize_provability
-    (V := V) (pa_proves_restrictedConsistency n)
+    (V := V) (pa_proves_paRestrictedConsistencyTemplate_instance n)
 
 /-! ## The exact missing uniform selector -/
 

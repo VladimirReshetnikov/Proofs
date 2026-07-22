@@ -1,0 +1,33 @@
+(** Public surface and assumption audit for nonstandard numeral-term codes. *)
+
+From BoundedPAConsistency Require Import RawCodedNumeralTermCode.
+
+Import PABoundedRawCodedNumeralTermCode.
+
+Check numeralCodeLiftTerm.
+Check RawNumeralTermCodeRows.
+Check RawNumeralTermCodeTrace.
+Check RawNumeralTermCodeAt.
+Check numeralTermCodeRowsTermAt.
+Check raw_sat_numeralTermCodeRowsTermAt_iff.
+Check numeralTermCodeTraceTermAt.
+Check raw_sat_numeralTermCodeTraceTermAt_iff.
+Check numeralTermCodeAtTermAt.
+Check raw_sat_numeralTermCodeAtTermAt_iff.
+Check RawNumeralTermCodeExists.
+Check numeralTermCodeExistsTermAt.
+Check raw_sat_numeralTermCodeExistsTermAt_iff.
+Check raw_numeralTermCodeExists_zero.
+Check raw_numeralTermCodeExists_succ.
+Check raw_numeralTermCodeExists_all.
+Check numeralTermCodeTotalityBodyFormula.
+Check raw_sat_numeralTermCodeTotalityBodyFormula_iff.
+Check numeralTermCodeTotalityFormula.
+Check numeralTermCodeTotalityFormula_sentence.
+Check numeralTermCodeTotalityFormula_raw_valid.
+Check PA_proves_numeralTermCodeTotalityFormula.
+
+Print Assumptions raw_sat_numeralTermCodeAtTermAt_iff.
+Print Assumptions raw_numeralTermCodeExists_succ.
+Print Assumptions raw_numeralTermCodeExists_all.
+Print Assumptions PA_proves_numeralTermCodeTotalityFormula.

@@ -660,8 +660,12 @@ Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedPAProvability.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedPAProvabilityAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedPAProvabilityRestrictedConsistency.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedPAProvabilityRestrictedConsistencyAudit.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedNumeralTermCode.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedNumeralTermCodeAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedPAUniformProvability.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedPAUniformProvabilityAudit.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedPASelectorPackageInduction.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedPASelectorPackageInductionAudit.v
 SetTheory/ClosureAxiomatization/Coq/Forward.v
 SetTheory/ClosureAxiomatization/Coq/Reverse.v
 SetTheory/ZF/Coq/Zf.v
