@@ -1,0 +1,48 @@
+import BoundedPAConsistency.DynamicTruthShiftInvariantStrongStepSource
+
+/-! Audit surface for the fixed-source shift-invariance strong step. -/
+
+namespace LeanProofs.BoundedPAConsistency.DynamicTruthShiftInvariantStrongStepSourceAudit
+
+open LO FirstOrder
+open LO.FirstOrder.Arithmetic
+open LeanProofs.BoundedPAConsistency.DynamicTruthShiftInvariantStrongStepSource
+
+#check sourcePriorShiftInvariantSentence
+#check sourceNextShiftInvariantPredicate
+#check sourceAvailableContext
+#check sourceStrongPrefix
+#check sourceStrongStepSentence
+#check sourceValidDomainStrongStepSentence
+#check sourceOffDomainStrongStepSentence
+#check arithmeticQuantifierFreeShiftSupportProof
+#check liftedArithmeticQuantifierFreeShiftSupportProof
+#check arithmeticQuantifierFreeShiftClosureProof
+#check liftedArithmeticQuantifierFreeShiftClosureProof
+#check sourceQuantifierFreeDomain
+#check sourceQuantifierFreeStrongStepSentence
+#check sourceQuantifierFreeStrongStepProof
+#check sourceOffDomainStrongStepProof
+#check SourceValidDomainStep.proveStrongStep
+#check availableContextFormula
+#check translate_sourceAvailableContext
+#check translate_sourceNextShiftInvariantPredicate
+#check translate_sourceAvailableContext_orbit
+#check translate_sourceNextShiftInvariantPredicate_orbit
+#check orbitAvailableContext
+#check proveOrbitAvailableFromAugmentedCrossContext
+
+#print axioms arithmeticQuantifierFreeShiftSupportProof
+#print axioms liftedArithmeticQuantifierFreeShiftSupportProof
+#print axioms arithmeticQuantifierFreeShiftClosureProof
+#print axioms liftedArithmeticQuantifierFreeShiftClosureProof
+#print axioms sourceQuantifierFreeStrongStepProof
+#print axioms sourceOffDomainStrongStepProof
+#print axioms SourceValidDomainStep.proveStrongStep
+#print axioms translate_sourceAvailableContext
+#print axioms translate_sourceNextShiftInvariantPredicate
+#print axioms translate_sourceAvailableContext_orbit
+#print axioms translate_sourceNextShiftInvariantPredicate_orbit
+#print axioms proveOrbitAvailableFromAugmentedCrossContext
+
+end LeanProofs.BoundedPAConsistency.DynamicTruthShiftInvariantStrongStepSourceAudit
