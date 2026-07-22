@@ -105,22 +105,16 @@ private lemma bounded_shift {level : V} {p : V}
 /-! ## Boolean and quantifier laws -/
 
 theorem nextTruth_neg_iff
-    {prior : V → V → V → Prop}
-    {previousLevel currentLevel nextLevel bound free p : V}
+    {lower : V → V → V → Prop}
+    {currentLevel nextLevel bound free p : V}
     (hcross : ∀ q,
       SuccessorCrossLaws
-        (SuccessorTruth prior previousLevel currentLevel)
-        currentLevel nextLevel q)
+        lower currentLevel nextLevel q)
     (hp : QuantifierBoundedCode ℒₒᵣ currentLevel p) :
-    SuccessorTruth
-        (SuccessorTruth prior previousLevel currentLevel)
-        currentLevel nextLevel bound free (neg ℒₒᵣ p) ↔
-      ¬SuccessorTruth
-        (SuccessorTruth prior previousLevel currentLevel)
-        currentLevel nextLevel bound free p := by
+    SuccessorTruth lower currentLevel nextLevel
+        bound free (neg ℒₒᵣ p) ↔
+      ¬SuccessorTruth lower currentLevel nextLevel bound free p := by
   classical
-  let current := SuccessorTruth prior previousLevel currentLevel
-  let next := SuccessorTruth current currentLevel nextLevel
   rcases quantifierBoundedCode_iff_sigma_or_pi.mp hp with hs | hpi
   · have hnpi : IsPiCode ℒₒᵣ currentLevel (neg ℒₒᵣ p) :=
       (isPiCode_neg_iff hs.1).mpr hs
@@ -134,36 +128,24 @@ theorem nextTruth_neg_iff
     simp [LowerPiTrue, hpi]
 
 theorem nextTruth_and_iff
-    {prior : V → V → V → Prop}
-    {previousLevel currentLevel nextLevel bound free p q : V}
+    {lower : V → V → V → Prop}
+    {currentLevel nextLevel bound free p q : V}
     (hpq : QuantifierBoundedCode ℒₒᵣ currentLevel (p ^⋏ q)) :
-    SuccessorTruth
-        (SuccessorTruth prior previousLevel currentLevel)
-        currentLevel nextLevel bound free (p ^⋏ q) ↔
-      SuccessorTruth
-          (SuccessorTruth prior previousLevel currentLevel)
-          currentLevel nextLevel bound free p ∧
-        SuccessorTruth
-          (SuccessorTruth prior previousLevel currentLevel)
-          currentLevel nextLevel bound free q := by
+    SuccessorTruth lower currentLevel nextLevel bound free (p ^⋏ q) ↔
+      SuccessorTruth lower currentLevel nextLevel bound free p ∧
+        SuccessorTruth lower currentLevel nextLevel bound free q := by
   have hparts : IsUFormula ℒₒᵣ p ∧ IsUFormula ℒₒᵣ q := by
     simpa using hpq.1
   exact SuccessorTruth.and_iff hparts.1 hparts.2
 
 theorem nextTruth_or_iff
-    {prior : V → V → V → Prop}
-    {previousLevel currentLevel nextLevel bound free p q : V}
+    {lower : V → V → V → Prop}
+    {currentLevel nextLevel bound free p q : V}
     (hnext : nextLevel = currentLevel + 1)
     (hpq : QuantifierBoundedCode ℒₒᵣ currentLevel (p ^⋎ q)) :
-    SuccessorTruth
-        (SuccessorTruth prior previousLevel currentLevel)
-        currentLevel nextLevel bound free (p ^⋎ q) ↔
-      SuccessorTruth
-          (SuccessorTruth prior previousLevel currentLevel)
-          currentLevel nextLevel bound free p ∨
-        SuccessorTruth
-          (SuccessorTruth prior previousLevel currentLevel)
-          currentLevel nextLevel bound free q := by
+    SuccessorTruth lower currentLevel nextLevel bound free (p ^⋎ q) ↔
+      SuccessorTruth lower currentLevel nextLevel bound free p ∨
+        SuccessorTruth lower currentLevel nextLevel bound free q := by
   have hu : IsUFormula ℒₒᵣ p ∧ IsUFormula ℒₒᵣ q := by
     simpa using hpq.1
   have hb := bounded_or_parts hu.1 hu.2 hpq
@@ -176,21 +158,58 @@ theorem nextTruth_or_iff
   exact SuccessorTruth.or_iff hu.1 hu.2 hsp hsq
 
 theorem nextTruth_exs_iff
-    {prior : V → V → V → Prop}
-    {previousLevel currentLevel nextLevel bound free q : V}
+    {lower : V → V → V → Prop}
+    {currentLevel nextLevel bound free q : V}
     (hnext : nextLevel = currentLevel + 1)
     (hq : QuantifierBoundedCode ℒₒᵣ currentLevel (^∃ q)) :
-    SuccessorTruth
-        (SuccessorTruth prior previousLevel currentLevel)
-        currentLevel nextLevel bound free (^∃ q) ↔
-      ∃ a, SuccessorTruth
-        (SuccessorTruth prior previousLevel currentLevel)
-        currentLevel nextLevel (bound ⁀' a) free q := by
+    SuccessorTruth lower currentLevel nextLevel bound free (^∃ q) ↔
+      ∃ a, SuccessorTruth lower currentLevel nextLevel
+        (bound ⁀' a) free q := by
   have hqU : IsUFormula ℒₒᵣ q := by simpa using hq.1
   apply SuccessorTruth.exs_iff hqU
   rw [hnext]
   simp
 
+def ExistentialLaws (relation : V → V → V → Prop) : Prop :=
+  ∀ {bound free q}, IsUFormula ℒₒᵣ q →
+    (relation bound free (^∃ q) ↔
+      ∃ a, relation (bound ⁀' a) free q)
+
+/-- A universal root in a successor truth predicate needs only the
+existential law of its lower predicate.  Isolating that minimal dependency
+allows later source templates to stay in the one-placeholder language. -/
+theorem nextTruth_all_iff_of_lower_exs
+    {lower : V → V → V → Prop}
+    {currentLevel nextLevel bound free q : V}
+    (hcross : ∀ r,
+      SuccessorCrossLaws lower currentLevel nextLevel r)
+    (hlowerExs : ExistentialLaws lower)
+    (hq : QuantifierBoundedCode ℒₒᵣ currentLevel (^∀ q)) :
+    SuccessorTruth lower currentLevel nextLevel bound free (^∀ q) ↔
+      ∀ a, SuccessorTruth lower currentLevel nextLevel
+        (bound ⁀' a) free q := by
+  classical
+  have hqU : IsUFormula ℒₒᵣ q := by simpa using hq.1
+  have hallPi : IsPiCode ℒₒᵣ currentLevel (^∀ q) :=
+    bounded_all_pi hqU hq
+  have hqPi : IsPiCode ℒₒᵣ currentLevel q :=
+    ((isPiCode_all_iff hqU).mp hallPi).1
+  rw [(hcross (^∀ q) bound free).2 hallPi]
+  change LowerPiTrue
+      lower currentLevel bound free (^∀ q) ↔ _
+  rw [LowerPiTrue, and_iff_right hallPi, neg_all hqU]
+  rw [hlowerExs hqU.neg]
+  constructor
+  · intro h a
+    apply ((hcross q (bound ⁀' a) free).2 hqPi).mpr
+    exact ⟨hqPi, fun ha ↦ h ⟨a, ha⟩⟩
+  · intro h hex
+    rcases hex with ⟨a, ha⟩
+    have hpi := ((hcross q (bound ⁀' a) free).2 hqPi).mp (h a)
+    exact hpi.2 ha
+
+/-- Specialization of the preceding theorem when the lower predicate is
+itself a concrete dynamic successor. -/
 theorem nextTruth_all_iff
     {prior : V → V → V → Prop}
     {previousLevel currentLevel nextLevel bound free q : V}
@@ -206,29 +225,11 @@ theorem nextTruth_all_iff
       ∀ a, SuccessorTruth
         (SuccessorTruth prior previousLevel currentLevel)
         currentLevel nextLevel (bound ⁀' a) free q := by
-  classical
-  have hqU : IsUFormula ℒₒᵣ q := by simpa using hq.1
-  have hallPi : IsPiCode ℒₒᵣ currentLevel (^∀ q) :=
-    bounded_all_pi hqU hq
-  have hqPi : IsPiCode ℒₒᵣ currentLevel q :=
-    ((isPiCode_all_iff hqU).mp hallPi).1
-  rw [(hcross (^∀ q) bound free).2 hallPi]
-  change LowerPiTrue
-      (SuccessorTruth prior previousLevel currentLevel)
-      currentLevel bound free (^∀ q) ↔ _
-  rw [LowerPiTrue, and_iff_right hallPi, neg_all hqU]
-  have hpositive : (1 : V) ≤ currentLevel := by
-    rw [hcurrent]
-    simp
-  rw [SuccessorTruth.exs_iff hqU.neg hpositive]
-  constructor
-  · intro h a
-    apply ((hcross q (bound ⁀' a) free).2 hqPi).mpr
-    exact ⟨hqPi, fun ha ↦ h ⟨a, ha⟩⟩
-  · intro h hex
-    rcases hex with ⟨a, ha⟩
-    have hpi := ((hcross q (bound ⁀' a) free).2 hqPi).mp (h a)
-    exact hpi.2 ha
+  apply nextTruth_all_iff_of_lower_exs hcross _ hq
+  intro bound free r hr
+  apply SuccessorTruth.exs_iff hr
+  rw [hcurrent]
+  simp
 
 /-! ## Environment laws -/
 
@@ -284,6 +285,44 @@ theorem nextTruth_free_iff
 
 /-! ## Packaged abstract-soundness interface -/
 
+/-- Package the full abstract-soundness interface for a successor over an
+opaque lower predicate.  Besides the target cross, shift, and substitution
+certificates, only the lower predicate's existential law is required. -/
+theorem nextTruth_laws_of_lower_exs
+    {lower : V → V → V → Prop}
+    {currentLevel nextLevel : V}
+    (hnext : nextLevel = currentLevel + 1)
+    (hcross : ∀ q,
+      SuccessorCrossLaws lower currentLevel nextLevel q)
+    (hlowerExs : ExistentialLaws lower)
+    (hshift : ∀ q,
+      ShiftInvariantAt
+        (SuccessorTruth lower currentLevel nextLevel)
+        currentLevel q)
+    (hsubstitution : ∀ q,
+      SubstitutionInvariantAt
+        (SuccessorTruth lower currentLevel nextLevel)
+        currentLevel q) :
+    Laws currentLevel
+      (SuccessorTruth lower currentLevel nextLevel) where
+  verum bound free := by
+    rw [SuccessorTruth.verum_iff]
+    simp
+  falsum bound free := by
+    rw [SuccessorTruth.falsum_iff]
+    simp
+  neg_iff hp := nextTruth_neg_iff hcross hp
+  and_iff hp := nextTruth_and_iff hp
+  or_iff hp := nextTruth_or_iff hnext hp
+  all_iff hp := nextTruth_all_iff_of_lower_exs hcross hlowerExs hp
+  exs_iff hp := nextTruth_exs_iff hnext hp
+  shift_iff hfree hp := hshift _ _ _ _ hfree hp
+  free_iff hhead hp hb :=
+    nextTruth_free_iff hshift hsubstitution hhead hp hb
+  substs1_iff hfree hp ht hb :=
+    nextTruth_substs1_iff hsubstitution hfree hp ht
+      (bounded_exs_body hp.isUFormula hb)
+
 /-- The complete law package for the next dynamic truth successor.
 
 All quantified levels are carrier elements.  In particular, neither of the
@@ -312,23 +351,11 @@ theorem nextTruth_laws
     Laws currentLevel
       (SuccessorTruth
         (SuccessorTruth prior previousLevel currentLevel)
-        currentLevel nextLevel) where
-  verum bound free := by
-    rw [SuccessorTruth.verum_iff]
-    simp
-  falsum bound free := by
-    rw [SuccessorTruth.falsum_iff]
-    simp
-  neg_iff hp := nextTruth_neg_iff hcross hp
-  and_iff hp := nextTruth_and_iff hp
-  or_iff hp := nextTruth_or_iff hnext hp
-  all_iff hp := nextTruth_all_iff hcurrent hcross hp
-  exs_iff hp := nextTruth_exs_iff hnext hp
-  shift_iff hfree hp := hshift _ _ _ _ hfree hp
-  free_iff hhead hp hb :=
-    nextTruth_free_iff hshift hsubstitution hhead hp hb
-  substs1_iff hfree hp ht hb :=
-    nextTruth_substs1_iff hsubstitution hfree hp ht
-      (bounded_exs_body hp.isUFormula hb)
+        currentLevel nextLevel) := by
+  apply nextTruth_laws_of_lower_exs hnext hcross _ hshift hsubstitution
+  intro bound free q hq
+  apply SuccessorTruth.exs_iff hq
+  rw [hcurrent]
+  simp
 
 end LeanProofs.BoundedPAConsistency.DynamicTruthSuccessorLaws

@@ -17,14 +17,19 @@ open LeanProofs.BoundedPAConsistency.DynamicTruthSuccessorLaws
 #check nextTruth_and_iff
 #check nextTruth_or_iff
 #check nextTruth_exs_iff
+#check ExistentialLaws
+#check nextTruth_all_iff_of_lower_exs
 #check nextTruth_all_iff
 #check nextTruth_substs1_iff
 #check nextTruth_free_iff
+#check nextTruth_laws_of_lower_exs
 #check nextTruth_laws
 
 #print axioms nextTruth_neg_iff
+#print axioms nextTruth_all_iff_of_lower_exs
 #print axioms nextTruth_all_iff
 #print axioms nextTruth_free_iff
+#print axioms nextTruth_laws_of_lower_exs
 #print axioms nextTruth_laws
 
 end LeanProofs.BoundedPAConsistency.DynamicTruthSuccessorLawsAudit
