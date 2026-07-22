@@ -35,22 +35,22 @@ local instance : V↓[ℒₒᵣ] ⊧* ISigma 1 := models_of_subtheory hPA
 /-! ## Exact next-orbit target -/
 
 /-- The unary predicate whose closure is shift invariance for the dynamic
-truth formula two positive steps beyond `truthFormula n`.
+truth successor constructed at recurrence index `n`.
 
 The deliberately explicit additions mirror the arguments of
-`orbitSuccessorShiftInvariantFormula (n + 1)`.  Keeping this predicate named
+`orbitSuccessorShiftInvariantFormula n`.  Keeping this predicate named
 avoids asking elaboration to normalize those model additions at every
 proof-producing call site. -/
 noncomputable def nextShiftInvariantPredicate (n : V) :
     Bootstrapping.Semiformula V ℒₒᵣ 1 :=
-  shiftInvariantPredicateFormula (truthFormula (n + 1))
-    (n + 1 + 1) (n + 1 + 1 + 1)
+  shiftInvariantPredicateFormula (truthFormula n)
+    (n + 1) (n + 1 + 1)
 
 /-- The universal closure of the named predicate is definitionally the next
 positive orbit field. -/
 @[simp] theorem all_nextShiftInvariantPredicate_eq_orbit (n : V) :
     (∀⁰ nextShiftInvariantPredicate n) =
-      orbitSuccessorShiftInvariantFormula (n + 1) := by
+      orbitSuccessorShiftInvariantFormula n := by
   rfl
 
 /-! ## Closedness required by represented PA induction -/
@@ -64,11 +64,11 @@ source predicate; this works just as well when `n` is nonstandard. -/
       nextShiftInvariantPredicate n := by
   unfold nextShiftInvariantPredicate
   rw [← translate_sourceShiftInvariantPredicate
-    (truthFormula (n + 1)) (n + 1 + 1) (n + 1 + 1 + 1)]
+    (truthFormula n) (n + 1) (n + 1 + 1)]
   rw [← translateFormula_shift
-    (truthFormula (n + 1))
-    ![n + 1 + 1, n + 1 + 1 + 1]
-    (truthFormula_shift (n + 1))]
+    (truthFormula n)
+    ![n + 1, n + 1 + 1]
+    (truthFormula_shift n)]
   congr 1
   unfold Rewriting.shift Rewriting.emb
   rw [← TransitiveRewriting.comp_app]
@@ -108,7 +108,7 @@ noncomputable def compileKernelOfStructuralUniversalProof
       Arrow.arrow context (∀⁰ nextShiftInvariantPredicate n))
     (hcontext : Peano.internalize V ⊢! context) :
   Peano.internalize V ⊢!
-      orbitSuccessorShiftInvariantFormula (n + 1) := by
+      orbitSuccessorShiftInvariantFormula n := by
   simpa only [kernelOfStructuralUniversalProof,
     PAInductionKernel.ofUniversalProof,
     all_nextShiftInvariantPredicate_eq_orbit] using

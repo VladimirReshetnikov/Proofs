@@ -34,7 +34,7 @@ noncomputable example (context : Bootstrapping.Formula V ℒₒᵣ) (n : V)
       Arrow.arrow context (∀⁰ nextShiftInvariantPredicate n))
     (hcontext : Peano.internalize V ⊢! context) :
     Peano.internalize V ⊢!
-      orbitSuccessorShiftInvariantFormula (n + 1) :=
+      orbitSuccessorShiftInvariantFormula n :=
   compileKernelOfStructuralUniversalProof context n proof hcontext
 
 end LeanProofs.BoundedPAConsistency.DynamicTruthShiftInvariantStructuralSuccessorAudit
