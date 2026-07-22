@@ -1,0 +1,21 @@
+import BoundedPAConsistency.DynamicTruthPAMinusAxioms
+
+/-! # Axiom audit for finite PA-minus dynamic truth -/
+
+namespace LeanProofs.BoundedPAConsistency.DynamicTruthPAMinusAxiomsAudit
+
+open LeanProofs.BoundedPAConsistency.DynamicTruthPAMinusAxioms
+
+#check successorTruth_quote_iff_eval
+#check successorTruth_sentence_quote_iff_models
+#check successorTruth_of_mem_peanoMinus_delta1Class
+#check successorTruth_of_mem_peanoMinus_delta1Class_of_seq
+#check successorTruth_of_mem_pa_delta1Class
+
+#print axioms successorTruth_quote_iff_eval
+#print axioms successorTruth_sentence_quote_iff_models
+#print axioms successorTruth_of_mem_peanoMinus_delta1Class
+#print axioms successorTruth_of_mem_peanoMinus_delta1Class_of_seq
+#print axioms successorTruth_of_mem_pa_delta1Class
+
+end LeanProofs.BoundedPAConsistency.DynamicTruthPAMinusAxiomsAudit
