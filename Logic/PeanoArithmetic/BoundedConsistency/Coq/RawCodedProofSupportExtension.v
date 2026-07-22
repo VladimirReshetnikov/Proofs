@@ -341,6 +341,57 @@ Proof.
   exact hraw.
 Qed.
 
+(** A syntax row for an old supported node can be replayed against the
+    rebuilt table.  Its constructor witnesses and descent facts are
+    table-independent.  Every recursive child is below the old node, so the
+    extension's exact characterization both retains its old support flag and
+    places it inside the new parent bound. *)
+Lemma raw_proofSyntaxStep_support_extension : forall
+    (M : RawPAModel), RawPASatisfies M -> forall
+      childRoot oldCode oldStep parent newCode newStep code,
+  RawProofSupportExtensionPrefix M
+    childRoot oldCode oldStep parent (raw_succ M parent)
+    newCode newStep ->
+  RawProofSyntaxStep M code oldCode oldStep ->
+  rawLt M code (raw_succ M childRoot) ->
+  rawLt M code (raw_succ M parent) ->
+  RawProofSyntaxStep M code newCode newStep.
+Proof.
+  intros M hPA childRoot oldCode oldStep parent newCode newStep code
+    [_ hnewExact] [hexists holdClosed] hcodeOldBound hcodeNewBound.
+  split; [exact hexists |].
+  intros context a b c t child1 child2 child3 hconstructor.
+  destruct (holdClosed context a b c t child1 child2 child3
+    hconstructor) as [hdescent holdCases].
+  split; [exact hdescent |].
+  rewrite Forall_forall in holdCases |- *.
+  intros [fields children] hentry.
+  pose proof (holdCases (fields, children) hentry) as holdCase.
+  unfold RawProofChildrenClosedCase in holdCase |- *.
+  intro hfields.
+  pose proof (holdCase hfields) as holdChildren.
+  rewrite Forall_forall in holdChildren |- *.
+  intros child hchild.
+  destruct (holdChildren child hchild)
+    as [hchildOldSupported hchildBelowCode].
+  assert (hchildOldBound :
+      rawLt M child (raw_succ M childRoot)).
+  {
+    exact (raw_assignment_lt_trans M hPA
+      child code (raw_succ M childRoot)
+      hchildBelowCode hcodeOldBound).
+  }
+  assert (hchildNewBound : rawLt M child (raw_succ M parent)).
+  {
+    exact (raw_assignment_lt_trans M hPA
+      child code (raw_succ M parent)
+      hchildBelowCode hcodeNewBound).
+  }
+  split; [| exact hchildBelowCode].
+  apply (proj2 (hnewExact child hchildNewBound)).
+  left. split; assumption.
+Qed.
+
 (** Public form used by a unary proof constructor. *)
 Corollary raw_proofSupportExtension_to_parent : forall
     (M : RawPAModel), RawPASatisfies M -> forall

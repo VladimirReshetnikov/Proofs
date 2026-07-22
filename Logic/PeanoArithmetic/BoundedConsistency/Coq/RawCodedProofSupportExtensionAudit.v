@@ -17,10 +17,12 @@ Check raw_proofSupportExtension_zero.
 Check raw_proofSupportExtension_append_old_iff.
 Check raw_proofSupportExtension_succ.
 Check raw_proofSupportExtension_all.
+Check raw_proofSyntaxStep_support_extension.
 Check raw_proofSupportExtension_to_parent.
 
 Print Assumptions raw_sat_proofSupportExtensionPrefixTermAt_iff.
 Print Assumptions raw_proofSupportExtension_append_old_iff.
 Print Assumptions raw_proofSupportExtension_succ.
 Print Assumptions raw_proofSupportExtension_all.
+Print Assumptions raw_proofSyntaxStep_support_extension.
 Print Assumptions raw_proofSupportExtension_to_parent.
