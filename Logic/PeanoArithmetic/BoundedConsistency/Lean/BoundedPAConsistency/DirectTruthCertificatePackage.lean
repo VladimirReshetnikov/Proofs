@@ -54,7 +54,11 @@ lemma directTruthCertificatePackage_definable
   letI : HierarchySymbol.sigmaOne.DefinableFunction₁ family.code :=
     masterCodeDefinable
   unfold DirectTruthCertificatePackage
-  definability
+  apply HierarchySymbol.DefinableRel.comp (P := Proof Peano)
+  · exact HierarchySymbol.Definable.of_deltaOne (by definability)
+  · exact HierarchySymbol.DefinableFunction.var 1
+  · exact HierarchySymbol.DefinableFunction₁.comp
+      (HierarchySymbol.DefinableFunction.var 0)
 
 variable [hPA : V↓[ℒₒᵣ] ⊧* Peano]
 
@@ -95,7 +99,9 @@ theorem paRestrictedConsistencyProofSelectorIn_of_directTruthCertificates
     refine ⟨next.val, ?_⟩
     have hproof : Proof Peano next.val step.target.sentence.val :=
       step.compile_isPAProof previous
-    exact htarget ▸ hproof
+    change Proof Peano next.val (family.code (n + 1))
+    rw [← htarget]
+    exact hproof
   · intro n d hd
     exact family.exists_finalProof_of_masterProof hd
 
@@ -148,7 +154,8 @@ theorem paRestrictedConsistencyProofSelectorIn_of_directTypedTruthCertificates_a
     PARestrictedConsistencyProofSelectorIn V := by
   apply paRestrictedConsistencyProofSelectorIn_of_directTypedTruthCertificates
     family
-    (family.code_definable_of_fields localStepDefinable
+    (LeanProofs.BoundedPAConsistency.TruthCertificateCodeDefinability.PATruthCertificateFamily.code_definable_of_fields
+      family localStepDefinable
       crossLevelDefinable shiftInvariantDefinable
       substitutionInvariantDefinable axiomSoundDefinable)
     baseCertificate successorTemplates

@@ -52,6 +52,7 @@ example (family : PATruthCertificateFamily (V := V))
     (haxiom : HierarchySymbol.sigmaOne.DefinableFunction₁
       (fun n : V ↦ (family.axiomSound n).val)) :
     HierarchySymbol.sigmaOne.DefinableFunction₁ family.code :=
-  family.code_definable_of_fields hlocal hcross hshift hsubst haxiom
+  LeanProofs.BoundedPAConsistency.TruthCertificateCodeDefinability.PATruthCertificateFamily.code_definable_of_fields
+    family hlocal hcross hshift hsubst haxiom
 
 end LeanProofs.BoundedPAConsistency.TruthCertificateCodeDefinabilityAudit

@@ -23,8 +23,10 @@ namespace LeanProofs.BoundedPAConsistency.TruthCertificateCodeDefinability
 open LO FirstOrder
 open LO.FirstOrder.Arithmetic
 open LO.FirstOrder.Arithmetic.Bootstrapping
+open LO.FirstOrder.Arithmetic.Bootstrapping.Arithmetic
 open LeanProofs.BoundedPAConsistency.TruthCertificateProofCompiler
 open LeanProofs.BoundedPAConsistency.PrimitiveRecursiveTruthCertificate
+open LeanProofs.BoundedPAConsistency.UniformInternalProvability
 
 variable {V : Type*} [ORingStructure V]
 variable [V↓[ℒₒᵣ] ⊧* ISigma 1]
@@ -63,8 +65,8 @@ state type while keeping formula-code and proof-code invariants separate. -/
 noncomputable def truthCertificateCompilerStateCode
     (localStep crossLevel shiftInvariant substitutionInvariant axiomSound
       finalConsistency proofState : V) : V :=
-  ⟨assembleTruthCertificateCode localStep crossLevel shiftInvariant
-      substitutionInvariant axiomSound finalConsistency, proofState⟩
+  ⟪assembleTruthCertificateCode localStep crossLevel shiftInvariant
+      substitutionInvariant axiomSound finalConsistency, proofState⟫
 
 /-- The seven-input compiler-state pairing operation is Sigma-one definable.
 The actual recursion's zero and successor proofs remain the responsibility of
@@ -87,8 +89,16 @@ Sigma-one graph. -/
 theorem paRestrictedConsistencyFormulaCode_definable :
     HierarchySymbol.sigmaOne.DefinableFunction₁
       (fun n : V ↦ (paRestrictedConsistencyFormula n).val) := by
-  simp_rw [paRestrictedConsistencyFormula_val]
-  definability
+  letI : HierarchySymbol.sigmaOne.DefinableFunction₂
+      (substNumeral : V → V → V) :=
+    substNumeral.defined.to_definable
+  have h : HierarchySymbol.sigmaOne.DefinableFunction
+      (fun v : Fin 1 → V ↦
+        substNumeral (⌜paRestrictedConsistencyTemplate⌝ : V) (v 0)) :=
+    HierarchySymbol.DefinableFunction₂.comp
+      (HierarchySymbol.DefinableFunction.const _)
+      (HierarchySymbol.DefinableFunction.var 0)
+  simpa only [paRestrictedConsistencyFormula_val] using h
 
 /-- Expose the exact raw-code shape of a family certificate.  In particular,
 the last coordinate is syntactically the represented numeral-substitution
@@ -102,8 +112,7 @@ code, not merely a semantically equivalent sentence. -/
         (family.shiftInvariant n).val
         (family.substitutionInvariant n).val
         (family.axiomSound n).val
-        (substNumeral
-          (⌜UniformInternalProvability.paRestrictedConsistencyTemplate⌝ : V) n) := by
+        (substNumeral (⌜paRestrictedConsistencyTemplate⌝ : V) n) := by
   simp [PATruthCertificateFamily.code, PATruthCertificateFamily.fields,
     TruthCertificateFields.sentence, assembleTruthCertificateCode]
 
@@ -148,9 +157,24 @@ theorem PATruthCertificateFamily.code_definable_of_fields
   letI : HierarchySymbol.sigmaOne.DefinableFunction₁
       (fun n : V ↦ (paRestrictedConsistencyFormula n).val) :=
     paRestrictedConsistencyFormulaCode_definable
-  simp_rw [family.code_eq_assemble]
-  unfold assembleTruthCertificateCode
-  definability
+  have hassembled : HierarchySymbol.sigmaOne.DefinableFunction
+      (fun v : Fin 1 → V ↦
+        assembleTruthCertificateCode
+          (family.localStep (v 0)).val
+          (family.crossLevel (v 0)).val
+          (family.shiftInvariant (v 0)).val
+          (family.substitutionInvariant (v 0)).val
+          (family.axiomSound (v 0)).val
+          (paRestrictedConsistencyFormula (v 0)).val) := by
+    unfold assembleTruthCertificateCode
+    definability
+  exact HierarchySymbol.DefinableFunction.of_eq
+    (fun v : Fin 1 → V ↦ family.code (v 0))
+    (fun v ↦ by
+      rw [LeanProofs.BoundedPAConsistency.TruthCertificateCodeDefinability.PATruthCertificateFamily.code_eq_assemble
+        family]
+      simp [paRestrictedConsistencyFormula_val])
+    hassembled
 
 /-! ## Selector bridges with only field-code premises -/
 
@@ -187,7 +211,8 @@ theorem paRestrictedConsistencyProofSelectorIn_of_primitiveRecursivePackage_and_
   apply
     paRestrictedConsistencyProofSelectorIn_of_primitiveRecursivePackage
       compiler parameters family
-      (family.code_definable_of_fields localStepDefinable
+      (LeanProofs.BoundedPAConsistency.TruthCertificateCodeDefinability.PATruthCertificateFamily.code_definable_of_fields
+        family localStepDefinable
         crossLevelDefinable shiftInvariantDefinable
         substitutionInvariantDefinable axiomSoundDefinable)
       baseCertificate successorCertificate
@@ -222,7 +247,8 @@ theorem paRestrictedConsistencyProofSelectorIn_of_typedPrimitiveRecursivePackage
   apply
     paRestrictedConsistencyProofSelectorIn_of_typedPrimitiveRecursivePackage
       compiler parameters family
-      (family.code_definable_of_fields localStepDefinable
+      (LeanProofs.BoundedPAConsistency.TruthCertificateCodeDefinability.PATruthCertificateFamily.code_definable_of_fields
+        family localStepDefinable
         crossLevelDefinable shiftInvariantDefinable
         substitutionInvariantDefinable axiomSoundDefinable)
       baseCertificate successorRealization
