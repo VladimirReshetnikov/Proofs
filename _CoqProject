@@ -36,6 +36,7 @@
 
 # Registered source list; `rocq makefile` resolves its dependency graph.
 
+Algebra/JacobianConjecture/Coq/Common.v
 Algebra/JacobianConjecture/Coq/Counterexample.v
 Algebra/JacobianConjecture/Coq/CollisionFamily.v
 Algebra/JacobianConjecture/Coq/SimplerCounterexample.v
