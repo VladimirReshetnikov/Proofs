@@ -17,6 +17,7 @@ import BoundedPAConsistency.Internal
 import BoundedPAConsistency.ModelCodedInductionAxiom
 import BoundedPAConsistency.ModelFormulaInduction
 import BoundedPAConsistency.OrientedHierarchy
+import BoundedPAConsistency.PrimitiveRecursiveTruthCertificate
 import BoundedPAConsistency.QuantifierFreeTruth
 import BoundedPAConsistency.QuantifierFreeTarski
 import BoundedPAConsistency.QuantifierFreeTransport
