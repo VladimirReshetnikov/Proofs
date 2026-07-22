@@ -14,7 +14,7 @@ From PAHF Require Import PAHF.
 From PAFiniteBasisReduction Require Import
   HierarchyReduction CanonicalSelectorPA FiniteBetaCoding.
 From BoundedPAConsistency Require Import
-  RawCodedNumeralTermCode
+  RawCodedNumeralTermCode RawCodedContextShift
   RawCodedRestrictedPAConsistencyFormulaCode
   RawCodedRestrictedPAConsistencyOpenCompiler
   RawCodedRestrictedPAConsistencyOpenDescent
@@ -29,6 +29,7 @@ Import PAHierarchyReduction.
 Import PACanonicalSelectorPA.
 Import PAFiniteBetaCoding.
 Import PABoundedRawCodedNumeralTermCode.
+Import PABoundedRawCodedContextShift.
 Import PABoundedRawCodedRestrictedPAConsistencyFormulaCode.
 Import PABoundedRawCodedRestrictedPAConsistencyOpenCompiler.
 Import PABoundedRawCodedRestrictedPAConsistencyOpenDescent.
@@ -253,22 +254,25 @@ Qed.
 (** The three concrete context-shift witnesses now exist unconditionally
     from the numeral-code certificate. *)
 Corollary raw_restrictedPAExistentialDescentContexts_realized : forall
-    (M : RawPAModel), RawPASatisfies M -> forall level numeralCode,
+    (M : RawPAModel), RawPASatisfies M -> forall
+      level numeralCode baseContext,
   RawNumeralTermCodeAt M level numeralCode ->
-  RawRestrictedPAExistentialDescentContexts M numeralCode
-    (rawRestrictedPAShiftedRootContextCode M
+  RawContextShift M baseContext baseContext ->
+  RawRestrictedPAExistentialDescentContexts M numeralCode baseContext
+    (rawRestrictedPAShiftedRootContextCode M baseContext
       (rawRestrictedPAProofAssumptionIteratedShiftCode M numeralCode 1))
-    (rawRestrictedPAShiftedWitnessContextCode M
+    (rawRestrictedPAShiftedWitnessContextCode M baseContext
       (rawRestrictedPAProofAfterWitnessIteratedShiftCode M numeralCode 1)
       (rawRestrictedPAProofAssumptionIteratedShiftCode M numeralCode 2))
-    (rawRestrictedPAShiftedProofContextCode M
+    (rawRestrictedPAShiftedProofContextCode M baseContext
       (rawRestrictedPAProofAfterProofIteratedShiftCode M numeralCode 1)
       (rawRestrictedPAProofAfterWitnessIteratedShiftCode M numeralCode 2)
       (rawRestrictedPAProofAssumptionIteratedShiftCode M numeralCode 3)).
 Proof.
-  intros M hPA level numeralCode hnumeral.
+  intros M hPA level numeralCode baseContext hnumeral hbaseShift.
   apply raw_restrictedPAExistentialDescentContexts_of_formulaShiftOrbit.
   - exact hPA.
+  - exact hbaseShift.
   - exact (raw_restrictedPAFormulaShiftOrbit_realized
       M hPA level numeralCode hnumeral).
 Qed.

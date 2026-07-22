@@ -12,9 +12,9 @@
 
   This module deliberately does not call semantic validity a proof code.
   [RawRestrictedPAProjectedFieldRefutationCompiler] is the exact remaining
-  proof-producing reflection obligation.  The theorem below proves that it
-  implies the previously exposed field-refutation compiler, discharging all
-  surrounding syntax bookkeeping unconditionally in every PA model.
+  proof-producing obligation.  It contains both the self-shift certificate
+  for the retained witnessed-axiom base and the dynamic-reflection step.  The
+  theorem below discharges every subsequent context and projection step.
 *)
 
 From PAHF Require Import PAHF.
@@ -22,7 +22,8 @@ From PAFiniteBasisReduction Require Import
   HierarchyReduction CanonicalSelectorPA FiniteBetaCoding.
 From BoundedPAConsistency Require Import
   RawCodedSyntaxConstructors RawCodedNumeralTermCode
-  RawCodedContextLists RawCodedContextShift RawCodedPAProvability
+  RawCodedContextLists RawCodedContextShift RawCodedRestrictedPAProof
+  RawCodedProofEndpoints RawCodedProofRuleCoverage RawCodedPAProvability
   RawCodedPALocalProofExistential
   RawCodedRestrictedPAConsistencyFormulaCode
   CompactPAUniformProvability
@@ -41,6 +42,9 @@ Import PABoundedRawCodedSyntaxConstructors.
 Import PABoundedRawCodedNumeralTermCode.
 Import PABoundedRawCodedContextLists.
 Import PABoundedRawCodedContextShift.
+Import PABoundedRawCodedRestrictedPAProof.
+Import PABoundedRawCodedProofEndpoints.
+Import PABoundedRawCodedProofRuleCoverage.
 Import PABoundedRawCodedPAProvability.
 Import PABoundedRawCodedPALocalProofExistential.
 Import PABoundedRawCodedRestrictedPAConsistencyFormulaCode.
@@ -54,52 +58,61 @@ Import PABoundedRawCodedRestrictedPAFieldProjections.
     eliminations.  Naming them keeps the remaining reflection interface
     readable and makes its context equality definitional. *)
 Definition rawRestrictedPACanonicalShiftedRootContextCode
-    (M : RawPAModel) (numeralCode : M) : M :=
-  rawRestrictedPAShiftedRootContextCode M
+    (M : RawPAModel) (baseContext numeralCode : M) : M :=
+  rawRestrictedPAShiftedRootContextCode M baseContext
     (rawRestrictedPAProofAssumptionIteratedShiftCode M numeralCode 1).
 
 Definition rawRestrictedPACanonicalShiftedWitnessContextCode
-    (M : RawPAModel) (numeralCode : M) : M :=
-  rawRestrictedPAShiftedWitnessContextCode M
+    (M : RawPAModel) (baseContext numeralCode : M) : M :=
+  rawRestrictedPAShiftedWitnessContextCode M baseContext
     (rawRestrictedPAProofAfterWitnessIteratedShiftCode M numeralCode 1)
     (rawRestrictedPAProofAssumptionIteratedShiftCode M numeralCode 2).
 
 Definition rawRestrictedPACanonicalShiftedProofContextCode
-    (M : RawPAModel) (numeralCode : M) : M :=
-  rawRestrictedPAShiftedProofContextCode M
+    (M : RawPAModel) (baseContext numeralCode : M) : M :=
+  rawRestrictedPAShiftedProofContextCode M baseContext
     (rawRestrictedPAProofAfterProofIteratedShiftCode M numeralCode 1)
     (rawRestrictedPAProofAfterWitnessIteratedShiftCode M numeralCode 2)
     (rawRestrictedPAProofAssumptionIteratedShiftCode M numeralCode 3).
 
 Arguments rawRestrictedPACanonicalShiftedRootContextCode
-  M numeralCode : clear implicits.
+  M baseContext numeralCode : clear implicits.
 Arguments rawRestrictedPACanonicalShiftedWitnessContextCode
-  M numeralCode : clear implicits.
+  M baseContext numeralCode : clear implicits.
 Arguments rawRestrictedPACanonicalShiftedProofContextCode
-  M numeralCode : clear implicits.
+  M baseContext numeralCode : clear implicits.
 
-(** The sole remaining local compiler.
+(** The sole remaining carried compiler.
 
     Its [projections] argument contains seven genuine local PA proof trees,
     all in the exact field context used by the third existential elimination.
     The lower target/certificate and the successor numeral-code witness are
     retained because the missing dynamic partial-truth construction must use
-    them.  The output is only the final covered local proof of [bottom]. *)
+    them.  Its first output is the exact unpacking of the incoming lower proof;
+    after the base self-shift it receives the seven projections and returns
+    only the final covered local proof of [bottom]. *)
 Definition RawRestrictedPAProjectedFieldRefutationCompiler
     (M : RawPAModel) : Prop :=
   forall level target certificate successorNumeralCode,
     RawRestrictedPAConsistencyFormulaCodeAt M level target ->
     RawCodedPAProofOf M target certificate ->
     RawNumeralTermCodeAt M (raw_succ M level) successorNumeralCode ->
-    RawRestrictedPAFieldProjectionPackage M successorNumeralCode
-      (rawRestrictedPACanonicalShiftedProofContextCode
-        M successorNumeralCode) ->
-    exists fieldChild : M,
-      RawCodedPALocalProofOf M
-        (rawRestrictedPAFieldsContextCode M successorNumeralCode
-          (rawRestrictedPACanonicalShiftedProofContextCode
-            M successorNumeralCode))
-        (rawFormulaBotCode M) fieldChild.
+    exists witnessList lowerProof baseContext : M,
+      certificate = rawCodeList3 M
+        (rawNumeralValue M 0) witnessList lowerProof /\
+      RawCodedPAAxiomWitnessContext M witnessList baseContext /\
+      RawProofRuleCoverage M lowerProof /\
+      RawProofEndpoint M lowerProof baseContext target /\
+      RawContextShift M baseContext baseContext /\
+      (RawRestrictedPAFieldProjectionPackage M successorNumeralCode
+        (rawRestrictedPACanonicalShiftedProofContextCode
+          M baseContext successorNumeralCode) ->
+       exists fieldChild : M,
+         RawCodedPALocalProofOf M
+           (rawRestrictedPAFieldsContextCode M successorNumeralCode
+             (rawRestrictedPACanonicalShiftedProofContextCode
+               M baseContext successorNumeralCode))
+           (rawFormulaBotCode M) fieldChild).
 
 Arguments RawRestrictedPAProjectedFieldRefutationCompiler M
   : clear implicits.
@@ -118,22 +131,27 @@ Theorem raw_restrictedPAConsistencyFieldRefutation_of_projectedFields :
 Proof.
   intros M hPA hprojected level target certificate successorNumeralCode
     htarget hcertificate hnumeral.
+  destruct (hprojected level target certificate successorNumeralCode
+      htarget hcertificate hnumeral) as
+    (witnessList & lowerProof & baseContext & hcertificateView &
+      hwitness & hlowerCoverage & hlowerEndpoint & hbaseShift & hrefute).
   set (shiftedRootContext :=
     rawRestrictedPACanonicalShiftedRootContextCode
-      M successorNumeralCode).
+      M baseContext successorNumeralCode).
   set (shiftedWitnessContext :=
     rawRestrictedPACanonicalShiftedWitnessContextCode
-      M successorNumeralCode).
+      M baseContext successorNumeralCode).
   set (shiftedProofContext :=
     rawRestrictedPACanonicalShiftedProofContextCode
-      M successorNumeralCode).
+      M baseContext successorNumeralCode).
   assert (hcontexts : RawRestrictedPAExistentialDescentContexts M
-      successorNumeralCode shiftedRootContext shiftedWitnessContext
-      shiftedProofContext).
+      successorNumeralCode baseContext shiftedRootContext
+      shiftedWitnessContext shiftedProofContext).
   {
     unfold shiftedRootContext, shiftedWitnessContext, shiftedProofContext.
     exact (raw_restrictedPAExistentialDescentContexts_realized
-      M hPA (raw_succ M level) successorNumeralCode hnumeral).
+      M hPA (raw_succ M level) successorNumeralCode baseContext
+      hnumeral hbaseShift).
   }
   destruct hcontexts as [hrootShift [hwitnessShift hproofShift]].
   assert (hproofContextRealizable :
@@ -150,11 +168,15 @@ Proof.
     exact (raw_restrictedPAFieldProjectionPackage M hPA
       successorNumeralCode shiftedProofContext hproofContextRealizable).
   }
-  destruct (hprojected level target certificate successorNumeralCode
-      htarget hcertificate hnumeral hprojections)
+  destruct (hrefute hprojections)
     as [fieldChild hfieldChild].
-  exists shiftedRootContext, shiftedWitnessContext, shiftedProofContext,
-    fieldChild.
+  exists witnessList, lowerProof, baseContext, shiftedRootContext,
+    shiftedWitnessContext, shiftedProofContext, fieldChild.
+  split; [exact hcertificateView |].
+  split; [exact hwitness |].
+  split; [exact hlowerCoverage |].
+  split; [exact hlowerEndpoint |].
+  split; [exact hbaseShift |].
   split.
   - exact (conj hrootShift (conj hwitnessShift hproofShift)).
   - exact hfieldChild.

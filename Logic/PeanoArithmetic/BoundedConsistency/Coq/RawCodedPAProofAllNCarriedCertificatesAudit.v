@@ -1,0 +1,18 @@
+(** Assumption audit for carried universal-closure certificates. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedPAProofAllNCarriedCertificates.
+
+Import PABoundedRawCodedPAProofAllNCarriedCertificates.
+
+Check rawProofCloseNCarriedRoot.
+Check raw_proofCloseNCarriedRoot_ruleCoverage.
+Check raw_proofCloseNCarriedRoot_endpoint.
+Check rawProofUniversalOpenNegationCarriedRoot.
+Check rawProofSealedUniversalOpenNegationCarriedCertificate.
+Check
+  raw_codedPAProofOf_sealed_universal_negation_of_carried_open_bottom.
+
+Print Assumptions raw_proofCloseNCarriedRoot_ruleCoverage.
+Print Assumptions
+  raw_codedPAProofOf_sealed_universal_negation_of_carried_open_bottom.

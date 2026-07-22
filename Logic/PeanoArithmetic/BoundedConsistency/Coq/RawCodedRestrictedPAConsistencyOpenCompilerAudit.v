@@ -6,6 +6,8 @@ Import PABoundedRawCodedRestrictedPAConsistencyOpenCompiler.
 Check rawRestrictedPAProofAssumptionCode.
 Check raw_restrictedPAConsistencyTargetCode_view.
 Check raw_restrictedPAConsistencyFormulaCodeAt_open_view.
+Check raw_codedPAProofOf_unpack_components.
+Check RawCodedPACarriedOpenContradictionFrom.
 Check RawRestrictedPAConsistencyOpenContradictionCompiler.
 Check RawRestrictedPAConsistencyOpenContradictionCompilerInAllModels.
 Check raw_restrictedPAConsistencyCertificateSuccessor_of_openCompiler.
@@ -16,6 +18,7 @@ Check
 
 Print Assumptions raw_restrictedPAConsistencyTargetCode_view.
 Print Assumptions raw_restrictedPAConsistencyFormulaCodeAt_open_view.
+Print Assumptions raw_codedPAProofOf_unpack_components.
 Print Assumptions
   raw_restrictedPAConsistencyCertificateSuccessor_of_openCompiler.
 Print Assumptions

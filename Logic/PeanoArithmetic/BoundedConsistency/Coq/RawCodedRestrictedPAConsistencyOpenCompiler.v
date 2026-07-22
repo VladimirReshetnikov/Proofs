@@ -23,8 +23,10 @@ From PAFiniteBasisReduction Require Import
 From BoundedPAConsistency Require Import
   RawCodedSyntaxConstructors RawCodedNumeralTermCode
   RawCodedRestrictedPAConsistencyFormulaCode
+  RawCodedContextShift RawCodedRestrictedPAProof
+  RawCodedProofEndpoints RawCodedProofRuleCoverage
   RawCodedPAProvability RawCodedPAOpenProofComposition
-  RawCodedPAProofAllICertificates RawCodedPAProofAllNCertificates
+  RawCodedPAProofAllNCarriedCertificates
   CompactPAUniformProvability.
 
 Module PABoundedRawCodedRestrictedPAConsistencyOpenCompiler.
@@ -36,10 +38,13 @@ Import PAFiniteBetaCoding.
 Import PABoundedRawCodedSyntaxConstructors.
 Import PABoundedRawCodedNumeralTermCode.
 Import PABoundedRawCodedRestrictedPAConsistencyFormulaCode.
+Import PABoundedRawCodedContextShift.
+Import PABoundedRawCodedRestrictedPAProof.
+Import PABoundedRawCodedProofEndpoints.
+Import PABoundedRawCodedProofRuleCoverage.
 Import PABoundedRawCodedPAProvability.
 Import PABoundedRawCodedPAOpenProofComposition.
-Import PABoundedRawCodedPAProofAllICertificates.
-Import PABoundedRawCodedPAProofAllNCertificates.
+Import PABoundedRawCodedPAProofAllNCarriedCertificates.
 Import PABoundedCompactPAUniformProvability.
 
 (** The formula assumed while refuting one candidate certificate.  Keeping
@@ -100,6 +105,44 @@ Proof.
   - apply raw_restrictedPAConsistencyTargetCode_view.
 Qed.
 
+(** Concrete elimination of the existential fields hidden by an ordinary
+    proof certificate.  This small theorem is intentionally public: later
+    compiler stages must retain these exact fields instead of silently
+    replacing the generally nonempty witnessed PA context by [nil]. *)
+Theorem raw_codedPAProofOf_unpack_components : forall
+    (M : RawPAModel) target certificate,
+  RawCodedPAProofOf M target certificate ->
+  exists witnessList proof baseContext : M,
+    certificate = rawCodeList3 M
+      (rawNumeralValue M 0) witnessList proof /\
+    RawCodedPAAxiomWitnessContext M witnessList baseContext /\
+    RawProofRuleCoverage M proof /\
+    RawProofEndpoint M proof baseContext target.
+Proof.
+  intros M target certificate hcertificate.
+  exact hcertificate.
+Qed.
+
+(** Carried output of the local contradiction compiler.  The first four
+    fields are exactly the unpacked incoming certificate; the open proof
+    keeps its witnessed list and base context.  [RawContextShift base base]
+    is the honest side condition needed to quantify and seal the resulting
+    implication without erasing that context. *)
+Definition RawCodedPACarriedOpenContradictionFrom
+    (M : RawPAModel) (target certificate assumption : M) : Prop :=
+  exists witnessList proof baseContext child : M,
+    certificate = rawCodeList3 M
+      (rawNumeralValue M 0) witnessList proof /\
+    RawCodedPAAxiomWitnessContext M witnessList baseContext /\
+    RawProofRuleCoverage M proof /\
+    RawProofEndpoint M proof baseContext target /\
+    RawContextShift M baseContext baseContext /\
+    RawCodedPAOpenProofOf M witnessList baseContext assumption
+      (rawFormulaBotCode M) child.
+
+Arguments RawCodedPACarriedOpenContradictionFrom
+  M target certificate assumption : clear implicits.
+
 (** The genuine local proof-producing seam.
 
     Unlike [RawRestrictedPAConsistencyCertificateSuccessor], this predicate
@@ -107,22 +150,20 @@ Qed.
     caller to package implication introduction or universal introduction.
     Its output is only a covered derivation of falsity in the context
 
-      RestrictedPAProof(succ(level), certificate) :: nil.
+      RestrictedPAProof(succ(level), certificate) :: baseContext,
 
-    The incoming lower target and its PA certificate remain available because
-    the eventual truth/soundness construction must use them.  Any remaining
-    truth reflection assumptions should be added behind this interface, not
-    by weakening its conclusion back to the old successor statement. *)
+    where [baseContext] and its witness list are the exact fields hidden in
+    the incoming lower certificate.  This avoids a nonexistent generic
+    weakening operation on proof trees whose every node stores its context.
+    Any remaining truth-reflection work belongs behind this interface. *)
 Definition RawRestrictedPAConsistencyOpenContradictionCompiler
     (M : RawPAModel) : Prop :=
   forall level target certificate successorNumeralCode,
     RawRestrictedPAConsistencyFormulaCodeAt M level target ->
     RawCodedPAProofOf M target certificate ->
     RawNumeralTermCodeAt M (raw_succ M level) successorNumeralCode ->
-    RawCodedPAOpenProvability M
-      (raw_zero M) (raw_zero M)
-      (rawRestrictedPAProofAssumptionCode M successorNumeralCode)
-      (rawFormulaBotCode M).
+    RawCodedPACarriedOpenContradictionFrom M target certificate
+      (rawRestrictedPAProofAssumptionCode M successorNumeralCode).
 
 Arguments RawRestrictedPAConsistencyOpenContradictionCompiler M
   : clear implicits.
@@ -147,17 +188,23 @@ Proof.
     M (raw_succ M level) nextTarget hnextTarget)
     as [successorNumeralCode [hnumeral hnextTargetView]].
   destruct (hcompiler level target certificate successorNumeralCode
-    htarget hcertificate hnumeral) as [child hopen].
-  exists (rawProofSealedUniversalOpenNegationCertificate M
+    htarget hcertificate hnumeral) as
+    (witnessList & lowerProof & baseContext & child &
+      hcertificateView & hwitness & hlowerCoverage & hlowerEndpoint &
+      hbaseShift & hopen).
+  exists (rawProofSealedUniversalOpenNegationCarriedCertificate M
+    witnessList baseContext
     (restrictedTargetFormulaContextBound
       restrictedPAConsistencyBodyFormulaContext)
     (rawRestrictedPAProofAssumptionCode M successorNumeralCode) child).
   rewrite hnextTargetView.
-  exact (raw_codedPAProofOf_sealed_universal_negation_of_open_bottom M hPA
+  exact
+    (raw_codedPAProofOf_sealed_universal_negation_of_carried_open_bottom
+    M hPA witnessList baseContext
     (restrictedTargetFormulaContextBound
       restrictedPAConsistencyBodyFormulaContext)
     (rawRestrictedPAProofAssumptionCode M successorNumeralCode)
-    child hopen).
+    child hbaseShift hopen).
 Qed.
 
 Corollary

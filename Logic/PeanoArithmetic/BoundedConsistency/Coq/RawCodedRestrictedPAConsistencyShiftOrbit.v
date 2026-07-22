@@ -2,23 +2,22 @@
   The finite formula-shift orbit needed by the three existential eliminations.
 
   The restricted-proof assumption has three nested existential binders.  Its
-  initial singleton context therefore grows, after the successive pointwise
+  initial temporary context therefore grows, after the successive pointwise
   de Bruijn shifts, as follows:
 
-      [A0]
-      [shift A0]
+      [A0; Gamma]
+      [shift A0; Gamma]
 
-      [A1; shift A0]
-      [shift A1; shift^2 A0]
+      [A1; shift A0; Gamma]
+      [shift A1; shift^2 A0; Gamma]
 
-      [A2; shift A1; shift^2 A0]
-      [shift A2; shift^2 A1; shift^3 A0].
+      [A2; shift A1; shift^2 A0; Gamma]
+      [shift A2; shift^2 A1; shift^3 A0; Gamma].
 
   This file makes those six formula-operation edges explicit and proves that
-  they are sufficient to construct the three genuine [RawContextShift]
-  witnesses.  Consequently, no context traversal remains hidden in the
-  later field-refutation compiler: the only syntactic obligation is the
-  finite formula-shift orbit itself.
+  together with a genuine self-shift of the retained base [Gamma], they are
+  sufficient to construct the three [RawContextShift] witnesses.  No
+  temporary assumption is ever detached from the incoming proof's base.
 *)
 
 From PAHF Require Import PAHF.
@@ -80,26 +79,27 @@ Arguments RawRestrictedPAFormulaShiftOrbit
 
 (** The canonical list codes for the three shifted contexts. *)
 Definition rawRestrictedPAShiftedRootContextCode (M : RawPAModel)
-    (shiftedAssumption1 : M) : M :=
-  rawListNode M shiftedAssumption1 (raw_zero M).
+    (baseContext shiftedAssumption1 : M) : M :=
+  rawListNode M shiftedAssumption1 baseContext.
 
 Definition rawRestrictedPAShiftedWitnessContextCode (M : RawPAModel)
-    (shiftedAfterWitness1 shiftedAssumption2 : M) : M :=
+    (baseContext shiftedAfterWitness1 shiftedAssumption2 : M) : M :=
   rawListNode M shiftedAfterWitness1
-    (rawListNode M shiftedAssumption2 (raw_zero M)).
+    (rawListNode M shiftedAssumption2 baseContext).
 
 Definition rawRestrictedPAShiftedProofContextCode (M : RawPAModel)
-    (shiftedAfterProof1 shiftedAfterWitness2 shiftedAssumption3 : M) : M :=
+    (baseContext shiftedAfterProof1 shiftedAfterWitness2
+      shiftedAssumption3 : M) : M :=
   rawListNode M shiftedAfterProof1
     (rawListNode M shiftedAfterWitness2
-      (rawListNode M shiftedAssumption3 (raw_zero M))).
+      (rawListNode M shiftedAssumption3 baseContext)).
 
 Arguments rawRestrictedPAShiftedRootContextCode
-  M shiftedAssumption1 : clear implicits.
+  M baseContext shiftedAssumption1 : clear implicits.
 Arguments rawRestrictedPAShiftedWitnessContextCode
-  M shiftedAfterWitness1 shiftedAssumption2 : clear implicits.
+  M baseContext shiftedAfterWitness1 shiftedAssumption2 : clear implicits.
 Arguments rawRestrictedPAShiftedProofContextCode
-  M shiftedAfterProof1 shiftedAfterWitness2 shiftedAssumption3
+  M baseContext shiftedAfterProof1 shiftedAfterWitness2 shiftedAssumption3
   : clear implicits.
 
 (** Construct the exact three context shifts by repeated canonical cons.
@@ -107,20 +107,23 @@ Arguments rawRestrictedPAShiftedProofContextCode
     formula shifting: every target formula is retained as explicit data. *)
 Theorem raw_restrictedPAExistentialDescentContexts_of_formulaShiftOrbit :
   forall (M : RawPAModel), RawPASatisfies M -> forall
-    numeralCode
+    numeralCode baseContext,
+  RawContextShift M baseContext baseContext ->
+  forall
     shiftedAssumption1 shiftedAssumption2 shiftedAssumption3
     shiftedAfterWitness1 shiftedAfterWitness2 shiftedAfterProof1,
   RawRestrictedPAFormulaShiftOrbit M numeralCode
     shiftedAssumption1 shiftedAssumption2 shiftedAssumption3
     shiftedAfterWitness1 shiftedAfterWitness2 shiftedAfterProof1 ->
-  RawRestrictedPAExistentialDescentContexts M numeralCode
-    (rawRestrictedPAShiftedRootContextCode M shiftedAssumption1)
-    (rawRestrictedPAShiftedWitnessContextCode M
+  RawRestrictedPAExistentialDescentContexts M numeralCode baseContext
+    (rawRestrictedPAShiftedRootContextCode M
+      baseContext shiftedAssumption1)
+    (rawRestrictedPAShiftedWitnessContextCode M baseContext
       shiftedAfterWitness1 shiftedAssumption2)
-    (rawRestrictedPAShiftedProofContextCode M
+    (rawRestrictedPAShiftedProofContextCode M baseContext
       shiftedAfterProof1 shiftedAfterWitness2 shiftedAssumption3).
 Proof.
-  intros M hPA numeralCode
+  intros M hPA numeralCode baseContext hbaseShift
     shiftedAssumption1 shiftedAssumption2 shiftedAssumption3
     shiftedAfterWitness1 shiftedAfterWitness2 shiftedAfterProof1
     [hAssumption1 [hAssumption2 [hAssumption3
@@ -134,18 +137,18 @@ Proof.
     rawRestrictedPAShiftedProofContextCode.
   split.
   - apply (raw_contextShift_cons M hPA).
-    + apply raw_contextShift_empty. exact hPA.
+    + exact hbaseShift.
     + exact hAssumption1.
   - split.
     + apply (raw_contextShift_cons M hPA).
       * apply (raw_contextShift_cons M hPA).
-        -- apply raw_contextShift_empty. exact hPA.
+        -- exact hbaseShift.
         -- exact hAssumption2.
       * exact hAfterWitness1.
     + apply (raw_contextShift_cons M hPA).
       * apply (raw_contextShift_cons M hPA).
         -- apply (raw_contextShift_cons M hPA).
-           ++ apply raw_contextShift_empty. exact hPA.
+           ++ exact hbaseShift.
            ++ exact hAssumption3.
         -- exact hAfterWitness2.
       * exact hAfterProof1.
@@ -155,27 +158,30 @@ Qed.
     This is the public bridge used by later compiler stages. *)
 Corollary raw_restrictedPAExistentialDescentContexts_exists_of_formulaShiftOrbit :
   forall (M : RawPAModel), RawPASatisfies M -> forall
-    numeralCode
+    numeralCode baseContext,
+  RawContextShift M baseContext baseContext ->
+  forall
     shiftedAssumption1 shiftedAssumption2 shiftedAssumption3
     shiftedAfterWitness1 shiftedAfterWitness2 shiftedAfterProof1,
   RawRestrictedPAFormulaShiftOrbit M numeralCode
     shiftedAssumption1 shiftedAssumption2 shiftedAssumption3
     shiftedAfterWitness1 shiftedAfterWitness2 shiftedAfterProof1 ->
   exists shiftedRootContext shiftedWitnessContext shiftedProofContext : M,
-    RawRestrictedPAExistentialDescentContexts M numeralCode
+    RawRestrictedPAExistentialDescentContexts M numeralCode baseContext
       shiftedRootContext shiftedWitnessContext shiftedProofContext.
 Proof.
-  intros M hPA numeralCode
+  intros M hPA numeralCode baseContext hbaseShift
     shiftedAssumption1 shiftedAssumption2 shiftedAssumption3
     shiftedAfterWitness1 shiftedAfterWitness2 shiftedAfterProof1 horbit.
-  exists (rawRestrictedPAShiftedRootContextCode M shiftedAssumption1),
-    (rawRestrictedPAShiftedWitnessContextCode M
+  exists (rawRestrictedPAShiftedRootContextCode M
+      baseContext shiftedAssumption1),
+    (rawRestrictedPAShiftedWitnessContextCode M baseContext
       shiftedAfterWitness1 shiftedAssumption2),
-    (rawRestrictedPAShiftedProofContextCode M
+    (rawRestrictedPAShiftedProofContextCode M baseContext
       shiftedAfterProof1 shiftedAfterWitness2 shiftedAssumption3).
   exact
     (raw_restrictedPAExistentialDescentContexts_of_formulaShiftOrbit
-      M hPA numeralCode
+      M hPA numeralCode baseContext hbaseShift
       shiftedAssumption1 shiftedAssumption2 shiftedAssumption3
       shiftedAfterWitness1 shiftedAfterWitness2 shiftedAfterProof1 horbit).
 Qed.

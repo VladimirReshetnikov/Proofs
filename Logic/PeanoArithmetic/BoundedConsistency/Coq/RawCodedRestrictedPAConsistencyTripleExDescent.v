@@ -11,9 +11,11 @@
   deduction.  These shifts are retained as explicit certificate data: this
   module performs no illicit syntactic decoding of a nonstandard formula.
 
-  The remaining field-level seam is consequently narrow.  It must provide
-  the three shift witnesses and a covered proof of falsity from the exposed
-  seven-field conjunction, using the incoming lower consistency proof.
+  The witnessed PA-axiom base of the incoming lower certificate is retained
+  as the tail of every context.  The remaining field-level seam must expose
+  those exact certificate fields, certify that the base is stable under
+  binder shift, and provide a covered proof of falsity from the seven-field
+  conjunction.
 *)
 
 From PAHF Require Import PAHF.
@@ -22,6 +24,8 @@ From PAFiniteBasisReduction Require Import
 From BoundedPAConsistency Require Import
   RawCodedSyntaxConstructors RawCodedNumeralTermCode
   RawCodedContextLists RawCodedContextShift
+  RawCodedRestrictedPAProof RawCodedProofEndpoints
+  RawCodedProofRuleCoverage
   RawCodedProofAssumptionLeaf RawCodedProofExEConstructor
   RawCodedPAProvability
   RawCodedPAOpenProofComposition RawCodedPALocalProofExistential
@@ -40,6 +44,9 @@ Import PABoundedRawCodedSyntaxConstructors.
 Import PABoundedRawCodedNumeralTermCode.
 Import PABoundedRawCodedContextLists.
 Import PABoundedRawCodedContextShift.
+Import PABoundedRawCodedRestrictedPAProof.
+Import PABoundedRawCodedProofEndpoints.
+Import PABoundedRawCodedProofRuleCoverage.
 Import PABoundedRawCodedProofAssumptionLeaf.
 Import PABoundedRawCodedProofExEConstructor.
 Import PABoundedRawCodedPAProvability.
@@ -51,9 +58,9 @@ Import PABoundedRawCodedRestrictedPAConsistencyOpenCompiler.
 Import PABoundedRawCodedRestrictedPAConsistencyOpenDescent.
 
 Definition rawRestrictedPAOpenRootContextCode (M : RawPAModel)
-    (numeralCode : M) : M :=
+    (numeralCode baseContext : M) : M :=
   rawListNode M
-    (rawRestrictedPAProofAssumptionCode M numeralCode) (raw_zero M).
+    (rawRestrictedPAProofAssumptionCode M numeralCode) baseContext.
 
 Definition rawRestrictedPAAfterWitnessContextCode (M : RawPAModel)
     (numeralCode shiftedRootContext : M) : M :=
@@ -73,7 +80,7 @@ Definition rawRestrictedPAFieldsContextCode (M : RawPAModel)
     (rawRestrictedPAProofFieldsCode M numeralCode)
     shiftedProofContext.
 
-Arguments rawRestrictedPAOpenRootContextCode M numeralCode
+Arguments rawRestrictedPAOpenRootContextCode M numeralCode baseContext
   : clear implicits.
 Arguments rawRestrictedPAAfterWitnessContextCode
   M numeralCode shiftedRootContext : clear implicits.
@@ -85,10 +92,10 @@ Arguments rawRestrictedPAFieldsContextCode
 (** The three binder shifts, stated against the exact contexts to which each
     successive [RP_exE] is applied. *)
 Definition RawRestrictedPAExistentialDescentContexts (M : RawPAModel)
-    (numeralCode shiftedRootContext shiftedWitnessContext
+    (numeralCode baseContext shiftedRootContext shiftedWitnessContext
       shiftedProofContext : M) : Prop :=
   RawContextShift M
-    (rawRestrictedPAOpenRootContextCode M numeralCode)
+    (rawRestrictedPAOpenRootContextCode M numeralCode baseContext)
     shiftedRootContext /\
   RawContextShift M
     (rawRestrictedPAAfterWitnessContextCode M
@@ -100,7 +107,7 @@ Definition RawRestrictedPAExistentialDescentContexts (M : RawPAModel)
     shiftedProofContext.
 
 Arguments RawRestrictedPAExistentialDescentContexts
-  M numeralCode shiftedRootContext shiftedWitnessContext
+  M numeralCode baseContext shiftedRootContext shiftedWitnessContext
     shiftedProofContext : clear implicits.
 
 (** Explicit proof roots, from the innermost elimination outward. *)
@@ -134,14 +141,14 @@ Definition rawRestrictedPASecondExERoot (M : RawPAModel)
       numeralCode shiftedWitnessContext shiftedProofContext fieldChild).
 
 Definition rawRestrictedPATripleExERoot (M : RawPAModel)
-    (numeralCode shiftedRootContext shiftedWitnessContext
+    (numeralCode baseContext shiftedRootContext shiftedWitnessContext
       shiftedProofContext fieldChild : M) : M :=
   rawProofExERoot M
-    (rawRestrictedPAOpenRootContextCode M numeralCode)
+    (rawRestrictedPAOpenRootContextCode M numeralCode baseContext)
     (rawRestrictedPAProofAfterWitnessCode M numeralCode)
     (rawFormulaBotCode M)
     (rawProofAssumptionRoot M
-      (rawRestrictedPAOpenRootContextCode M numeralCode)
+      (rawRestrictedPAOpenRootContextCode M numeralCode baseContext)
       (rawRestrictedPAProofAssumptionCode M numeralCode))
     (rawRestrictedPASecondExERoot M
       numeralCode shiftedRootContext shiftedWitnessContext
@@ -154,30 +161,31 @@ Arguments rawRestrictedPASecondExERoot
   M numeralCode shiftedRootContext shiftedWitnessContext
     shiftedProofContext fieldChild : clear implicits.
 Arguments rawRestrictedPATripleExERoot
-  M numeralCode shiftedRootContext shiftedWitnessContext
+  M numeralCode baseContext shiftedRootContext shiftedWitnessContext
     shiftedProofContext fieldChild : clear implicits.
 
 Theorem raw_codedPAOpenProofOf_bottom_of_restrictedPA_fields : forall
     (M : RawPAModel), RawPASatisfies M -> forall
-      numeralCode shiftedRootContext shiftedWitnessContext
+      witnessList baseContext numeralCode
+      shiftedRootContext shiftedWitnessContext
       shiftedProofContext fieldChild,
-  RawRestrictedPAExistentialDescentContexts M numeralCode
+  RawCodedPAAxiomWitnessContext M witnessList baseContext ->
+  RawRestrictedPAExistentialDescentContexts M numeralCode baseContext
     shiftedRootContext shiftedWitnessContext shiftedProofContext ->
   RawCodedPALocalProofOf M
     (rawRestrictedPAFieldsContextCode M
       numeralCode shiftedProofContext)
     (rawFormulaBotCode M) fieldChild ->
-  RawCodedPAOpenProofOf M
-    (raw_zero M) (raw_zero M)
+  RawCodedPAOpenProofOf M witnessList baseContext
     (rawRestrictedPAProofAssumptionCode M numeralCode)
     (rawFormulaBotCode M)
-    (rawRestrictedPATripleExERoot M numeralCode
+    (rawRestrictedPATripleExERoot M numeralCode baseContext
       shiftedRootContext shiftedWitnessContext
       shiftedProofContext fieldChild).
 Proof.
-  intros M hPA numeralCode shiftedRootContext shiftedWitnessContext
-    shiftedProofContext fieldChild
-    [hrootShift [hwitnessShift hproofShift]] hfield.
+  intros M hPA witnessList baseContext numeralCode
+    shiftedRootContext shiftedWitnessContext shiftedProofContext fieldChild
+    hwitness [hrootShift [hwitnessShift hproofShift]] hfield.
   assert (hproofTailRealizable :
       RawContextListRealizable M shiftedWitnessContext).
   {
@@ -223,7 +231,7 @@ Proof.
       RawContextListRealizable M shiftedRootContext).
   {
     exact (raw_contextShift_target_realizable M
-      (rawRestrictedPAOpenRootContextCode M numeralCode)
+      (rawRestrictedPAOpenRootContextCode M numeralCode baseContext)
       shiftedRootContext hrootShift).
   }
   assert (hwitnessAssumption :
@@ -262,26 +270,26 @@ Proof.
   }
   assert (houterAssumption :
       RawCodedPAOpenProofOf M
-        (raw_zero M) (raw_zero M)
+        witnessList baseContext
         (rawRestrictedPAProofAssumptionCode M numeralCode)
         (rawFormulaExCode M
           (rawRestrictedPAProofAfterWitnessCode M numeralCode))
         (rawProofAssumptionRoot M
-          (rawRestrictedPAOpenRootContextCode M numeralCode)
+          (rawRestrictedPAOpenRootContextCode M numeralCode baseContext)
           (rawRestrictedPAProofAssumptionCode M numeralCode))).
   {
     rewrite <- raw_restrictedPAProofAssumptionCode_view.
     exact (raw_codedPAOpenProofOf_restrictedPAProof_assumption
-      M hPA numeralCode).
+      M hPA numeralCode witnessList baseContext hwitness).
   }
   unfold rawRestrictedPATripleExERoot.
   exact (raw_codedPAOpenProofOf_exE_bottom M hPA
-    (raw_zero M) (raw_zero M)
+    witnessList baseContext
     (rawRestrictedPAProofAssumptionCode M numeralCode)
     shiftedRootContext
     (rawRestrictedPAProofAfterWitnessCode M numeralCode)
     (rawProofAssumptionRoot M
-      (rawRestrictedPAOpenRootContextCode M numeralCode)
+      (rawRestrictedPAOpenRootContextCode M numeralCode baseContext)
       (rawRestrictedPAProofAssumptionCode M numeralCode))
     (rawRestrictedPASecondExERoot M numeralCode
       shiftedRootContext shiftedWitnessContext
@@ -298,10 +306,18 @@ Definition RawRestrictedPAConsistencyFieldRefutationCompiler
     RawRestrictedPAConsistencyFormulaCodeAt M level target ->
     RawCodedPAProofOf M target certificate ->
     RawNumeralTermCodeAt M (raw_succ M level) successorNumeralCode ->
-    exists shiftedRootContext shiftedWitnessContext shiftedProofContext
+    exists witnessList lowerProof baseContext
+      shiftedRootContext shiftedWitnessContext shiftedProofContext
       fieldChild : M,
+      certificate = rawCodeList3 M
+        (rawNumeralValue M 0) witnessList lowerProof /\
+      RawCodedPAAxiomWitnessContext M witnessList baseContext /\
+      RawProofRuleCoverage M lowerProof /\
+      RawProofEndpoint M lowerProof baseContext target /\
+      RawContextShift M baseContext baseContext /\
       RawRestrictedPAExistentialDescentContexts M successorNumeralCode
-        shiftedRootContext shiftedWitnessContext shiftedProofContext /\
+        baseContext shiftedRootContext shiftedWitnessContext
+        shiftedProofContext /\
       RawCodedPALocalProofOf M
         (rawRestrictedPAFieldsContextCode M
           successorNumeralCode shiftedProofContext)
@@ -324,13 +340,23 @@ Proof.
     htarget hcertificate hnumeral.
   destruct (hfield level target certificate successorNumeralCode
     htarget hcertificate hnumeral) as
-    (shiftedRootContext & shiftedWitnessContext & shiftedProofContext &
-      fieldChild & hcontexts & hfieldChild).
-  exists (rawRestrictedPATripleExERoot M successorNumeralCode
-    shiftedRootContext shiftedWitnessContext shiftedProofContext fieldChild).
+    (witnessList & lowerProof & baseContext & shiftedRootContext &
+      shiftedWitnessContext & shiftedProofContext & fieldChild &
+      hcertificateView & hwitness & hlowerCoverage & hlowerEndpoint &
+      hbaseShift & hcontexts & hfieldChild).
+  exists witnessList, lowerProof, baseContext,
+    (rawRestrictedPATripleExERoot M successorNumeralCode baseContext
+      shiftedRootContext shiftedWitnessContext shiftedProofContext
+      fieldChild).
+  split; [exact hcertificateView |].
+  split; [exact hwitness |].
+  split; [exact hlowerCoverage |].
+  split; [exact hlowerEndpoint |].
+  split; [exact hbaseShift |].
   exact (raw_codedPAOpenProofOf_bottom_of_restrictedPA_fields M hPA
-    successorNumeralCode shiftedRootContext shiftedWitnessContext
-    shiftedProofContext fieldChild hcontexts hfieldChild).
+    witnessList baseContext successorNumeralCode
+    shiftedRootContext shiftedWitnessContext shiftedProofContext
+    fieldChild hwitness hcontexts hfieldChild).
 Qed.
 
 Corollary

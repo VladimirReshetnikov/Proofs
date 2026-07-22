@@ -150,24 +150,28 @@ Proof.
 Qed.
 
 (** The local proof really begins with the checker formula as an assumption,
-    over the empty witnessed-axiom context. *)
+    over the exact witnessed-axiom context carried by the incoming lower
+    certificate.  The previous empty-context specialization discarded data
+    needed by any compiler which actually reuses that certificate. *)
 Theorem raw_codedPAOpenProofOf_restrictedPAProof_assumption : forall
     (M : RawPAModel), RawPASatisfies M -> forall numeralCode,
+  forall witnessList baseContext,
+  RawCodedPAAxiomWitnessContext M witnessList baseContext ->
   RawCodedPAOpenProofOf M
-    (raw_zero M) (raw_zero M)
+    witnessList baseContext
     (rawRestrictedPAProofAssumptionCode M numeralCode)
     (rawRestrictedPAProofAssumptionCode M numeralCode)
     (rawProofAssumptionRoot M
       (rawListNode M
         (rawRestrictedPAProofAssumptionCode M numeralCode)
-        (raw_zero M))
+        baseContext)
       (rawRestrictedPAProofAssumptionCode M numeralCode)).
 Proof.
-  intros M hPA numeralCode.
+  intros M hPA numeralCode witnessList baseContext hwitness.
   apply (raw_codedPAOpenProofOf_assumption M hPA
-    (raw_zero M) (raw_zero M)
+    witnessList baseContext
     (rawRestrictedPAProofAssumptionCode M numeralCode)).
-  exact (raw_codedPAAxiomWitnessContext_empty M hPA).
+  exact hwitness.
 Qed.
 
 End PABoundedRawCodedRestrictedPAConsistencyOpenDescent.
