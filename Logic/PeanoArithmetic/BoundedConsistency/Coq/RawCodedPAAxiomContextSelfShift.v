@@ -3149,7 +3149,9 @@ Proof.
   setoid_rewrite raw_sat_codedUniversalClosureTermAt_iff.
   setoid_rewrite raw_sat_codedFormulaDiagonalShiftTermAt_iff.
   repeat setoid_rewrite raw_operation_eval_liftTerm_three.
-  cbn [raw_term_eval scons]. reflexivity.
+  cbn [raw_term_eval scons].
+  repeat setoid_rewrite raw_operation_eval_liftTerm_three.
+  reflexivity.
 Qed.
 
 Lemma raw_universalClosureDiagonalShiftAt_zero : forall
@@ -3236,7 +3238,9 @@ Proof.
   pose proof (raw_universalClosure_diagonalShift_all M hPA body count)
     as hdescent.
   apply (hdescent (raw_zero M) output (rawNumeralValue M 1) hclosure).
-  rewrite raw_zero_add. exact hbody.
+  rewrite (raw_add_comm M hPA (raw_zero M) count).
+  rewrite raw_assignmentTotality_add_zero_right by exact hPA.
+  exact hbody.
 Qed.
 
 (** ------------------------------------------------------------------

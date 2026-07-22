@@ -593,6 +593,7 @@ Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedPAAxiomTruth.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedPAAxiomWitnessAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedPAAxiomWitness.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedPAAxiomContextSelfShift.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedPAAxiomContextSelfShiftAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedProofAtomicAdequacyAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedProofAtomicAdequacyStandardAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedProofAtomicAdequacyStandard.v

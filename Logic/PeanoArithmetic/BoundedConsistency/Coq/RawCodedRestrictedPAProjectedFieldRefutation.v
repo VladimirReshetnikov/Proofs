@@ -12,9 +12,10 @@
 
   This module deliberately does not call semantic validity a proof code.
   [RawRestrictedPAProjectedFieldRefutationCompiler] is the exact remaining
-  proof-producing obligation.  It contains both the self-shift certificate
-  for the retained witnessed-axiom base and the dynamic-reflection step.  The
-  theorem below discharges every subsequent context and projection step.
+  proof-producing obligation.  The retained witnessed-axiom base now yields
+  its own self-shift certificate internally, so the compiler contains only
+  the dynamic-reflection step.  The theorem below discharges every subsequent
+  context and projection step.
 *)
 
 From PAHF Require Import PAHF.
@@ -30,7 +31,8 @@ From BoundedPAConsistency Require Import
   RawCodedRestrictedPAConsistencyTripleExDescent
   RawCodedRestrictedPAConsistencyShiftOrbit
   RawCodedRestrictedPAConsistencyShiftRealization
-  RawCodedRestrictedPAFieldProjections.
+  RawCodedRestrictedPAFieldProjections
+  RawCodedPAAxiomContextSelfShift.
 
 Module PABoundedRawCodedRestrictedPAProjectedFieldRefutation.
 
@@ -53,6 +55,7 @@ Import PABoundedRawCodedRestrictedPAConsistencyTripleExDescent.
 Import PABoundedRawCodedRestrictedPAConsistencyShiftOrbit.
 Import PABoundedRawCodedRestrictedPAConsistencyShiftRealization.
 Import PABoundedRawCodedRestrictedPAFieldProjections.
+Import PABoundedRawCodedPAAxiomContextSelfShift.
 
 (** Canonical contexts after respectively one, two, and three existential
     eliminations.  Naming them keeps the remaining reflection interface
@@ -89,8 +92,9 @@ Arguments rawRestrictedPACanonicalShiftedProofContextCode
     The lower target/certificate and the successor numeral-code witness are
     retained because the missing dynamic partial-truth construction must use
     them.  Its first output is the exact unpacking of the incoming lower proof;
-    after the base self-shift it receives the seven projections and returns
-    only the final covered local proof of [bottom]. *)
+    the witnessed base supplies its self-shift by theorem, and the callback
+    receives the seven projections and returns only the final covered local
+    proof of [bottom]. *)
 Definition RawRestrictedPAProjectedFieldRefutationCompiler
     (M : RawPAModel) : Prop :=
   forall level target certificate successorNumeralCode,
@@ -103,7 +107,6 @@ Definition RawRestrictedPAProjectedFieldRefutationCompiler
       RawCodedPAAxiomWitnessContext M witnessList baseContext /\
       RawProofRuleCoverage M lowerProof /\
       RawProofEndpoint M lowerProof baseContext target /\
-      RawContextShift M baseContext baseContext /\
       (RawRestrictedPAFieldProjectionPackage M successorNumeralCode
         (rawRestrictedPACanonicalShiftedProofContextCode
           M baseContext successorNumeralCode) ->
@@ -134,7 +137,12 @@ Proof.
   destruct (hprojected level target certificate successorNumeralCode
       htarget hcertificate hnumeral) as
     (witnessList & lowerProof & baseContext & hcertificateView &
-      hwitness & hlowerCoverage & hlowerEndpoint & hbaseShift & hrefute).
+      hwitness & hlowerCoverage & hlowerEndpoint & hrefute).
+  assert (hbaseShift : RawContextShift M baseContext baseContext).
+  {
+    exact (raw_codedPAAxiomWitnessContext_selfShift M hPA
+      witnessList baseContext hwitness).
+  }
   set (shiftedRootContext :=
     rawRestrictedPACanonicalShiftedRootContextCode
       M baseContext successorNumeralCode).
