@@ -424,6 +424,7 @@ Logic/Propositional/FiniteMatrixNoncharacterizability/Coq/ThreeValuedExample.v
 Logic/Propositional/FiniteMatrixNoncharacterizability/Coq/Audit.v
 Logic/Propositional/ShefferStroke/Coq/Nicod.v
 NumberTheory/DiophantineEquations/Coq/FermatFour.v
+NumberTheory/DiophantineEquations/Coq/Audit.v
 NumberTheory/IntegerSums/Coq/FloorSqrtSum.v
 NumberTheory/RationalEnumeration/Coq/RationalFloorOrbit.v
 NumberTheory/RiemannHypothesis/PAStatement/Coq/PAStatement.v

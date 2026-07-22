@@ -38,6 +38,17 @@ Proof.
   intros [x Himpossible]. discriminate Himpossible.
 Qed.
 
+(** A concrete relation for which the two nesting orders have opposite
+    truth values. *)
+Theorem nested_no_exists_counterexample :
+    nested_no_exists_xy no_exists_relation /\
+    ~ nested_no_exists_yx no_exists_relation.
+Proof.
+  split.
+  - exact nested_no_exists_xy_holds.
+  - exact nested_no_exists_yx_fails.
+Qed.
+
 (** Thus even the forward implication needed to swap the quantifiers fails. *)
 Theorem nested_no_exists_swap_implication_fails :
     ~ (nested_no_exists_xy no_exists_relation ->
@@ -87,15 +98,32 @@ Definition exists_unique_relation (x y : three) : Prop :=
   | _, _ => False
   end.
 
+(** Any witness together with a per-point uniqueness check yields unique
+    existence over [three]. *)
+Lemma three_exists_unique_intro (P : three -> Prop) (w : three) :
+    P w ->
+    (P point_a -> w = point_a) ->
+    (P point_b -> w = point_b) ->
+    (P point_c -> w = point_c) ->
+    exists! t, P t.
+Proof.
+  intros Hw Ha Hb Hc.
+  exists w. split.
+  - exact Hw.
+  - intros t Ht. destruct t.
+    + exact (Ha Ht).
+    + exact (Hb Ht).
+    + exact (Hc Ht).
+Qed.
+
 Lemma row_a_is_unique :
     exists! y, exists_unique_relation point_a y.
 Proof.
-  exists point_a. split.
+  apply three_exists_unique_intro with (w := point_a); simpl.
   - exact I.
-  - intros y Hy. destruct y; simpl in Hy.
-    + reflexivity.
-    + contradiction.
-    + contradiction.
+  - intros _. reflexivity.
+  - intros [].
+  - intros [].
 Qed.
 
 Lemma row_b_is_not_unique :
@@ -119,34 +147,31 @@ Qed.
 Lemma column_a_is_unique :
     exists! x, exists_unique_relation x point_a.
 Proof.
-  exists point_a. split.
+  apply three_exists_unique_intro with (w := point_a); simpl.
   - exact I.
-  - intros x Hx. destruct x; simpl in Hx.
-    + reflexivity.
-    + contradiction.
-    + contradiction.
+  - intros _. reflexivity.
+  - intros [].
+  - intros [].
 Qed.
 
 Lemma column_b_is_unique :
     exists! x, exists_unique_relation x point_b.
 Proof.
-  exists point_b. split.
+  apply three_exists_unique_intro with (w := point_b); simpl.
   - exact I.
-  - intros x Hx. destruct x; simpl in Hx.
-    + contradiction.
-    + reflexivity.
-    + contradiction.
+  - intros [].
+  - intros _. reflexivity.
+  - intros [].
 Qed.
 
 Lemma column_c_is_unique :
     exists! x, exists_unique_relation x point_c.
 Proof.
-  exists point_b. split.
+  apply three_exists_unique_intro with (w := point_b); simpl.
   - exact I.
-  - intros x Hx. destruct x; simpl in Hx.
-    + contradiction.
-    + reflexivity.
-    + contradiction.
+  - intros [].
+  - intros _. reflexivity.
+  - intros [].
 Qed.
 
 Theorem nested_exists_unique_xy_holds :
@@ -171,6 +196,17 @@ Proof.
   assert (point_a = point_b) as Hab.
   { rewrite <- Hya. exact Hyb. }
   discriminate Hab.
+Qed.
+
+(** A concrete relation for which the two unique-existence nesting orders
+    have opposite truth values. *)
+Theorem nested_exists_unique_counterexample :
+    nested_exists_unique_xy exists_unique_relation /\
+    ~ nested_exists_unique_yx exists_unique_relation.
+Proof.
+  split.
+  - exact nested_exists_unique_xy_holds.
+  - exact nested_exists_unique_yx_fails.
 Qed.
 
 (** Again, the forward implication—and therefore equivalence—fails. *)
