@@ -1,0 +1,15 @@
+From BoundedPAConsistency Require Import RawCodedPALocalProofExistential.
+
+Import PABoundedRawCodedPALocalProofExistential.
+
+Check RawCodedPALocalProofOf.
+Check raw_codedPALocalProofOf_assumption.
+Check raw_codedPALocalProofOf_exE.
+Check raw_codedFormulaShift_bottom_zero_one.
+Check raw_codedPALocalProofOf_exE_bottom.
+Check raw_codedPAOpenProofOf_exE_bottom.
+
+Print Assumptions raw_codedPALocalProofOf_assumption.
+Print Assumptions raw_codedPALocalProofOf_exE.
+Print Assumptions raw_codedFormulaShift_bottom_zero_one.
+Print Assumptions raw_codedPAOpenProofOf_exE_bottom.

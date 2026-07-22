@@ -1,0 +1,17 @@
+From BoundedPAConsistency Require Import RawCodedProofExEConstructor.
+
+Import PABoundedRawCodedProofExEConstructor.
+
+Check rawProofExERoot.
+Check raw_proofExERoot_existential_child_lt.
+Check raw_proofExERoot_body_child_lt.
+Check raw_proofExERoot_list_view.
+Check raw_proofExERoot_recursive_children.
+Check raw_proofExE_syntax_step.
+Check raw_proofExE_endpoint_rule_complete.
+Check raw_proofExE_endpoint.
+Check raw_proofExE_ruleCoverage.
+
+Print Assumptions raw_proofExERoot_recursive_children.
+Print Assumptions raw_proofExE_endpoint_rule_complete.
+Print Assumptions raw_proofExE_ruleCoverage.
