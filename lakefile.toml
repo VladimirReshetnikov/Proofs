@@ -50,6 +50,10 @@ name = "CombinatoryLogic"
 srcDir = "Computability/CombinatoryLogic/Lean"
 
 [[lean_lib]]
+name = "TuringDegrees"
+srcDir = "Computability/TuringDegrees/Lean"
+
+[[lean_lib]]
 name = "FirstOrder"
 srcDir = "Logic/FirstOrder/Lean"
 
