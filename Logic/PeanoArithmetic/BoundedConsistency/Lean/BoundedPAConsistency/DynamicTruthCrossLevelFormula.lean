@@ -267,4 +267,26 @@ theorem orbitSuccessorCrossLevelFormula_upper (n : V) :
     orbitSuccessorCrossLevelFormula n =
       crossLevelFormula (truthFormula n) (n + 1) (n + 1 + 1) := rfl
 
+/-! ## Representability of the positive-branch code -/
+
+/-- The raw code of the positive successor field is Sigma-one definable as
+a function of the (possibly nonstandard) predecessor index.
+
+All formula-building operations in the displayed field are represented
+syntax constructors.  The only recursively varying component is
+`truthFormulaCode`, whose Sigma-one graph is supplied by
+`DynamicTruthOrbit`. -/
+theorem orbitSuccessorCrossLevelFormulaCode_definable :
+    HierarchySymbol.sigmaOne.DefinableFunction₁
+      (fun n : V ↦ (orbitSuccessorCrossLevelFormula n).val) := by
+  simp only [orbitSuccessorCrossLevelFormula, crossLevelFormula,
+    crossLevelPredicateFormula, crossLevelBodyFormula,
+    lowerPiTruthFormula, sigmaDomainFormula, piDomainFormula,
+    DynamicTruthFormula.apply₃_val, Semiformula.val_all,
+    Semiformula.val_and, Semiformula.val_iff, Semiformula.val_imp,
+    Semiformula.val_exs, Semiformula.val_neg,
+    Bootstrapping.Semiformula.val_substs,
+    DynamicTruthOrbit.truthFormula_val]
+  definability
+
 end LeanProofs.BoundedPAConsistency.DynamicTruthCrossLevelFormula

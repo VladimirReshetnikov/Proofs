@@ -36,11 +36,13 @@ open LeanProofs.BoundedPAConsistency.ModelCodedPredicateParameters
 #check translate_sourceCrossLevelSentence
 #check baseCrossLevelFormula
 #check orbitSuccessorCrossLevelFormula
+#check orbitSuccessorCrossLevelFormulaCode_definable
 
 #print axioms translate_sourceLowerPiTruth
 #print axioms translate_sourceCrossLevelBody
 #print axioms translate_sourceCrossLevelPredicate
 #print axioms translate_sourceCrossLevelSentence
+#print axioms orbitSuccessorCrossLevelFormulaCode_definable
 
 variable {V : Type*} [ORingStructure V]
 variable [V↓[ℒₒᵣ] ⊧* ISigma 1]
@@ -62,6 +64,12 @@ example (n : V) :
       truthFormula (n + 1) := by
   symm
   exact truthFormula_succ n
+
+/-- The positive field is not merely available pointwise: its raw syntax
+codes have one Sigma-one graph over all model indices. -/
+example : HierarchySymbol.sigmaOne.DefinableFunction₁
+    (fun n : V ↦ (orbitSuccessorCrossLevelFormula n).val) :=
+  orbitSuccessorCrossLevelFormulaCode_definable
 
 /-- The base branch names the genuine quantifier-free predecessor. -/
 example : baseCrossLevelFormula (V := V) =
