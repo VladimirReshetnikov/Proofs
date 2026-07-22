@@ -1,0 +1,14 @@
+(** Assumption audit for closure self-instantiation orbit constructors. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedPAUniversalClosureSelfInstantiation.
+
+Import PABoundedRawCodedPAUniversalClosureSelfInstantiation.
+
+Check raw_codedUniversalClosureSelfInstantiationThrough_zero.
+Check raw_codedUniversalClosureSelfInstantiationThrough_succ.
+
+Print Assumptions
+  raw_codedUniversalClosureSelfInstantiationThrough_zero.
+Print Assumptions
+  raw_codedUniversalClosureSelfInstantiationThrough_succ.

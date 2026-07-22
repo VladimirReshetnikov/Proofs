@@ -1,0 +1,17 @@
+(** Assumption audit for arbitrary-closure model-coded PA induction. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedPAClosureInductionCompiler.
+
+Import PABoundedRawCodedPAClosureInductionCompiler.
+
+Check RawCodedPAClosureInductionData.
+Check raw_codedPAClosureInductionData_axiom.
+Check rawPAClosureInductionPremiseProofRoot.
+Check rawPAClosureInductionProofRoot.
+Check rawPAClosureInductionCertificate.
+Check raw_codedPALocalProofOf_closure_induction.
+Check raw_codedPAProofOf_closure_induction.
+
+Print Assumptions raw_codedPALocalProofOf_closure_induction.
+Print Assumptions raw_codedPAProofOf_closure_induction.

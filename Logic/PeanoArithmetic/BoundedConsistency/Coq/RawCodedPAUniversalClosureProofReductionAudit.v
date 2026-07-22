@@ -1,0 +1,23 @@
+(** Assumption audit for the model-internal universal-closure proof orbit. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedPAUniversalClosureProofReduction.
+
+Import PABoundedRawCodedPAUniversalClosureProofReduction.
+
+Check codedPALocalProofOfTermAt.
+Check raw_sat_codedPALocalProofOfTermAt_iff.
+Check RawCodedUniversalClosureSelfInstantiationThrough.
+Check codedUniversalClosureSelfInstantiationThroughTermAt.
+Check raw_sat_codedUniversalClosureSelfInstantiationThroughTermAt_iff.
+Check RawCodedUniversalClosureProofReducibleAt.
+Check codedUniversalClosureProofReducibleAtTermAt.
+Check raw_sat_codedUniversalClosureProofReducibleAtTermAt_iff.
+Check RawCodedUniversalClosureProofReducibleWithin.
+Check codedUniversalClosureProofReducibleWithinTermAt.
+Check raw_sat_codedUniversalClosureProofReducibleWithinTermAt_iff.
+Check raw_codedUniversalClosureProofReducibleWithin_all.
+Check raw_codedPALocalProofOf_universalClosure_reduce.
+
+Print Assumptions raw_codedUniversalClosureProofReducibleWithin_all.
+Print Assumptions raw_codedPALocalProofOf_universalClosure_reduce.
