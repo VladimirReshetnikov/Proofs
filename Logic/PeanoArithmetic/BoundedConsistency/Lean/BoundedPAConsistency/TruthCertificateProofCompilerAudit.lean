@@ -23,6 +23,8 @@ open LeanProofs.BoundedPAConsistency.TruthCertificateProofCompiler
 #check TruthCertificateStep.compile_isProof
 #check PAInductionKernel
 #check PAInductionKernel.compile
+#check PAInductionKernel.compileImplication
+#check PAInductionKernel.compileViaImplication
 #check PAInductiveTruthCertificateStep
 #check PAInductiveTruthCertificateStep.target
 #check PAInductiveTruthCertificateStep.compile
@@ -33,6 +35,8 @@ open LeanProofs.BoundedPAConsistency.TruthCertificateProofCompiler
 #print axioms TruthCertificateStep.compile
 #print axioms TruthCertificateStep.compile_isProof
 #print axioms PAInductionKernel.compile
+#print axioms PAInductionKernel.compileImplication
+#print axioms PAInductionKernel.compileViaImplication
 #print axioms PAInductiveTruthCertificateStep.compile
 #print axioms PAInductiveTruthCertificateStep.compile_isPAProof
 

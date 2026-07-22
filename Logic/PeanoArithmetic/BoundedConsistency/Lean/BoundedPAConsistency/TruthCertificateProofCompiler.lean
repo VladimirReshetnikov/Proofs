@@ -213,6 +213,41 @@ noncomputable def compile {context : Bootstrapping.Formula V ℒₒᵣ}
     (TProof.modusPonens kernel.proveZero hcontext)
     (TProof.modusPonens kernel.proveSuccessor hcontext)
 
+/-- Compile an induction kernel without first supplying a proof of its
+context.
+
+The model-coded PA induction axiom has curried shape
+
+```
+P(0) -> (forall x, P(x) -> P(x + 1)) -> forall x, P(x).
+```
+
+Both premises stored by `PAInductionKernel` already have `context` as their
+antecedent.  Two applications of Hilbert's implication-distribution law
+therefore retain that antecedent and produce the represented implication
+`context -> forall x, P(x)`.  This constructor is important for nested
+induction arguments: an outer proof can consume the universal conclusion as
+an implication without ever assuming or decoding the possibly nonstandard
+context formula. -/
+noncomputable def compileImplication
+    {context : Bootstrapping.Formula V ℒₒᵣ}
+    (kernel : PAInductionKernel context) :
+    Peano.internalize V ⊢! context 🡒 ∀⁰ kernel.predicate := by
+  have hinduction : Peano.internalize V ⊢! indBody kernel.predicate :=
+    paInductionProofOfShiftFixed kernel.predicate kernel.shiftFixed
+  exact (Entailment.C_of_conseq hinduction) ⨀₁ kernel.proveZero ⨀₁
+    kernel.proveSuccessor
+
+/-- Applying the implication compiler to a context proof agrees with the
+ordinary public result type.  Keeping this application as a named constructor
+lets downstream code choose whichever dependency shape is more convenient. -/
+noncomputable def compileViaImplication
+    {context : Bootstrapping.Formula V ℒₒᵣ}
+    (kernel : PAInductionKernel context)
+    (hcontext : Peano.internalize V ⊢! context) :
+    Peano.internalize V ⊢! ∀⁰ kernel.predicate :=
+  TProof.modusPonens kernel.compileImplication hcontext
+
 end PAInductionKernel
 
 /-- The concrete shape of a successor certificate whose four recursive laws
