@@ -23,7 +23,7 @@ project, `Lean/` and `Coq/` are siblings; `Research/`, `Support/`, and
 | [`Algebra/`](Algebra/) | Jacobian-conjecture counterexamples: the dimension-three witness and a lower-degree stable representative checked independently in Lean and Coq, plus an exact cubic reduction. |
 | [`Analysis/`](Analysis/) | Exact trigonometric, arctangent, and exponential identities. |
 | [`Combinatorics/`](Combinatorics/) | Enumeration of power towers and radical expressions, including OEIS certificates and research corpora. |
-| [`Computability/`](Computability/) | Lambda/SK/SKI/Iota universality and the faithful Iota-to-lambda embedding; Busy Beaver semantics, domination, exact small-state scores and times, and certificate bridges. |
+| [`Computability/`](Computability/) | Set Turing degrees (order, joins, cardinalities, jump/c.e. theory, and Post's problem); lambda/SK/SKI/Iota universality; Busy Beaver semantics, domination, exact small-state scores and times, and certificate bridges. |
 | [`Logic/`](Logic/) | First-order logic and completeness, propositional/equational axiom systems, PA infinitude, and PA/HF interpretability. |
 | [`NumberTheory/`](NumberTheory/) | FLT for exponent four, floor-square-root sums, rational enumeration, and an arithmetic RH sentence. |
 | [`SetTheory/`](SetTheory/) | First-order ZF and the Closure axiomatization's equivalence with ZF. |
@@ -86,6 +86,11 @@ is the broad Lean import surface.
 - Busy Beaver domination plus exact results `Sigma(2)=4`, `Sigma(3)=6`,
   `Sigma(4)=13` and `BB(2)=6`, `BB(3)=21`, `BB(4)=107` for the documented
   score/time conventions.
+- A [Lean/Rocq Turing-degree development](Computability/TuringDegrees/README.md)
+  covering the quotient/setoid order, degree zero, exact even/odd joins,
+  cardinalities of degree classes and cones, jump strictness, Kleene--Post
+  incomparability, c.e.-completeness, Shoenfield's limit lemma, Post's theorem,
+  and a conditional constructive solution of Post's problem.
 
 ## Lean workspace
 
@@ -114,6 +119,7 @@ lake build +CombinatoryLogic
 lake build +BusyBeaver.BB2
 lake build +BusyBeaver.BB3
 lake build +BusyBeaver.Mathlib
+lake build +TuringDegrees +TuringDegrees.Audit
 ```
 
 These projects also have project-local Lake files for focused builds:
@@ -137,6 +143,7 @@ lake --dir SetTheory/ZF/Lean build
 lake --dir SetTheory/ClosureAxiomatization/Lean build
 lake --dir NumberTheory/RiemannHypothesis/PAStatement/Lean build
 lake --dir Computability/BusyBeaver/Lean build
+lake --dir Computability/TuringDegrees/Lean build
 ```
 
 The Busy Beaver facade excludes the expensive BB2/BB3 classifications and the
@@ -150,6 +157,8 @@ including the vendored certificates under
 `lib/Coq-BB5`:
 
 ```powershell
+git submodule update --init lib/Coq-Synthetic-Computability
+pwsh -NoProfile -File Computability/TuringDegrees/Coq/BuildSyntheticComputability.ps1
 rocq makefile -f _CoqProject -o Makefile.coq
 make -f Makefile.coq
 ```
@@ -160,6 +169,11 @@ Iota simulation and the converse faithful Iota-to-lambda embedding independently
 in both systems. In particular, some other Coq ports check the finite
 certificate surface while the analytic or semantic bridge remains Lean-only;
 no blanket parity is claimed.
+
+The Turing-degree project uses a pinned `coq-synthetic-computability`
+submodule. Its focused README documents the compatibility-patched dependency
+build and wrapper build; constructive principles and effective-enumeration
+hypotheses remain visible in theorem signatures.
 
 ## Trust and status
 
@@ -186,6 +200,10 @@ licenses are retained. The focused
 comes from `uds-psl/coq-library-undecidability` commit `806690d0...`; its
 nested README records the exact 186-file dependency closure and its MPL-2.0
 license is retained.
+[`lib/Coq-Synthetic-Computability`](lib/Coq-Synthetic-Computability/) is pinned
+to `uds-psl/coq-synthetic-computability` commit `8fc0014f...`; its MIT license
+is retained, and the Turing-degree project owns a small, reproducible Rocq
+9.2/stdpp 1.13 compatibility patch rather than modifying the pin.
 
 ## License
 
