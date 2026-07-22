@@ -65,6 +65,12 @@ theorem noExists_counterexample :
     NoExistsXY firstColumn ∧ ¬ NoExistsYX firstColumn :=
   ⟨firstColumn_noExistsXY, firstColumn_not_noExistsYX⟩
 
+/-- Thus even the forward implication needed to swap the two `∄` binders
+fails. -/
+theorem noExists_swap_implication_fails :
+    ¬ (NoExistsXY firstColumn → NoExistsYX firstColumn) :=
+  fun h => firstColumn_not_noExistsYX (h firstColumn_noExistsXY)
+
 /-- Therefore two adjacent `∄` quantifiers cannot in general be swapped. -/
 theorem noExists_not_commutative :
     ¬ (NoExistsXY firstColumn ↔ NoExistsYX firstColumn) := by
