@@ -1,0 +1,28 @@
+import BoundedPAConsistency.DynamicTruthRestrictedSoundnessPredicate
+
+/-!
+# Axiom audit for the restricted-derivation soundness predicate
+
+The semantic theorems verify the precise de Bruijn layout of the fixed
+source invariant.  The final closedness theorem is the syntactic obligation
+needed by represented strong induction.
+-/
+
+namespace LeanProofs.BoundedPAConsistency.DynamicTruthRestrictedSoundnessPredicateAudit
+
+open LeanProofs.BoundedPAConsistency.DynamicTruthRestrictedSoundnessPredicate
+
+#check sourceRestrictedDerivation
+#check sourceSequentTrue
+#check sourceDerivationSoundnessPredicate
+#check sourceDerivationSoundnessStrongStep
+#check derivationSoundnessPredicateFormula
+#check derivationSoundnessPredicateFormula_shift
+#check eval_sourceDerivationSoundnessPredicate
+#check eval_sourceDerivationSoundnessStrongStep
+
+#print axioms derivationSoundnessPredicateFormula_shift
+#print axioms eval_sourceDerivationSoundnessPredicate
+#print axioms eval_sourceDerivationSoundnessStrongStep
+
+end LeanProofs.BoundedPAConsistency.DynamicTruthRestrictedSoundnessPredicateAudit

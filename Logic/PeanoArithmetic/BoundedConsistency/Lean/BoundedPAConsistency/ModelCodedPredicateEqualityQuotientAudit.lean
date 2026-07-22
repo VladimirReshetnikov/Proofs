@@ -1,0 +1,17 @@
+import BoundedPAConsistency.ModelCodedPredicateEqualityQuotient
+
+/-! # Axiom audit for one-predicate equality completion -/
+
+namespace LeanProofs.BoundedPAConsistency.ModelCodedPredicateEqualityQuotientAudit
+
+open LeanProofs.BoundedPAConsistency.ModelCodedPredicateEqualityQuotient
+
+#check placeholderRelation
+#check placeholderCongruenceSentence
+#check models_fullEquality
+#check complete_underPlaceholderCongruence
+
+#print axioms models_fullEquality
+#print axioms complete_underPlaceholderCongruence
+
+end LeanProofs.BoundedPAConsistency.ModelCodedPredicateEqualityQuotientAudit

@@ -1,0 +1,15 @@
+From BoundedPAConsistency Require Import
+  RawCodedTermOperationTreeRealization.
+
+Import PABoundedRawCodedTermOperationTreeRealization.
+
+Check RawTermOperationTree.
+Check RawTermOperationTreeValid.
+Check raw_termOperationTree_segment_row.
+Check RawCodedTermOperation.
+Check raw_codedTermOperation_of_valid_tree.
+Check raw_codedTermOpening_of_valid_tree.
+
+Print Assumptions raw_termOperationTree_segment_row.
+Print Assumptions raw_codedTermOperation_of_valid_tree.
+Print Assumptions raw_codedTermOpening_of_valid_tree.

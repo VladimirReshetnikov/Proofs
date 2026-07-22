@@ -1,0 +1,37 @@
+import BoundedPAConsistency.DynamicTruthShiftInvariantPositiveRankProduction
+
+/-!
+# Audit: production positive-rank shift-invariance induction
+
+This audit exposes every proof-producing seam from the congruence-safe fixed
+source theorem through the staged shift-invariance induction kernel.  The
+orbit index remains an arbitrary element of the ambient PA model.
+-/
+
+namespace LeanProofs.BoundedPAConsistency.DynamicTruthShiftInvariantPositiveRankProductionAudit
+
+open LO FirstOrder
+open LO.FirstOrder.Arithmetic
+open LO.FirstOrder.Arithmetic.Bootstrapping
+open LeanProofs.BoundedPAConsistency.DynamicTruthShiftInvariantPositiveRankProduction
+
+#check translate_sourceStrongPrefix
+#check translate_sourceStrongStepSentence
+#check translate_sourceCongruentStrongStepSentence
+#check compiledStrongStepProof
+#check translate_sourceAvailableContext_orbit_exact
+#check translate_sourceNextShiftInvariantPredicate_orbit_exact
+#check orbitShiftInvariantStrongStepProof
+#check orbitAvailableContext_shift
+#check orbitShiftInvariantStructuralUniversalProof
+#check orbitShiftInvariantInductionKernel
+#check stagedShiftInvariantInductionKernel
+
+#print axioms compiledStrongStepProof
+#print axioms orbitShiftInvariantStrongStepProof
+#print axioms orbitAvailableContext_shift
+#print axioms orbitShiftInvariantStructuralUniversalProof
+#print axioms orbitShiftInvariantInductionKernel
+#print axioms stagedShiftInvariantInductionKernel
+
+end LeanProofs.BoundedPAConsistency.DynamicTruthShiftInvariantPositiveRankProductionAudit

@@ -1,0 +1,13 @@
+From BoundedPAConsistency Require Import RawCodedNumeralTermOpening.
+
+Import PABoundedRawCodedNumeralTermOpening.
+
+Check raw_codedTermOpening_numeral_identity.
+Check raw_codedTermOpening_variable_at_cutoff.
+Check raw_codedFormulaSubstitutionAtom_variable_numeral.
+Check raw_codedFormulaSubstitutionAtom_numeral_identity.
+
+Print Assumptions raw_codedTermOpening_numeral_identity.
+Print Assumptions raw_codedTermOpening_variable_at_cutoff.
+Print Assumptions raw_codedFormulaSubstitutionAtom_variable_numeral.
+Print Assumptions raw_codedFormulaSubstitutionAtom_numeral_identity.

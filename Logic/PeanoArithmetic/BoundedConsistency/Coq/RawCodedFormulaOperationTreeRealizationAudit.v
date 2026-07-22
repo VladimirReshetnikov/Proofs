@@ -1,0 +1,16 @@
+From BoundedPAConsistency Require Import
+  RawCodedFormulaOperationTreeRealization.
+
+Import PABoundedRawCodedFormulaOperationTreeRealization.
+
+Check RawFormulaOperationTreeValid.
+Check raw_formulaOperationTree_segment_row.
+Check raw_codedFormulaOperation_of_valid_tree.
+Check RawFormulaSubstitutionTreeValid.
+Check raw_codedFormulaSubstitution_of_valid_tree.
+Check raw_codedFormulaSingleSubstitution_of_valid_tree.
+
+Print Assumptions raw_formulaOperationTree_segment_row.
+Print Assumptions raw_codedFormulaOperation_of_valid_tree.
+Print Assumptions raw_codedFormulaSubstitution_of_valid_tree.
+Print Assumptions raw_codedFormulaSingleSubstitution_of_valid_tree.

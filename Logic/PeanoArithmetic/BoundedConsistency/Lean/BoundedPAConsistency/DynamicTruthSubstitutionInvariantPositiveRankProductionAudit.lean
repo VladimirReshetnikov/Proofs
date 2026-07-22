@@ -1,0 +1,38 @@
+import BoundedPAConsistency.DynamicTruthSubstitutionInvariantPositiveRankProduction
+
+/-!
+# Audit: production positive-rank substitution-invariance induction
+
+The declarations below expose the complete proof-code route from the
+congruence-safe one-predicate source theorem through the staged substitution
+kernel.  In particular, the audited staged context retains the augmented
+local field required by the source's quantifier-free branch.
+-/
+
+namespace LeanProofs.BoundedPAConsistency.DynamicTruthSubstitutionInvariantPositiveRankProductionAudit
+
+open LO FirstOrder
+open LO.FirstOrder.Arithmetic
+open LO.FirstOrder.Arithmetic.Bootstrapping
+open LeanProofs.BoundedPAConsistency.DynamicTruthSubstitutionInvariantPositiveRankProduction
+
+#check translate_sourceCongruentStrongStepSentence
+#check compiledStrongStepProof
+#check availableContextFormula_orbit
+#check translate_sourceAvailableContext_orbit
+#check orbitSubstitutionInvariantStrongStepProof
+#check orbitAvailableContext_shift
+#check orbitSubstitutionInvariantStructuralUniversalProof
+#check orbitSubstitutionInvariantInductionKernel
+#check proveOrbitAvailableFromProductionShiftContext
+#check stagedSubstitutionInvariantInductionKernel
+
+#print axioms compiledStrongStepProof
+#print axioms orbitSubstitutionInvariantStrongStepProof
+#print axioms orbitAvailableContext_shift
+#print axioms orbitSubstitutionInvariantStructuralUniversalProof
+#print axioms orbitSubstitutionInvariantInductionKernel
+#print axioms proveOrbitAvailableFromProductionShiftContext
+#print axioms stagedSubstitutionInvariantInductionKernel
+
+end LeanProofs.BoundedPAConsistency.DynamicTruthSubstitutionInvariantPositiveRankProductionAudit

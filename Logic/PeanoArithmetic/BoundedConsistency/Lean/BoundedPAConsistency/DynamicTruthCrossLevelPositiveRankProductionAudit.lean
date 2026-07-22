@@ -1,0 +1,44 @@
+import BoundedPAConsistency.DynamicTruthCrossLevelPositiveRankProduction
+
+/-!
+# Audit: production positive-rank cross-level induction
+
+This audit exposes the complete proof-producing path: exact source
+translation, represented congruence discharge, the orbit strong step,
+model-coded strong induction, and installation under the staged certificate
+context.  The parameter is an arbitrary element of a model of PA, so none of
+the declarations assumes that the hierarchy index is externally standard.
+-/
+
+namespace LeanProofs.BoundedPAConsistency.DynamicTruthCrossLevelPositiveRankProductionAudit
+
+open LO FirstOrder
+open LO.FirstOrder.Arithmetic
+open LO.FirstOrder.Arithmetic.Bootstrapping
+open LeanProofs.BoundedPAConsistency.DynamicTruthCrossLevelPositiveRankProduction
+
+#check translate_sourceDerivedStrongPrefix
+#check translate_sourceDerivedStrongStepSentence
+#check translate_sourceCongruentDerivedStrongStepSentence
+#check compiledDerivedStrongStepProof
+#check translate_sourceDerivedStrongStepPremises_orbit
+#check orbitCurrentDefinitionProof
+#check orbitDerivedStrongStepContextProofFromCross
+#check orbitCrossLevelStrongStepProof
+#check orbitSuccessorCrossLevelFormula_shift
+#check orbitCrossLevelStructuralUniversalProof
+#check orbitCrossLevelInductionKernel
+#check proveOrbitCrossFromPositiveLocalContext
+#check stagedPositiveCrossLevelInductionKernel
+
+#print axioms compiledDerivedStrongStepProof
+#print axioms orbitCurrentDefinitionProof
+#print axioms orbitDerivedStrongStepContextProofFromCross
+#print axioms orbitCrossLevelStrongStepProof
+#print axioms orbitSuccessorCrossLevelFormula_shift
+#print axioms orbitCrossLevelStructuralUniversalProof
+#print axioms orbitCrossLevelInductionKernel
+#print axioms proveOrbitCrossFromPositiveLocalContext
+#print axioms stagedPositiveCrossLevelInductionKernel
+
+end LeanProofs.BoundedPAConsistency.DynamicTruthCrossLevelPositiveRankProductionAudit
