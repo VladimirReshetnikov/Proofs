@@ -1,3 +1,5 @@
 import JacobianConjecture.Counterexample
 import JacobianConjecture.CollisionFamily
+import JacobianConjecture.Equivariance
+import JacobianConjecture.Scaling
 import JacobianConjecture.SimplerCounterexample

@@ -30,11 +30,59 @@ open LeanProofs.JacobianCounterexample
 #check collisionFamily₁_value
 #check collisionFamily
 #check collisionFamily_points_distinct
+#check collisionFamily₀_at_neg_one
+#check collisionFamily₁_at_neg_one
+#check collisionFamilyValue_at_neg_one
 
 #print axioms collisionFamily₀_value
 #print axioms collisionFamily₁_value
 #print axioms collisionFamily
 #print axioms collisionFamily_points_distinct
+#print axioms collisionFamily₀_at_neg_one
+#print axioms collisionFamily₁_at_neg_one
+#print axioms collisionFamilyValue_at_neg_one
+
+#check counterexample_equivariant
+#check collision_of_flipTarget_fixed
+#check mirrored_integral_collision
+#check rationalCollision₀_value
+#check rationalCollision₁_value
+#check rationalCollision₂_eq_flip
+#check rationalCollision₂_value
+#check rationalCollisions_distinct
+#check counterexample_triple_collision
+#check collisionFamily₀_mirror
+#check collisionFamily₁_mirror
+#check collisionFamilyValue_mirror
+
+#print axioms counterexample_equivariant
+#print axioms collision_of_flipTarget_fixed
+#print axioms mirrored_integral_collision
+#print axioms rationalCollision₀_value
+#print axioms rationalCollision₁_value
+#print axioms rationalCollision₂_eq_flip
+#print axioms rationalCollision₂_value
+#print axioms rationalCollisions_distinct
+#print axioms counterexample_triple_collision
+#print axioms collisionFamily₀_mirror
+#print axioms collisionFamily₁_mirror
+#print axioms collisionFamilyValue_mirror
+
+#check counterexample_scaling
+#check collision_scaling
+#check flipSource_eq_scale
+#check flipTarget_eq_scale
+#check scale_collisionFamily₀
+#check scale_collisionFamily₁
+#check scale_collisionFamilyValue
+
+#print axioms counterexample_scaling
+#print axioms collision_scaling
+#print axioms flipSource_eq_scale
+#print axioms flipTarget_eq_scale
+#print axioms scale_collisionFamily₀
+#print axioms scale_collisionFamily₁
+#print axioms scale_collisionFamilyValue
 
 open LeanProofs.JacobianSimplerCounterexample
 
@@ -52,7 +100,11 @@ open LeanProofs.JacobianSimplerCounterexample
 #check simplerCounterexample_has_no_polynomial_inverse
 #check jacobianConjectureInDimensionFive_false
 #check jacobianConjectureInDimensionFive_false_over_complex
+#check simplerCounterexample_equivariant
+#check LeanProofs.JacobianSimplerCounterexample.mirrored_collision
 
+#print axioms simplerCounterexample_equivariant
+#print axioms LeanProofs.JacobianSimplerCounterexample.mirrored_collision
 #print axioms simplerFirst_stable_identity
 #print axioms degreeExpressions_profile
 #print axioms degreeExpressions_toPolynomial

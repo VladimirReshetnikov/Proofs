@@ -57,4 +57,33 @@ theorem collisionFamily_points_distinct
   apply ht
   simpa [collisionFamily₀, collisionFamily₁] using hx
 
+/-!
+The integral collision of `Counterexample` is exactly the `t = -1` member of
+the family.
+-/
+
+theorem collisionFamily₀_at_neg_one (R : Type*) [Field R] :
+    collisionFamily₀ R (-1) = collision₀ R := by
+  funext i
+  fin_cases i <;>
+    norm_num [collisionFamily₀, collision₀,
+      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
+      Matrix.head_cons, Matrix.tail_cons]
+
+theorem collisionFamily₁_at_neg_one (R : Type*) [Field R] :
+    collisionFamily₁ R (-1) = collision₁ R := by
+  funext i
+  fin_cases i <;>
+    norm_num [collisionFamily₁, collision₁,
+      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
+      Matrix.head_cons, Matrix.tail_cons]
+
+theorem collisionFamilyValue_at_neg_one (R : Type*) [Field R] :
+    collisionFamilyValue R (-1) = collisionValue R := by
+  funext i
+  fin_cases i <;>
+    norm_num [collisionFamilyValue, collisionValue,
+      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
+      Matrix.head_cons, Matrix.tail_cons]
+
 end LeanProofs.JacobianCounterexample

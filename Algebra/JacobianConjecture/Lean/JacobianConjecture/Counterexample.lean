@@ -99,7 +99,9 @@ private theorem det3_eq_det {R : Type u} [CommRing R] (A : Matrix I I R) :
   simp only [det3]
   ring
 
-private theorem pderiv_ofNat {σ R : Type*} [CommSemiring R] {i : σ} (n : Nat)
+/-- Numeric literals have vanishing formal partial derivatives.  Shared by
+the determinant calculations of this file and `SimplerCounterexample`. -/
+theorem pderiv_ofNat {σ R : Type*} [CommSemiring R] {i : σ} (n : Nat)
     [n.AtLeastTwo] :
     pderiv i (ofNat(n) : MvPolynomial σ R) = 0 := by
   rw [← map_ofNat (C : R →+* MvPolynomial σ R) n]

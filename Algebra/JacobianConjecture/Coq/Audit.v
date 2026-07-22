@@ -1,7 +1,7 @@
 (* Kernel-assumption audit for both formal Jacobian counterexamples. *)
 
 From JacobianConjecture Require Import
-  Counterexample CollisionFamily SimplerCounterexample.
+  Counterexample CollisionFamily Scaling SimplerCounterexample.
 
 Import LeanProofs.JacobianCounterexample.
 
@@ -64,6 +64,24 @@ Print Assumptions collision_family_value_mirror.
 Print Assumptions collision_family_0_at_minus_one.
 Print Assumptions collision_family_1_at_minus_one.
 Print Assumptions collision_family_value_at_minus_one.
+
+Import Scaling.
+
+Check counterexample_scaling.
+Check collision_scaling.
+Check flip_source_eq_scale.
+Check flip_target_eq_scale.
+Check scale_collision_family_0.
+Check scale_collision_family_1.
+Check scale_collision_family_value.
+
+Print Assumptions counterexample_scaling.
+Print Assumptions collision_scaling.
+Print Assumptions flip_source_eq_scale.
+Print Assumptions flip_target_eq_scale.
+Print Assumptions scale_collision_family_0.
+Print Assumptions scale_collision_family_1.
+Print Assumptions scale_collision_family_value.
 
 Import LeanProofs.JacobianSimplerCounterexample.
 
