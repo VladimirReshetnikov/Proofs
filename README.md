@@ -20,6 +20,7 @@ project, `Lean/` and `Coq/` are siblings; `Research/`, `Support/`, and
 
 | Topic | Contents |
 | --- | --- |
+| [`Algebra/`](Algebra/) | Jacobian-conjecture counterexamples: the dimension-three witness and a lower-degree stable representative checked independently in Lean and Coq, plus an exact cubic reduction. |
 | [`Analysis/`](Analysis/) | Exact trigonometric, arctangent, and exponential identities. |
 | [`Combinatorics/`](Combinatorics/) | Enumeration of power towers and radical expressions, including OEIS certificates and research corpora. |
 | [`Computability/`](Computability/) | Lambda/SK/SKI/Iota universality and the faithful Iota-to-lambda embedding; Busy Beaver semantics, domination, exact small-state scores and times, and certificate bridges. |
@@ -33,6 +34,11 @@ is the broad Lean import surface.
 
 ## Highlights
 
+- A Lean/Coq proof that the Jacobian conjecture is false in dimension three:
+  an explicit polynomial map has formal Jacobian determinant `-2` but
+  identifies distinct integral and rational points.  A second kernel-checked
+  representative lowers maximum degree from seven to six, and exact stable
+  reductions reach the globally optimal degree three in ten variables.
 - Fermat's Last Theorem for `n = 4`, an exact floor-square-root sum, and a
   bijective Calkin-Wilf rational orbit.
 - Exact trigonometric, arctangent, and tiny-exponent-tower identities.
@@ -80,6 +86,7 @@ lake build
 The broad build is intentionally expensive. Focused examples are:
 
 ```powershell
+lake build JacobianConjecture
 lake build +DiophantineEquations.FermatFour
 lake build +ShefferStroke.Sheffer
 lake build +FirstOrder.Fol
@@ -97,6 +104,7 @@ lake build +BusyBeaver.Mathlib
 These projects also have project-local Lake files for focused builds:
 
 ```powershell
+lake --dir Algebra/JacobianConjecture/Lean build
 lake --dir Logic/Propositional/NaturalDeduction/Lean build
 lake --dir Logic/Propositional/FiniteMatrixNoncharacterizability/Lean build
 lake --dir Logic/Propositional/MonotonicityOfEntailment/Lean build

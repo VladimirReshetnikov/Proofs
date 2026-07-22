@@ -1,0 +1,68 @@
+(* Kernel-assumption audit for both formal Jacobian counterexamples. *)
+
+From JacobianConjecture Require Import
+  Counterexample CollisionFamily SimplerCounterexample.
+
+Import LeanProofs.JacobianCounterexample.
+
+Check jacobian_det_is_minus_two.
+Check collision_0_value.
+Check collision_1_value.
+Check collision_2_value.
+Check collision_points_distinct.
+Check integral_collision_0_value.
+Check integral_collision_1_value.
+Check integral_collision_points_distinct.
+Check counterexample_has_nonzero_constant_jacobian.
+Check counterexample_not_injective.
+Check counterexample_has_no_polynomial_inverse.
+Check jacobian_conjecture_dimension_three_is_false.
+
+Print Assumptions jacobian_det_is_minus_two.
+Print Assumptions collision_0_value.
+Print Assumptions collision_1_value.
+Print Assumptions collision_2_value.
+Print Assumptions collision_points_distinct.
+Print Assumptions integral_collision_0_value.
+Print Assumptions integral_collision_1_value.
+Print Assumptions integral_collision_points_distinct.
+Print Assumptions counterexample_has_nonzero_constant_jacobian.
+Print Assumptions counterexample_not_injective.
+Print Assumptions counterexample_has_no_polynomial_inverse.
+Print Assumptions jacobian_conjecture_dimension_three_is_false.
+
+Import CollisionFamily.
+
+Check collision_family_0_value.
+Check collision_family_1_value.
+Check collision_family.
+Check collision_family_points_distinct.
+
+Print Assumptions collision_family_0_value.
+Print Assumptions collision_family_1_value.
+Print Assumptions collision_family.
+Print Assumptions collision_family_points_distinct.
+
+Import LeanProofs.JacobianSimplerCounterexample.
+
+Check simpler_counterexample_degree_profile.
+Check simpler_first_stable_identity.
+Check jacobian_det5_is_minus_two.
+Check collision0_value.
+Check collision1_value.
+Check collision_points_distinct.
+Check simpler_counterexample_has_nonzero_constant_jacobian.
+Check simpler_counterexample_not_injective.
+Check simpler_counterexample_has_no_polynomial_inverse.
+Check jacobian_conjecture_dimension_five_is_false.
+
+Print Assumptions simpler_counterexample_degree_profile.
+Print Assumptions simpler_first_stable_identity.
+Print Assumptions jacobian_det5_is_minus_two.
+Print Assumptions collision0_value.
+Print Assumptions collision1_value.
+Print Assumptions collision_points_distinct.
+Print Assumptions simpler_counterexample_has_nonzero_constant_jacobian.
+Print Assumptions simpler_counterexample_not_injective.
+Print Assumptions simpler_counterexample_has_no_polynomial_inverse.
+Print Assumptions jacobian_conjecture_dimension_five_is_false.

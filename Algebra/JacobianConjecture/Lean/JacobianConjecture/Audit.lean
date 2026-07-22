@@ -1,0 +1,69 @@
+import JacobianConjecture
+
+/-! Kernel-assumption audit for the formal Jacobian counterexamples. -/
+
+open LeanProofs.JacobianCounterexample
+
+#check jacobianDet_counterexample
+#check LeanProofs.JacobianCounterexample.collision₀_value
+#check LeanProofs.JacobianCounterexample.collision₁_value
+#check LeanProofs.JacobianCounterexample.collision_points_distinct
+#check counterexample_not_injective
+#check counterexample_has_nonzero_constant_jacobian
+#check counterexample_has_no_polynomial_inverse
+#check jacobianConjectureInDimensionThree_false
+#check jacobianConjecture_false
+#check jacobianConjecture_false_over_complex
+
+#print axioms jacobianDet_counterexample
+#print axioms LeanProofs.JacobianCounterexample.collision₀_value
+#print axioms LeanProofs.JacobianCounterexample.collision₁_value
+#print axioms LeanProofs.JacobianCounterexample.collision_points_distinct
+#print axioms counterexample_not_injective
+#print axioms counterexample_has_nonzero_constant_jacobian
+#print axioms counterexample_has_no_polynomial_inverse
+#print axioms jacobianConjectureInDimensionThree_false
+#print axioms jacobianConjecture_false
+#print axioms jacobianConjecture_false_over_complex
+
+#check collisionFamily₀_value
+#check collisionFamily₁_value
+#check collisionFamily
+#check collisionFamily_points_distinct
+
+#print axioms collisionFamily₀_value
+#print axioms collisionFamily₁_value
+#print axioms collisionFamily
+#print axioms collisionFamily_points_distinct
+
+open LeanProofs.JacobianSimplerCounterexample
+
+#check simplerFirst_stable_identity
+#check degreeExpressions_profile
+#check degreeExpressions_toPolynomial
+#check simplerCounterexample_totalDegree_le_profile
+#check simplerCounterexample_totalDegree_le_six
+#check jacobianDet_simplerCounterexample
+#check LeanProofs.JacobianSimplerCounterexample.collision₀_value
+#check LeanProofs.JacobianSimplerCounterexample.collision₁_value
+#check LeanProofs.JacobianSimplerCounterexample.collision_points_distinct
+#check simplerCounterexample_not_injective
+#check simplerCounterexample_has_nonzero_constant_jacobian
+#check simplerCounterexample_has_no_polynomial_inverse
+#check jacobianConjectureInDimensionFive_false
+#check jacobianConjectureInDimensionFive_false_over_complex
+
+#print axioms simplerFirst_stable_identity
+#print axioms degreeExpressions_profile
+#print axioms degreeExpressions_toPolynomial
+#print axioms simplerCounterexample_totalDegree_le_profile
+#print axioms simplerCounterexample_totalDegree_le_six
+#print axioms jacobianDet_simplerCounterexample
+#print axioms LeanProofs.JacobianSimplerCounterexample.collision₀_value
+#print axioms LeanProofs.JacobianSimplerCounterexample.collision₁_value
+#print axioms LeanProofs.JacobianSimplerCounterexample.collision_points_distinct
+#print axioms simplerCounterexample_not_injective
+#print axioms simplerCounterexample_has_nonzero_constant_jacobian
+#print axioms simplerCounterexample_has_no_polynomial_inverse
+#print axioms jacobianConjectureInDimensionFive_false
+#print axioms jacobianConjectureInDimensionFive_false_over_complex

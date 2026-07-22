@@ -1,3 +1,4 @@
+-Q Algebra/JacobianConjecture/Coq JacobianConjecture
 -Q Analysis/TrigonometricIdentities/Coq TrigonometricIdentities
 -Q Analysis/ExponentialIdentities/Coq ExponentialIdentities
 -Q Combinatorics/ExpressionEnumeration/PowerTowers/Coq PowerTowers
@@ -31,6 +32,10 @@
 
 # Dependency-ordered by `rocq dep -sort -f _CoqProject`.
 
+Algebra/JacobianConjecture/Coq/Counterexample.v
+Algebra/JacobianConjecture/Coq/CollisionFamily.v
+Algebra/JacobianConjecture/Coq/SimplerCounterexample.v
+Algebra/JacobianConjecture/Coq/Audit.v
 lib/Coq-Library-Undecidability-current/theories/Synthetic/Definitions.v
 lib/Coq-Library-Undecidability-current/theories/Shared/Dec.v
 lib/Coq-Library-Undecidability-current/theories/Synthetic/DecidabilityFacts.v

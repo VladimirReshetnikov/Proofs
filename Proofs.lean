@@ -1,3 +1,4 @@
+import JacobianConjecture
 import TrigonometricIdentities
 import ExponentialIdentities
 import DiophantineEquations
@@ -29,6 +30,9 @@ import BusyBeaver
 /-!
 Repository-wide Lean import surface, organized by mathematical topic.
 
+The Jacobian-conjecture facade exposes the formal dimension-three witness,
+its collision family, a lower-degree stable representative, and the resulting
+negation over the complex numbers.
 Large Busy Beaver classification certificates remain explicit opt-in targets;
 the `BusyBeaver` facade imports the semantic core and known witnesses only.
 The combinatory-logic facade includes the checked weak-lambda-to-SK-to-SKI-to-
