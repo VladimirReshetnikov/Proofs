@@ -1,0 +1,22 @@
+(** Public interface and kernel-assumption audit for the honest syntax/data
+    boundary.  No theorem here claims either induction case. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedRestrictedPADynamicSoundnessInductionSyntax
+  RawCodedRestrictedPADynamicSoundnessInductionData.
+
+Import PABoundedRawCodedRestrictedPADynamicSoundnessInductionSyntax.
+Import PABoundedRawCodedRestrictedPADynamicSoundnessInductionData.
+
+Check restrictedPADynamicSoundnessInductionSourceFormula.
+Check restrictedPADynamicSoundnessInductionSourceFormula_scoped.
+Check restrictedPADynamicSoundnessInductionBodyFormula_closed.
+Check raw_codedRestrictedPADynamicSoundnessInductionBody_diagonal.
+Check raw_codedRestrictedPADynamicSoundnessClosureInductionData.
+
+Print Assumptions
+  restrictedPADynamicSoundnessInductionSourceFormula_scoped.
+Print Assumptions
+  raw_codedRestrictedPADynamicSoundnessInductionBody_diagonal.
+Print Assumptions
+  raw_codedRestrictedPADynamicSoundnessClosureInductionData.
