@@ -39,6 +39,9 @@ is the broad Lean import surface.
   identifies distinct integral and rational points.  A second kernel-checked
   representative lowers maximum degree from seven to six, and exact stable
   reductions reach the globally optimal degree three in ten variables.
+  Both developments also prove the witness's discrete mirror symmetry and
+  the weighted torus action behind it, exhibiting the rational collision
+  family as the orbit of a single integral collision.
 - Fermat's Last Theorem for `n = 4`, an exact floor-square-root sum, and a
   bijective Calkin-Wilf rational orbit.
 - Exact trigonometric, arctangent, and tiny-exponent-tower identities.
