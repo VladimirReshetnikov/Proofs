@@ -9,14 +9,11 @@
   object-formula representation is isolated as a separate interface below.
 
   The syntax of the target is constant except for occurrences of the numeral
-  term carrying the restriction level.  We reserve the closed numeral 17 as
-  a compile-time marker (the proof-constructor tags stop at 16), quote the
-  marked target by transparent polynomial syntax constructors, and replace
-  every marked term-code leaf with the output of [RawNumeralTermCodeAt].
-  Exact agreement with the legacy concrete target family is stated as the
-  finite marker-context equation below.  It is not discharged by a giant
-  normalization, because expanding that formula defeats Rocq's sharing and
-  is not a maintainable proof method.
+  term carrying the restriction level.  A generic marker-replacement
+  construction is retained for reuse, while the exact target family is built
+  from an explicit syntax context whose holes are precisely those numerals.
+  Fixed subformulae remain shared, so agreement with the legacy target is
+  proved compositionally without normalizing the enormous expanded formula.
 
   This module constructs target codes only.  It does not construct a PA proof
   certificate for the target and hence does not discharge the uniform proof
@@ -26,12 +23,20 @@
 From Stdlib Require Import List Arith Lia Bool.
 From FirstOrder Require Import Fol.
 From PAHF Require Import PAHF.
-From PAListCoding Require Import ListCode.
+From PAListCoding Require Import ListCode Representability.
 From PAFiniteBasisReduction Require Import
   HierarchyReduction CanonicalSelector CanonicalSelectorPA FiniteBetaCoding.
 From BoundedPAConsistency Require Import
   CodedSyntax RawModelCompleteness RawCodedSyntaxConstructors
   RawCodedAssignment
+  RawCodedFormulaRankStep RawCodedFormulaRankTraversal
+  RawCodedFormulaRankTotality RawCodedTermEvaluationTraversal
+  RawCodedContextLists
+  RawCodedFormulaOperations
+  RawCodedProofTraversal RawCodedProofEndpoints RawCodedProofRules
+  RawCodedProofAtomicAdequacy RawCodedProofRuleCoverage
+  RawCodedFixedLevelTruth RawCodedContextBounds
+  RawCodedRestrictedProofTraversal RawCodedRestrictedPAProof
   RawCodedRestrictedPAConsistency RawCodedNumeralTermCode.
 
 Import ListNotations.
@@ -40,6 +45,7 @@ Module PABoundedRawCodedRestrictedPAConsistencyFormulaCode.
 
 Import PA.
 Import PAListCode.
+Import PAListRepresentability.
 Import PAHierarchyReduction.
 Import PACanonicalSelector.
 Import PACanonicalSelectorPA.
@@ -48,6 +54,21 @@ Import PABoundedCodedSyntax.
 Import PABoundedRawModelCompleteness.
 Import PABoundedRawCodedSyntaxConstructors.
 Import PABoundedRawCodedAssignment.
+Import PABoundedRawCodedFormulaRankTraversal.
+Import PABoundedRawCodedFormulaRankStep.
+Import PABoundedRawCodedFormulaRankTotality.
+Import PABoundedRawCodedTermEvaluationTraversal.
+Import PABoundedRawCodedFormulaOperations.
+Import PABoundedRawCodedContextLists.
+Import PABoundedRawCodedProofTraversal.
+Import PABoundedRawCodedProofEndpoints.
+Import PABoundedRawCodedProofRules.
+Import PABoundedRawCodedProofAtomicAdequacy.
+Import PABoundedRawCodedProofRuleCoverage.
+Import PABoundedRawCodedFixedLevelTruth.
+Import PABoundedRawCodedContextBounds.
+Import PABoundedRawCodedRestrictedProofTraversal.
+Import PABoundedRawCodedRestrictedPAProof.
 Import PABoundedRawCodedRestrictedPAConsistency.
 Import PABoundedRawCodedNumeralTermCode.
 
@@ -66,9 +87,9 @@ Fixpoint rawTargetTermEqb (left right : term) : bool :=
   end.
 
 (** Seventeen is deliberately the first number beyond the constructor tags
-    in [proofOccurrenceCasesTerms].  The exact replacement theorem below is
-    the kernel-checked guarantee that it is not also used by fixed target
-    syntax in a way that would be changed accidentally. *)
+    in [proofOccurrenceCasesTerms].  Marker replacement remains a useful
+    generic quoting operation, but exact target agreement below uses explicit
+    contexts and therefore does not depend on a global freshness claim. *)
 Definition restrictedPAConsistencyLevelMarker : nat := 17.
 
 Definition restrictedPAConsistencyLevelMarkerTerm : term :=
@@ -124,16 +145,6 @@ Fixpoint replaceRestrictedPAConsistencyLevelFormula
 
 Definition markedRestrictedPAConsistencyFormula : formula :=
   restrictedPAConsistencyFormula restrictedPAConsistencyLevelMarker.
-
-(** Exactness of the finite marked syntax context.  This proposition is kept
-    explicit because blindly normalizing the already-large concrete target
-    duplicates its syntax exponentially in Rocq.  A later compositional audit
-    can discharge it one shared definition at a time; none of the arbitrary-
-    model totality results below assumes it. *)
-Definition RestrictedPAConsistencyLevelMarkerExact : Prop := forall level,
-  replaceRestrictedPAConsistencyLevelFormula (Term.numeral level)
-    markedRestrictedPAConsistencyFormula =
-  restrictedPAConsistencyFormula level.
 
 (** ------------------------------------------------------------------
     The same replacement while quoting into a raw model. *)
@@ -226,6 +237,682 @@ Proof.
 Qed.
 
 (** ------------------------------------------------------------------
+    A shared syntax context for the exact target family.
+
+    The marker construction above is useful generically, but proving that a
+    concrete marker is fresh by reducing the fully expanded target destroys
+    sharing.  The context datatype below records the level holes explicitly.
+    [RTFCFixed] is the key sharing constructor: a level-independent formula is
+    retained as one opaque subtree instead of being traversed and copied. *)
+
+Inductive RestrictedTargetTermContext : Type :=
+| RTTCFixed : term -> RestrictedTargetTermContext
+| RTTCHole : RestrictedTargetTermContext
+| RTTCSucc : RestrictedTargetTermContext -> RestrictedTargetTermContext
+| RTTCAdd : RestrictedTargetTermContext -> RestrictedTargetTermContext ->
+    RestrictedTargetTermContext
+| RTTCMul : RestrictedTargetTermContext -> RestrictedTargetTermContext ->
+    RestrictedTargetTermContext.
+
+Inductive RestrictedTargetFormulaContext : Type :=
+| RTFCFixed : formula -> RestrictedTargetFormulaContext
+| RTFCBot : RestrictedTargetFormulaContext
+| RTFCEq : RestrictedTargetTermContext -> RestrictedTargetTermContext ->
+    RestrictedTargetFormulaContext
+| RTFCImp : RestrictedTargetFormulaContext ->
+    RestrictedTargetFormulaContext -> RestrictedTargetFormulaContext
+| RTFCAnd : RestrictedTargetFormulaContext ->
+    RestrictedTargetFormulaContext -> RestrictedTargetFormulaContext
+| RTFCOr : RestrictedTargetFormulaContext ->
+    RestrictedTargetFormulaContext -> RestrictedTargetFormulaContext
+| RTFCAll : RestrictedTargetFormulaContext -> RestrictedTargetFormulaContext
+| RTFCEx : RestrictedTargetFormulaContext -> RestrictedTargetFormulaContext
+| RTFCSeal : RestrictedTargetFormulaContext -> RestrictedTargetFormulaContext.
+
+Fixpoint instantiateRestrictedTargetTermContext
+    (replacement : term) (context : RestrictedTargetTermContext) : term :=
+  match context with
+  | RTTCFixed fixed => fixed
+  | RTTCHole => replacement
+  | RTTCSucc child =>
+      tSucc (instantiateRestrictedTargetTermContext replacement child)
+  | RTTCAdd lhs rhs =>
+      tAdd
+        (instantiateRestrictedTargetTermContext replacement lhs)
+        (instantiateRestrictedTargetTermContext replacement rhs)
+  | RTTCMul lhs rhs =>
+      tMul
+        (instantiateRestrictedTargetTermContext replacement lhs)
+        (instantiateRestrictedTargetTermContext replacement rhs)
+  end.
+
+Fixpoint instantiateRestrictedTargetFormulaContext
+    (replacement : term) (context : RestrictedTargetFormulaContext)
+    : formula :=
+  match context with
+  | RTFCFixed fixed => fixed
+  | RTFCBot => pBot
+  | RTFCEq lhs rhs =>
+      pEq
+        (instantiateRestrictedTargetTermContext replacement lhs)
+        (instantiateRestrictedTargetTermContext replacement rhs)
+  | RTFCImp lhs rhs =>
+      pImp
+        (instantiateRestrictedTargetFormulaContext replacement lhs)
+        (instantiateRestrictedTargetFormulaContext replacement rhs)
+  | RTFCAnd lhs rhs =>
+      pAnd
+        (instantiateRestrictedTargetFormulaContext replacement lhs)
+        (instantiateRestrictedTargetFormulaContext replacement rhs)
+  | RTFCOr lhs rhs =>
+      pOr
+        (instantiateRestrictedTargetFormulaContext replacement lhs)
+        (instantiateRestrictedTargetFormulaContext replacement rhs)
+  | RTFCAll child =>
+      pAll (instantiateRestrictedTargetFormulaContext replacement child)
+  | RTFCEx child =>
+      pEx (instantiateRestrictedTargetFormulaContext replacement child)
+  | RTFCSeal child =>
+      Formula.sealPA
+        (instantiateRestrictedTargetFormulaContext replacement child)
+  end.
+
+Fixpoint restrictedTargetTermContextBound
+    (context : RestrictedTargetTermContext) : nat :=
+  match context with
+  | RTTCFixed fixed => Term.bound fixed
+  | RTTCHole => 0
+  | RTTCSucc child => restrictedTargetTermContextBound child
+  | RTTCAdd lhs rhs
+  | RTTCMul lhs rhs =>
+      restrictedTargetTermContextBound lhs +
+      restrictedTargetTermContextBound rhs
+  end.
+
+Fixpoint restrictedTargetFormulaContextBound
+    (context : RestrictedTargetFormulaContext) : nat :=
+  match context with
+  | RTFCFixed fixed => Formula.bound fixed
+  | RTFCBot => 0
+  | RTFCEq lhs rhs =>
+      restrictedTargetTermContextBound lhs +
+      restrictedTargetTermContextBound rhs
+  | RTFCImp lhs rhs
+  | RTFCAnd lhs rhs
+  | RTFCOr lhs rhs =>
+      restrictedTargetFormulaContextBound lhs +
+      restrictedTargetFormulaContextBound rhs
+  | RTFCAll child
+  | RTFCEx child
+  | RTFCSeal child => restrictedTargetFormulaContextBound child
+  end.
+
+Lemma restrictedTargetTermContextBound_instance : forall replacement,
+  Term.bound replacement = 0 -> forall context,
+  Term.bound (instantiateRestrictedTargetTermContext replacement context) =
+  restrictedTargetTermContextBound context.
+Proof.
+  intros replacement hclosed context.
+  induction context; cbn
+    [instantiateRestrictedTargetTermContext
+      restrictedTargetTermContextBound Term.bound];
+    try rewrite ?IHcontext, ?IHcontext1, ?IHcontext2;
+    try reflexivity.
+  exact hclosed.
+Qed.
+
+Lemma restrictedTarget_formula_bound_closeN : forall count phi,
+  Formula.bound (Formula.closeN count phi) = Formula.bound phi.
+Proof.
+  induction count as [|count IH]; intro phi; cbn [Formula.closeN].
+  - reflexivity.
+  - rewrite IH. reflexivity.
+Qed.
+
+Lemma restrictedTargetFormulaContextBound_instance : forall replacement,
+  Term.bound replacement = 0 -> forall context,
+  Formula.bound
+    (instantiateRestrictedTargetFormulaContext replacement context) =
+  restrictedTargetFormulaContextBound context.
+Proof.
+  intros replacement hclosed context.
+  induction context; cbn
+    [instantiateRestrictedTargetFormulaContext
+      restrictedTargetFormulaContextBound Formula.bound];
+    try rewrite ?IHcontext, ?IHcontext1, ?IHcontext2;
+    try reflexivity.
+  - now rewrite !restrictedTargetTermContextBound_instance.
+  - unfold Formula.sealPA.
+    rewrite restrictedTarget_formula_bound_closeN, IHcontext.
+    reflexivity.
+Qed.
+
+Fixpoint rawRestrictedTargetCloseNFormulaCode (M : RawPAModel)
+    (count : nat) (code : M) : M :=
+  match count with
+  | 0 => code
+  | S count' =>
+      rawRestrictedTargetCloseNFormulaCode M count'
+        (rawFormulaAllCode M code)
+  end.
+
+Fixpoint rawRestrictedTargetTermContextCode (M : RawPAModel)
+    (replacementCode : M) (context : RestrictedTargetTermContext) : M :=
+  match context with
+  | RTTCFixed fixed => rawQuotedTermCode M fixed
+  | RTTCHole => replacementCode
+  | RTTCSucc child =>
+      rawTermSuccCode M
+        (rawRestrictedTargetTermContextCode M replacementCode child)
+  | RTTCAdd lhs rhs =>
+      rawTermAddCode M
+        (rawRestrictedTargetTermContextCode M replacementCode lhs)
+        (rawRestrictedTargetTermContextCode M replacementCode rhs)
+  | RTTCMul lhs rhs =>
+      rawTermMulCode M
+        (rawRestrictedTargetTermContextCode M replacementCode lhs)
+        (rawRestrictedTargetTermContextCode M replacementCode rhs)
+  end.
+
+Fixpoint rawRestrictedTargetFormulaContextCode (M : RawPAModel)
+    (replacementCode : M) (context : RestrictedTargetFormulaContext) : M :=
+  match context with
+  | RTFCFixed fixed => rawQuotedFormulaCode M fixed
+  | RTFCBot => rawFormulaBotCode M
+  | RTFCEq lhs rhs =>
+      rawFormulaEqCode M
+        (rawRestrictedTargetTermContextCode M replacementCode lhs)
+        (rawRestrictedTargetTermContextCode M replacementCode rhs)
+  | RTFCImp lhs rhs =>
+      rawFormulaImpCode M
+        (rawRestrictedTargetFormulaContextCode M replacementCode lhs)
+        (rawRestrictedTargetFormulaContextCode M replacementCode rhs)
+  | RTFCAnd lhs rhs =>
+      rawFormulaAndCode M
+        (rawRestrictedTargetFormulaContextCode M replacementCode lhs)
+        (rawRestrictedTargetFormulaContextCode M replacementCode rhs)
+  | RTFCOr lhs rhs =>
+      rawFormulaOrCode M
+        (rawRestrictedTargetFormulaContextCode M replacementCode lhs)
+        (rawRestrictedTargetFormulaContextCode M replacementCode rhs)
+  | RTFCAll child =>
+      rawFormulaAllCode M
+        (rawRestrictedTargetFormulaContextCode M replacementCode child)
+  | RTFCEx child =>
+      rawFormulaExCode M
+        (rawRestrictedTargetFormulaContextCode M replacementCode child)
+  | RTFCSeal child =>
+      rawRestrictedTargetCloseNFormulaCode M
+        (restrictedTargetFormulaContextBound child)
+        (rawRestrictedTargetFormulaContextCode M replacementCode child)
+  end.
+
+Arguments rawRestrictedTargetTermContextCode
+  M replacementCode context : clear implicits.
+Arguments rawRestrictedTargetFormulaContextCode
+  M replacementCode context : clear implicits.
+
+Lemma rawRestrictedTargetCloseNFormulaCode_quoted : forall
+    (M : RawPAModel) count phi,
+  rawRestrictedTargetCloseNFormulaCode M count
+    (rawQuotedFormulaCode M phi) =
+  rawQuotedFormulaCode M (Formula.closeN count phi).
+Proof.
+  intros M count. induction count as [|count IH]; intro phi.
+  - reflexivity.
+  - cbn [rawRestrictedTargetCloseNFormulaCode Formula.closeN].
+    change (rawRestrictedTargetCloseNFormulaCode M count
+      (rawQuotedFormulaCode M (pAll phi)) =
+      rawQuotedFormulaCode M (Formula.closeN count (pAll phi))).
+    apply IH.
+Qed.
+
+Lemma rawRestrictedTargetTermContextCode_quoted : forall
+    (M : RawPAModel) replacement context,
+  rawRestrictedTargetTermContextCode M
+    (rawQuotedTermCode M replacement) context =
+  rawQuotedTermCode M
+    (instantiateRestrictedTargetTermContext replacement context).
+Proof.
+  intros M replacement context. induction context; cbn
+    [rawRestrictedTargetTermContextCode
+      instantiateRestrictedTargetTermContext rawQuotedTermCode];
+    now rewrite ?IHcontext, ?IHcontext1, ?IHcontext2.
+Qed.
+
+Lemma rawRestrictedTargetFormulaContextCode_quoted : forall
+    (M : RawPAModel) replacement,
+  Term.bound replacement = 0 -> forall context,
+  rawRestrictedTargetFormulaContextCode M
+    (rawQuotedTermCode M replacement) context =
+  rawQuotedFormulaCode M
+    (instantiateRestrictedTargetFormulaContext replacement context).
+Proof.
+  intros M replacement hclosed context. induction context; cbn
+    [rawRestrictedTargetFormulaContextCode
+      instantiateRestrictedTargetFormulaContext rawQuotedFormulaCode].
+  - reflexivity.
+  - reflexivity.
+  - now rewrite !rawRestrictedTargetTermContextCode_quoted.
+  - now rewrite IHcontext1, IHcontext2.
+  - now rewrite IHcontext1, IHcontext2.
+  - now rewrite IHcontext1, IHcontext2.
+  - now rewrite IHcontext.
+  - now rewrite IHcontext.
+  - rewrite IHcontext.
+    unfold Formula.sealPA.
+    rewrite (restrictedTargetFormulaContextBound_instance
+      replacement hclosed context).
+    apply rawRestrictedTargetCloseNFormulaCode_quoted.
+Qed.
+
+Fixpoint restrictedTargetAllN
+    (count : nat) (context : RestrictedTargetFormulaContext)
+    : RestrictedTargetFormulaContext :=
+  match count with
+  | 0 => context
+  | S count' => restrictedTargetAllN count' (RTFCAll context)
+  end.
+
+Fixpoint restrictedTargetExN
+    (count : nat) (context : RestrictedTargetFormulaContext)
+    : RestrictedTargetFormulaContext :=
+  match count with
+  | 0 => context
+  | S count' => restrictedTargetExN count' (RTFCEx context)
+  end.
+
+Definition restrictedTargetLeContext (lhs : term)
+    : RestrictedTargetFormulaContext :=
+  RTFCEx
+    (RTFCEq
+      (RTTCFixed (tAdd (Term.rename S lhs) (tVar 0)))
+      RTTCHole).
+
+Lemma restrictedTargetLeContext_instance : forall level lhs,
+  instantiateRestrictedTargetFormulaContext (Term.numeral level)
+    (restrictedTargetLeContext lhs) =
+  Formula.leTermAt lhs (Term.numeral level).
+Proof.
+  intros level lhs.
+  unfold restrictedTargetLeContext, Formula.leTermAt.
+  cbn [instantiateRestrictedTargetFormulaContext
+    instantiateRestrictedTargetTermContext].
+  now rewrite Term.rename_numeral.
+Qed.
+
+Definition restrictedTargetSigmaDomainContext
+    (code : term) : RestrictedTargetFormulaContext :=
+  restrictedTargetExN 2
+    (RTFCAnd
+      (RTFCFixed
+        (codedFormulaRankTermAt (liftTerm 2 code) (tVar 1) (tVar 0)))
+      (restrictedTargetLeContext (tVar 1))).
+
+Definition restrictedTargetPiDomainContext
+    (code : term) : RestrictedTargetFormulaContext :=
+  restrictedTargetExN 2
+    (RTFCAnd
+      (RTFCFixed
+        (codedFormulaRankTermAt (liftTerm 2 code) (tVar 1) (tVar 0)))
+      (restrictedTargetLeContext (tVar 0))).
+
+Lemma restrictedTargetSigmaDomainContext_instance : forall level code,
+  instantiateRestrictedTargetFormulaContext (Term.numeral level)
+    (restrictedTargetSigmaDomainContext code) =
+  fixedLevelSigmaDomainTermAt level code.
+Proof.
+  intros level code.
+  unfold restrictedTargetSigmaDomainContext,
+    fixedLevelSigmaDomainTermAt, fixedLevelEx2.
+  cbn [restrictedTargetExN instantiateRestrictedTargetFormulaContext].
+  now rewrite restrictedTargetLeContext_instance.
+Qed.
+
+Lemma restrictedTargetPiDomainContext_instance : forall level code,
+  instantiateRestrictedTargetFormulaContext (Term.numeral level)
+    (restrictedTargetPiDomainContext code) =
+  fixedLevelPiDomainTermAt level code.
+Proof.
+  intros level code.
+  unfold restrictedTargetPiDomainContext,
+    fixedLevelPiDomainTermAt, fixedLevelEx2.
+  cbn [restrictedTargetExN instantiateRestrictedTargetFormulaContext].
+  now rewrite restrictedTargetLeContext_instance.
+Qed.
+
+Definition restrictedTargetFormulaQuantifierBoundedContext
+    (code : term) : RestrictedTargetFormulaContext :=
+  RTFCOr
+    (restrictedTargetSigmaDomainContext code)
+    (restrictedTargetPiDomainContext code).
+
+Lemma restrictedTargetFormulaQuantifierBoundedContext_instance : forall
+    level code,
+  instantiateRestrictedTargetFormulaContext (Term.numeral level)
+    (restrictedTargetFormulaQuantifierBoundedContext code) =
+  formulaQuantifierBoundedTermAt level code.
+Proof.
+  intros level code.
+  unfold restrictedTargetFormulaQuantifierBoundedContext,
+    formulaQuantifierBoundedTermAt.
+  cbn [instantiateRestrictedTargetFormulaContext].
+  now rewrite restrictedTargetSigmaDomainContext_instance,
+    restrictedTargetPiDomainContext_instance.
+Qed.
+
+Definition restrictedTargetContextAllBoundedWithTablesContext
+    (bound headCode headStep : term) : RestrictedTargetFormulaContext :=
+  RTFCAll
+    (RTFCImp
+      (RTFCFixed
+        (Formula.ltTermAt (tVar 0) (liftTerm 1 bound)))
+      (RTFCAll
+        (RTFCImp
+          (RTFCFixed
+            (codedAssignmentLookupTermAt
+              (liftTerm 2 headCode) (liftTerm 2 headStep)
+              (tVar 1) (tVar 0)))
+          (restrictedTargetFormulaQuantifierBoundedContext (tVar 0))))).
+
+Lemma restrictedTargetContextAllBoundedWithTablesContext_instance : forall
+    level bound headCode headStep,
+  instantiateRestrictedTargetFormulaContext (Term.numeral level)
+    (restrictedTargetContextAllBoundedWithTablesContext
+      bound headCode headStep) =
+  contextAllBoundedWithTablesTermAt level bound headCode headStep.
+Proof.
+  intros level bound headCode headStep.
+  unfold restrictedTargetContextAllBoundedWithTablesContext,
+    contextAllBoundedWithTablesTermAt.
+  cbn [instantiateRestrictedTargetFormulaContext].
+  now rewrite restrictedTargetFormulaQuantifierBoundedContext_instance.
+Qed.
+
+Definition restrictedTargetContextAllBoundedContext
+    (root : term) : RestrictedTargetFormulaContext :=
+  restrictedTargetExN 5
+    (RTFCAnd
+      (RTFCFixed
+        (contextListTraversalTermAt
+          (liftTerm 5 root) (tVar 4) (tVar 3) (tVar 2)
+          (tVar 1) (tVar 0)))
+      (restrictedTargetContextAllBoundedWithTablesContext
+        (tVar 4) (tVar 1) (tVar 0))).
+
+Lemma restrictedTargetContextAllBoundedContext_instance : forall level root,
+  instantiateRestrictedTargetFormulaContext (Term.numeral level)
+    (restrictedTargetContextAllBoundedContext root) =
+  contextAllBoundedTermAt level root.
+Proof.
+  intros level root.
+  unfold restrictedTargetContextAllBoundedContext,
+    contextAllBoundedTermAt, contextListEx5.
+  cbn [restrictedTargetExN instantiateRestrictedTargetFormulaContext].
+  now rewrite restrictedTargetContextAllBoundedWithTablesContext_instance.
+Qed.
+
+Fixpoint restrictedTargetProofFormulaFieldsBoundedContext
+    (fields : list term) : RestrictedTargetFormulaContext :=
+  match fields with
+  | [] => RTFCFixed (pEq tZero tZero)
+  | field :: tail =>
+      RTFCAnd
+        (restrictedTargetFormulaQuantifierBoundedContext field)
+        (restrictedTargetProofFormulaFieldsBoundedContext tail)
+  end.
+
+Lemma restrictedTargetProofFormulaFieldsBoundedContext_instance : forall
+    level fields,
+  instantiateRestrictedTargetFormulaContext (Term.numeral level)
+    (restrictedTargetProofFormulaFieldsBoundedContext fields) =
+  proofFormulaFieldsBoundedTermAt level fields.
+Proof.
+  intros level fields. induction fields as [|field tail IH].
+  - reflexivity.
+  - cbn [restrictedTargetProofFormulaFieldsBoundedContext
+      proofFormulaFieldsBoundedTermAt
+      instantiateRestrictedTargetFormulaContext].
+    now rewrite restrictedTargetFormulaQuantifierBoundedContext_instance, IH.
+Qed.
+
+Fixpoint restrictedTargetProofOccurrenceCasesBoundedContext
+    (code context : term) (cases : list (term * list term))
+    : RestrictedTargetFormulaContext :=
+  match cases with
+  | [] => RTFCFixed (pEq tZero tZero)
+  | (constructorCode, formulaFields) :: tail =>
+      RTFCAnd
+        (RTFCImp
+          (RTFCFixed (pEq code constructorCode))
+          (RTFCAnd
+            (restrictedTargetContextAllBoundedContext context)
+            (restrictedTargetProofFormulaFieldsBoundedContext
+              formulaFields)))
+        (restrictedTargetProofOccurrenceCasesBoundedContext
+          code context tail)
+  end.
+
+Lemma restrictedTargetProofOccurrenceCasesBoundedContext_instance : forall
+    level code context cases,
+  instantiateRestrictedTargetFormulaContext (Term.numeral level)
+    (restrictedTargetProofOccurrenceCasesBoundedContext
+      code context cases) =
+  proofOccurrenceCasesBoundedTermAt level code context cases.
+Proof.
+  intros level code context cases.
+  induction cases as [|[constructorCode formulaFields] tail IH].
+  - reflexivity.
+  - cbn [restrictedTargetProofOccurrenceCasesBoundedContext
+      proofOccurrenceCasesBoundedTermAt
+      instantiateRestrictedTargetFormulaContext].
+    now rewrite restrictedTargetContextAllBoundedContext_instance,
+      restrictedTargetProofFormulaFieldsBoundedContext_instance, IH.
+Qed.
+
+Definition restrictedTargetProofConstructorOccurrencesBoundedContext
+    (code : term) : RestrictedTargetFormulaContext :=
+  restrictedTargetAllN 8
+    (restrictedTargetProofOccurrenceCasesBoundedContext
+      (liftTerm 8 code) (tVar 7)
+      (proofOccurrenceCasesTerms
+        (tVar 7) (tVar 6) (tVar 5) (tVar 4)
+        (tVar 3) (tVar 2) (tVar 1) (tVar 0))).
+
+Lemma restrictedTargetProofConstructorOccurrencesBoundedContext_instance :
+  forall level code,
+  instantiateRestrictedTargetFormulaContext (Term.numeral level)
+    (restrictedTargetProofConstructorOccurrencesBoundedContext code) =
+  proofConstructorOccurrencesBoundedTermAt level code.
+Proof.
+  intros level code.
+  unfold restrictedTargetProofConstructorOccurrencesBoundedContext,
+    proofConstructorOccurrencesBoundedTermAt, restrictedProofAll8.
+  cbn [restrictedTargetAllN instantiateRestrictedTargetFormulaContext].
+  now rewrite restrictedTargetProofOccurrenceCasesBoundedContext_instance.
+Qed.
+
+Definition restrictedTargetProofEndpointOccurrencesBoundedContext
+    (code : term) : RestrictedTargetFormulaContext :=
+  restrictedTargetAllN 2
+    (RTFCImp
+      (RTFCFixed
+        (proofEndpointTermAt
+          (liftTerm 2 code) (tVar 1) (tVar 0)))
+      (RTFCAnd
+        (restrictedTargetContextAllBoundedContext (tVar 1))
+        (restrictedTargetFormulaQuantifierBoundedContext (tVar 0)))).
+
+Lemma restrictedTargetProofEndpointOccurrencesBoundedContext_instance :
+  forall level code,
+  instantiateRestrictedTargetFormulaContext (Term.numeral level)
+    (restrictedTargetProofEndpointOccurrencesBoundedContext code) =
+  proofEndpointOccurrencesBoundedTermAt level code.
+Proof.
+  intros level code.
+  unfold restrictedTargetProofEndpointOccurrencesBoundedContext,
+    proofEndpointOccurrencesBoundedTermAt, restrictedProofAll2.
+  cbn [restrictedTargetAllN instantiateRestrictedTargetFormulaContext].
+  now rewrite restrictedTargetContextAllBoundedContext_instance,
+    restrictedTargetFormulaQuantifierBoundedContext_instance.
+Qed.
+
+Definition restrictedTargetProofNodeContext
+    (code supportCode supportStep : term) : RestrictedTargetFormulaContext :=
+  RTFCAnd
+    (RTFCFixed (proofSyntaxStepTermAt code supportCode supportStep))
+    (RTFCAnd
+      (RTFCFixed (proofRuleEndpointExistsTermAt code))
+      (RTFCAnd
+        (restrictedTargetProofConstructorOccurrencesBoundedContext code)
+        (restrictedTargetProofEndpointOccurrencesBoundedContext code))).
+
+Lemma restrictedTargetProofNodeContext_instance : forall
+    level code supportCode supportStep,
+  instantiateRestrictedTargetFormulaContext (Term.numeral level)
+    (restrictedTargetProofNodeContext code supportCode supportStep) =
+  restrictedProofNodeTermAt level code supportCode supportStep.
+Proof.
+  intros level code supportCode supportStep.
+  unfold restrictedTargetProofNodeContext,
+    restrictedProofNodeTermAt, restrictedProofAnd4.
+  cbn [instantiateRestrictedTargetFormulaContext].
+  now rewrite
+    restrictedTargetProofConstructorOccurrencesBoundedContext_instance,
+    restrictedTargetProofEndpointOccurrencesBoundedContext_instance.
+Qed.
+
+Definition restrictedTargetProofTraversalContext
+    (bound supportCode supportStep : term) : RestrictedTargetFormulaContext :=
+  RTFCAnd
+    (RTFCFixed
+      (codedAssignmentDefinedThroughTermAt supportCode supportStep bound))
+    (RTFCAll
+      (RTFCImp
+        (RTFCFixed
+          (Formula.ltTermAt (tVar 0) (liftTerm 1 bound)))
+        (RTFCImp
+          (RTFCFixed
+            (proofCodeSupportedTermAt
+              (liftTerm 1 supportCode) (liftTerm 1 supportStep) (tVar 0)))
+          (restrictedTargetProofNodeContext
+            (tVar 0) (liftTerm 1 supportCode) (liftTerm 1 supportStep))))).
+
+Lemma restrictedTargetProofTraversalContext_instance : forall
+    level bound supportCode supportStep,
+  instantiateRestrictedTargetFormulaContext (Term.numeral level)
+    (restrictedTargetProofTraversalContext bound supportCode supportStep) =
+  restrictedProofTraversalTermAt level bound supportCode supportStep.
+Proof.
+  intros level bound supportCode supportStep.
+  unfold restrictedTargetProofTraversalContext,
+    restrictedProofTraversalTermAt.
+  cbn [instantiateRestrictedTargetFormulaContext].
+  now rewrite restrictedTargetProofNodeContext_instance.
+Qed.
+
+Definition restrictedTargetProofCertificateWithSupportContext
+    (root supportCode supportStep : term) : RestrictedTargetFormulaContext :=
+  RTFCAnd
+    (restrictedTargetProofTraversalContext
+      (tSucc root) supportCode supportStep)
+    (RTFCFixed (proofCodeSupportedTermAt supportCode supportStep root)).
+
+Lemma restrictedTargetProofCertificateWithSupportContext_instance : forall
+    level root supportCode supportStep,
+  instantiateRestrictedTargetFormulaContext (Term.numeral level)
+    (restrictedTargetProofCertificateWithSupportContext
+      root supportCode supportStep) =
+  restrictedProofCertificateWithSupportTermAt
+    level root supportCode supportStep.
+Proof.
+  intros level root supportCode supportStep.
+  unfold restrictedTargetProofCertificateWithSupportContext,
+    restrictedProofCertificateWithSupportTermAt.
+  cbn [instantiateRestrictedTargetFormulaContext].
+  now rewrite restrictedTargetProofTraversalContext_instance.
+Qed.
+
+Definition restrictedTargetProofContext
+    (root : term) : RestrictedTargetFormulaContext :=
+  restrictedTargetExN 2
+    (restrictedTargetProofCertificateWithSupportContext
+      (liftTerm 2 root) (tVar 1) (tVar 0)).
+
+Lemma restrictedTargetProofContext_instance : forall level root,
+  instantiateRestrictedTargetFormulaContext (Term.numeral level)
+    (restrictedTargetProofContext root) =
+  restrictedProofTermAt level root.
+Proof.
+  intros level root.
+  unfold restrictedTargetProofContext,
+    restrictedProofTermAt, restrictedProofEx2.
+  cbn [restrictedTargetExN instantiateRestrictedTargetFormulaContext].
+  now rewrite restrictedTargetProofCertificateWithSupportContext_instance.
+Qed.
+
+Definition restrictedTargetCodedRestrictedPAProofContext
+    (certificate : term) : RestrictedTargetFormulaContext :=
+  restrictedTargetExN 3
+    (RTFCAnd
+      (RTFCFixed
+        (codeList3TermAt (liftTerm 3 certificate)
+          (Term.numeral 0) (tVar 2) (tVar 1)))
+      (RTFCAnd
+        (RTFCFixed
+          (codedPAAxiomWitnessContextTermAt (tVar 2) (tVar 0)))
+        (RTFCAnd
+          (restrictedTargetProofContext (tVar 1))
+          (RTFCAnd
+            (RTFCFixed (proofAtomicallyAdequateTermAt (tVar 1)))
+            (RTFCAnd
+              (RTFCFixed (proofHasFormulaCoverageTermAt (tVar 1)))
+              (RTFCAnd
+                (RTFCFixed (proofRuleCoverageTermAt (tVar 1)))
+                (RTFCFixed
+                  (proofRuleValidTermAt (tVar 1) (tVar 0)
+                    rawFormulaBotCodeTerm)))))))).
+
+Lemma restrictedTargetCodedRestrictedPAProofContext_instance : forall
+    level certificate,
+  instantiateRestrictedTargetFormulaContext (Term.numeral level)
+    (restrictedTargetCodedRestrictedPAProofContext certificate) =
+  codedRestrictedPAProofTermAt level certificate.
+Proof.
+  intros level certificate.
+  unfold restrictedTargetCodedRestrictedPAProofContext,
+    codedRestrictedPAProofTermAt, restrictedPAEx3, restrictedPAAnd7.
+  cbn [restrictedTargetExN instantiateRestrictedTargetFormulaContext].
+  now rewrite restrictedTargetProofContext_instance.
+Qed.
+
+Definition restrictedPAConsistencyBodyFormulaContext
+    : RestrictedTargetFormulaContext :=
+  RTFCAll
+    (RTFCImp
+      (restrictedTargetCodedRestrictedPAProofContext (tVar 0))
+      RTFCBot).
+
+Definition restrictedPAConsistencyFormulaContext
+    : RestrictedTargetFormulaContext :=
+  RTFCSeal restrictedPAConsistencyBodyFormulaContext.
+
+Theorem restrictedPAConsistencyFormulaContext_instance_exact : forall level,
+  instantiateRestrictedTargetFormulaContext (Term.numeral level)
+    restrictedPAConsistencyFormulaContext =
+  restrictedPAConsistencyFormula level.
+Proof.
+  intro level.
+  unfold restrictedPAConsistencyFormulaContext,
+    restrictedPAConsistencyBodyFormulaContext,
+    restrictedPAConsistencyFormula,
+    restrictedPAConsistencyBodyFormula.
+  cbn [instantiateRestrictedTargetFormulaContext].
+  now rewrite restrictedTargetCodedRestrictedPAProofContext_instance.
+Qed.
+
+
+(** ------------------------------------------------------------------
     Raw graph and arbitrary-model totality. *)
 
 Definition RawMarkedFormulaCodeAt (source : formula)
@@ -239,8 +926,11 @@ Arguments RawMarkedFormulaCodeAt source M level output
 
 Definition RawRestrictedPAConsistencyFormulaCodeAt
     (M : RawPAModel) (level output : M) : Prop :=
-  RawMarkedFormulaCodeAt
-    markedRestrictedPAConsistencyFormula M level output.
+  exists numeralCode : M,
+    RawNumeralTermCodeAt M level numeralCode /\
+    output =
+      rawRestrictedTargetFormulaContextCode M numeralCode
+        restrictedPAConsistencyFormulaContext.
 
 Arguments RawRestrictedPAConsistencyFormulaCodeAt M level output
   : clear implicits.
@@ -263,8 +953,11 @@ Corollary raw_restrictedPAConsistencyFormulaCodeAt_total : forall
     RawRestrictedPAConsistencyFormulaCodeAt M level output.
 Proof.
   intros M hPA level.
-  exact (raw_markedFormulaCodeAt_total
-    markedRestrictedPAConsistencyFormula M hPA level).
+  destruct (raw_numeralTermCodeExists_all M hPA level)
+    as [numeralCode hnumeral].
+  exists (rawRestrictedTargetFormulaContextCode M numeralCode
+    restrictedPAConsistencyFormulaContext), numeralCode.
+  split; [exact hnumeral | reflexivity].
 Qed.
 
 (** A formula represents the raw graph in output-first order when variable 0
@@ -332,6 +1025,190 @@ Definition RawNumeralTermCodeAtFunctional (M : RawPAModel) : Prop :=
     RawNumeralTermCodeAt M level second ->
     first = second.
 
+(** Agreement of two numeral-code traces at one carrier index.  The bound
+    guard is part of the formula, rather than a meta-level side condition,
+    so PA's own induction axiom can propagate the assertion across every
+    (possibly nonstandard) index of an arbitrary model. *)
+Definition RawNumeralTermCodeTablesAgreeAt (M : RawPAModel)
+    (bound leftCode leftStep rightCode rightStep current : M) : Prop :=
+  rawLe M current bound ->
+  forall leftValue,
+    RawCodedAssignmentLookup M
+      leftCode leftStep current leftValue ->
+  forall rightValue,
+    RawCodedAssignmentLookup M
+      rightCode rightStep current rightValue ->
+    leftValue = rightValue.
+
+Arguments RawNumeralTermCodeTablesAgreeAt
+  M bound leftCode leftStep rightCode rightStep current : clear implicits.
+
+(** Formula-level version of [RawNumeralTermCodeTablesAgreeAt].  Under the
+    first universal binder [leftValue] is variable 0.  Under the second,
+    [rightValue] is variable 0 and [leftValue] has shifted to variable 1;
+    all six surrounding parameters are lifted past the new binders. *)
+Definition numeralTermCodeTablesAgreeAtTermAt
+    (bound leftCode leftStep rightCode rightStep current : term) : formula :=
+  pImp
+    (Formula.leTermAt current bound)
+    (pAll
+      (pImp
+        (codedAssignmentLookupTermAt
+          (numeralCodeLiftTerm 1 leftCode)
+          (numeralCodeLiftTerm 1 leftStep)
+          (numeralCodeLiftTerm 1 current) (tVar 0))
+        (pAll
+          (pImp
+            (codedAssignmentLookupTermAt
+              (numeralCodeLiftTerm 2 rightCode)
+              (numeralCodeLiftTerm 2 rightStep)
+              (numeralCodeLiftTerm 2 current) (tVar 0))
+            (pEq (tVar 1) (tVar 0)))))).
+
+Lemma raw_sat_numeralTermCodeTablesAgreeAtTermAt_iff : forall
+    (M : RawPAModel) (e : nat -> M)
+    bound leftCode leftStep rightCode rightStep current,
+  raw_formula_sat M e
+    (numeralTermCodeTablesAgreeAtTermAt
+      bound leftCode leftStep rightCode rightStep current) <->
+  RawNumeralTermCodeTablesAgreeAt M
+    (raw_term_eval M e bound)
+    (raw_term_eval M e leftCode) (raw_term_eval M e leftStep)
+    (raw_term_eval M e rightCode) (raw_term_eval M e rightStep)
+    (raw_term_eval M e current).
+Proof.
+  intros M e bound leftCode leftStep rightCode rightStep current.
+  unfold numeralTermCodeTablesAgreeAtTermAt,
+    RawNumeralTermCodeTablesAgreeAt.
+  cbn [raw_formula_sat].
+  setoid_rewrite raw_sat_leTermAt_iff_rank.
+  setoid_rewrite raw_sat_codedAssignmentLookupTermAt_iff.
+  repeat setoid_rewrite raw_numeralCode_eval_liftTerm_one.
+  repeat setoid_rewrite raw_numeralCode_eval_liftTerm_two.
+  cbn [raw_term_eval scons].
+  reflexivity.
+Qed.
+
+Lemma raw_numeralTermCodeTablesAgreeAt_zero : forall
+    (M : RawPAModel), RawPASatisfies M ->
+  forall bound leftCode leftStep rightCode rightStep,
+  RawNumeralTermCodeTrace M bound leftCode leftStep ->
+  RawNumeralTermCodeTrace M bound rightCode rightStep ->
+  RawNumeralTermCodeTablesAgreeAt M bound
+    leftCode leftStep rightCode rightStep (raw_zero M).
+Proof.
+  intros M hPA bound leftCode leftStep rightCode rightStep
+    [_ [hleftZero _]] [_ [hrightZero _]] _
+    leftValue hleft rightValue hright.
+  transitivity (rawTermZeroCode M).
+  - exact (raw_codedAssignmentLookup_functional M hPA
+      leftCode leftStep (raw_zero M)
+      leftValue (rawTermZeroCode M) hleft hleftZero).
+  - symmetry. exact (raw_codedAssignmentLookup_functional M hPA
+      rightCode rightStep (raw_zero M)
+      rightValue (rawTermZeroCode M) hright hrightZero).
+Qed.
+
+(** The successor argument reads the predecessor entries from both total
+    traces, uses the induction hypothesis there, and transports equality
+    through the common [tSucc]-code constructor. *)
+Lemma raw_numeralTermCodeTablesAgreeAt_succ : forall
+    (M : RawPAModel), RawPASatisfies M ->
+  forall bound leftCode leftStep rightCode rightStep current,
+  RawNumeralTermCodeTrace M bound leftCode leftStep ->
+  RawNumeralTermCodeTrace M bound rightCode rightStep ->
+  RawNumeralTermCodeTablesAgreeAt M bound
+    leftCode leftStep rightCode rightStep current ->
+  RawNumeralTermCodeTablesAgreeAt M bound
+    leftCode leftStep rightCode rightStep (raw_succ M current).
+Proof.
+  intros M hPA bound leftCode leftStep rightCode rightStep current
+    [hleftDefined [_ hleftRows]]
+    [hrightDefined [_ hrightRows]] hcurrent
+    hsuccBound leftNext hleftNext rightNext hrightNext.
+  assert (hcurrentBound : rawLt M current bound).
+  { exact (raw_rank_lt_of_succ_le M hPA current bound hsuccBound). }
+  assert (hcurrentDefined :
+      rawLt M current (raw_succ M bound)).
+  {
+    apply (raw_lt_succ_of_le M hPA current bound).
+    exact (raw_lt_to_le M current bound hcurrentBound).
+  }
+  destruct (hleftDefined current hcurrentDefined)
+    as [leftCurrent hleftCurrent].
+  destruct (hrightDefined current hcurrentDefined)
+    as [rightCurrent hrightCurrent].
+  specialize (hleftRows current leftCurrent leftNext
+    hcurrentBound hleftCurrent hleftNext).
+  specialize (hrightRows current rightCurrent rightNext
+    hcurrentBound hrightCurrent hrightNext).
+  specialize (hcurrent
+    (raw_lt_to_le M current bound hcurrentBound)
+    leftCurrent hleftCurrent rightCurrent hrightCurrent).
+  rewrite hleftRows, hrightRows, hcurrent.
+  reflexivity.
+Qed.
+
+(** Functionality at nonstandard levels cannot be obtained by Rocq's
+    induction on [nat].  We instantiate the induction axiom available in
+    every raw PA model with the formula above, keeping the two beta tables
+    and the common bound as parameters. *)
+Theorem raw_numeralTermCodeAt_functional : forall
+    (M : RawPAModel), RawPASatisfies M ->
+  RawNumeralTermCodeAtFunctional M.
+Proof.
+  intros M hPA level first second
+    (leftCode & leftStep & hleftTrace & hleftOutput)
+    (rightCode & rightStep & hrightTrace & hrightOutput).
+  set (parameterEnv :=
+    scons M level
+      (scons M leftCode (scons M leftStep
+        (scons M rightCode (scons M rightStep
+          (fun _ : nat => raw_zero M)))))).
+  set (phi := numeralTermCodeTablesAgreeAtTermAt
+    (tVar 1) (tVar 2) (tVar 3) (tVar 4) (tVar 5) (tVar 0)).
+  assert (hall : forall current,
+      raw_formula_sat M (scons M current parameterEnv) phi).
+  {
+    apply (raw_definable_induction M hPA phi parameterEnv).
+    - unfold phi.
+      apply (proj2
+        (raw_sat_numeralTermCodeTablesAgreeAtTermAt_iff M
+          (scons M (raw_zero M) parameterEnv)
+          (tVar 1) (tVar 2) (tVar 3) (tVar 4) (tVar 5) (tVar 0))).
+      unfold parameterEnv. cbn [raw_term_eval scons].
+      exact (raw_numeralTermCodeTablesAgreeAt_zero M hPA
+        level leftCode leftStep rightCode rightStep
+        hleftTrace hrightTrace).
+    - intros current hcurrentSat.
+      unfold phi in hcurrentSat |- *.
+      pose proof (proj1
+        (raw_sat_numeralTermCodeTablesAgreeAtTermAt_iff M
+          (scons M current parameterEnv)
+          (tVar 1) (tVar 2) (tVar 3) (tVar 4) (tVar 5) (tVar 0))
+        hcurrentSat) as hcurrent.
+      apply (proj2
+        (raw_sat_numeralTermCodeTablesAgreeAtTermAt_iff M
+          (scons M (raw_succ M current) parameterEnv)
+          (tVar 1) (tVar 2) (tVar 3) (tVar 4) (tVar 5) (tVar 0))).
+      unfold parameterEnv in hcurrent |- *.
+      cbn [raw_term_eval scons] in hcurrent |- *.
+      exact (raw_numeralTermCodeTablesAgreeAt_succ M hPA
+        level leftCode leftStep rightCode rightStep current
+        hleftTrace hrightTrace hcurrent).
+  }
+  unfold phi in hall.
+  pose proof (proj1
+    (raw_sat_numeralTermCodeTablesAgreeAtTermAt_iff M
+      (scons M level parameterEnv)
+      (tVar 1) (tVar 2) (tVar 3) (tVar 4) (tVar 5) (tVar 0))
+    (hall level)) as hagree.
+  unfold parameterEnv in hagree.
+  cbn [raw_term_eval scons] in hagree.
+  exact (hagree (raw_le_refl_traversal M hPA level)
+    first hleftOutput second hrightOutput).
+Qed.
+
 Theorem raw_restrictedPAConsistencyFormulaCodeAt_functional_of_numeral :
   forall (M : RawPAModel), RawNumeralTermCodeAtFunctional M ->
   forall level first second,
@@ -344,6 +1221,18 @@ Proof.
     [secondNumeral [hsecondNumeral ->]].
   now rewrite (hfunctional level firstNumeral secondNumeral
     hfirstNumeral hsecondNumeral).
+Qed.
+
+Theorem raw_restrictedPAConsistencyFormulaCodeAt_functional : forall
+    (M : RawPAModel), RawPASatisfies M ->
+  forall level first second,
+    RawRestrictedPAConsistencyFormulaCodeAt M level first ->
+    RawRestrictedPAConsistencyFormulaCodeAt M level second ->
+    first = second.
+Proof.
+  intros M hPA.
+  apply raw_restrictedPAConsistencyFormulaCodeAt_functional_of_numeral.
+  exact (raw_numeralTermCodeAt_functional M hPA).
 Qed.
 
 (** ------------------------------------------------------------------
@@ -435,18 +1324,23 @@ Proof.
     symmetry. apply rawQuotedFormulaCode_standard. exact hPA.
 Qed.
 
-Theorem raw_restrictedPAConsistencyFormulaCodeAt_standard_of_marker_exact :
-  RestrictedPAConsistencyLevelMarkerExact -> forall
+Theorem raw_restrictedPAConsistencyFormulaCodeAt_standard : forall
     (M : RawPAModel), RawPASatisfies M -> forall level,
   RawRestrictedPAConsistencyFormulaCodeAt M
     (rawNumeralValue M level)
     (rawNumeralValue M
       (formulaCode (restrictedPAConsistencyFormula level))).
 Proof.
-  intros hmarker M hPA level.
+  intros M hPA level.
   unfold RawRestrictedPAConsistencyFormulaCodeAt.
-  rewrite <- hmarker.
-  apply raw_markedFormulaCodeAt_standard. exact hPA.
+  exists (rawQuotedTermCode M (Term.numeral level)). split.
+  - exact (raw_numeralTermCodeAt_standard M hPA level).
+  - assert (hbound : Term.bound (Term.numeral level) = 0).
+    { induction level; cbn [Term.numeral Term.bound];
+        [reflexivity | exact IHlevel]. }
+    rewrite rawRestrictedTargetFormulaContextCode_quoted by exact hbound.
+    rewrite restrictedPAConsistencyFormulaContext_instance_exact.
+    symmetry. apply rawQuotedFormulaCode_standard. exact hPA.
 Qed.
 
 End PABoundedRawCodedRestrictedPAConsistencyFormulaCode.
