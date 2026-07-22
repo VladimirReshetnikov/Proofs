@@ -623,4 +623,39 @@ theorem orbitCompiledLocalBundleWithQuantifierFreeIntroductionProof_isPAProof
   simpa [Proof] using
     (orbitCompiledLocalBundleWithQuantifierFreeIntroductionProof n).derivationOf
 
+/-! ### Representability of the augmented local field -/
+
+set_option maxHeartbeats 800000 in
+/-- The code of the positive quantifier-free constructor varies by a
+Sigma-one graph.  Its only recursive input is the already represented orbit
+formula at the successor index; the quantifier-free evaluator is fixed
+syntax. -/
+theorem orbitQuantifierFreeIntroductionFormulaCode_definable :
+    HierarchySymbol.sigmaOne.DefinableFunction₁
+      (fun n : V ↦ (orbitQuantifierFreeIntroductionFormula n).val) := by
+  simp only [orbitQuantifierFreeIntroductionFormula,
+    quantifierFreeTruthFormula, Semiformula.val_all,
+    Semiformula.val_imp,
+    LeanProofs.BoundedPAConsistency.DynamicTruthOrbit.truthFormula_val]
+  definability
+
+set_option maxHeartbeats 800000 in
+/-- Consequently the complete four-law local field—three eliminators plus
+the positive quantifier-free constructor—has a Sigma-one code graph suitable
+for the recursive master-certificate family. -/
+theorem
+    orbitCompiledLocalBundleWithQuantifierFreeIntroductionCode_definable :
+    HierarchySymbol.sigmaOne.DefinableFunction₁
+      (fun n : V ↦
+        (orbitCompiledLocalBundleWithQuantifierFreeIntroduction n).val) := by
+  letI : HierarchySymbol.sigmaOne.DefinableFunction₁
+      (fun n : V ↦ (orbitCompiledLocalBundle n).val) :=
+    orbitCompiledLocalBundleCode_definable
+  letI : HierarchySymbol.sigmaOne.DefinableFunction₁
+      (fun n : V ↦ (orbitQuantifierFreeIntroductionFormula n).val) :=
+    orbitQuantifierFreeIntroductionFormulaCode_definable
+  simp only [orbitCompiledLocalBundleWithQuantifierFreeIntroduction,
+    Semiformula.val_and]
+  definability
+
 end LeanProofs.BoundedPAConsistency.DynamicTruthQuantifierFreeAnchor
