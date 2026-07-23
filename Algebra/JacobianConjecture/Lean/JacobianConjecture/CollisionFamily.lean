@@ -36,18 +36,14 @@ theorem collisionFamily₀_eq_scale (R : Type*) [Field R] (t : R) (ht : t ≠ 0)
     collisionFamily₀ R t = scaleSource t⁻¹ (flipSource (collision₀ R)) := by
   funext i
   fin_cases i <;>
-    simp [collisionFamily₀, scaleSource, flipSource, collision₀,
-      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-      Matrix.head_cons, Matrix.tail_cons] <;>
+    simp [collisionFamily₀, scaleSource, flipSource, collision₀] <;>
     field_simp
 
 theorem collisionFamily₁_eq_scale (R : Type*) [Field R] (t : R) (ht : t ≠ 0) :
     collisionFamily₁ R t = scaleSource t⁻¹ (flipSource (collision₁ R)) := by
   funext i
   fin_cases i <;>
-    simp [collisionFamily₁, scaleSource, flipSource, collision₁,
-      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-      Matrix.head_cons, Matrix.tail_cons] <;>
+    simp [collisionFamily₁, scaleSource, flipSource, collision₁] <;>
     field_simp
 
 theorem collisionFamilyValue_eq_scale
@@ -55,9 +51,7 @@ theorem collisionFamilyValue_eq_scale
     collisionFamilyValue R t = scaleTarget t⁻¹ (flipTarget (collisionValue R)) := by
   funext i
   fin_cases i <;>
-    simp [collisionFamilyValue, scaleTarget, flipTarget, collisionValue,
-      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-      Matrix.head_cons, Matrix.tail_cons]
+    simp [collisionFamilyValue, scaleTarget, flipTarget, collisionValue]
   field_simp
 
 /-!
@@ -151,24 +145,18 @@ theorem collisionFamily₀_at_neg_one (R : Type*) [Field R] :
     collisionFamily₀ R (-1) = collision₀ R := by
   funext i
   fin_cases i <;>
-    norm_num [collisionFamily₀, collision₀,
-      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-      Matrix.head_cons, Matrix.tail_cons]
+    norm_num [collisionFamily₀, collision₀, Matrix.cons_val_two]
 
 theorem collisionFamily₁_at_neg_one (R : Type*) [Field R] :
     collisionFamily₁ R (-1) = collision₁ R := by
   funext i
   fin_cases i <;>
-    norm_num [collisionFamily₁, collision₁,
-      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-      Matrix.head_cons, Matrix.tail_cons]
+    norm_num [collisionFamily₁, collision₁, Matrix.cons_val_two]
 
 theorem collisionFamilyValue_at_neg_one (R : Type*) [Field R] :
     collisionFamilyValue R (-1) = collisionValue R := by
   funext i
   fin_cases i <;>
-    norm_num [collisionFamilyValue, collisionValue,
-      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-      Matrix.head_cons, Matrix.tail_cons]
+    norm_num [collisionFamilyValue, collisionValue, Matrix.cons_val_two]
 
 end LeanProofs.JacobianCounterexample

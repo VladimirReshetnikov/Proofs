@@ -38,9 +38,7 @@ theorem counterexample_scaling
       scaleTarget s (evalMap (counterexample R) p) := by
   funext i
   fin_cases i <;>
-    simp [evalMap, counterexample, scaleSource, scaleTarget,
-      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-      Matrix.head_cons, Matrix.tail_cons] <;>
+    simp [evalMap, counterexample, scaleSource, scaleTarget] <;>
     field_simp
 
 /-- Scaling preserves collisions. -/
@@ -56,8 +54,7 @@ theorem scaleSource_comp {R : Type u} [Field R] (a b : R) (p : I → R) :
     scaleSource a (scaleSource b p) = scaleSource (a * b) p := by
   funext i
   fin_cases i <;>
-    simp [scaleSource, Matrix.cons_val_zero, Matrix.cons_val_one,
-      Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons] <;>
+    simp [scaleSource] <;>
     ring
 
 /-- The target action composes multiplicatively. -/
@@ -65,8 +62,7 @@ theorem scaleTarget_comp {R : Type u} [Field R] (a b : R) (v : I → R) :
     scaleTarget a (scaleTarget b v) = scaleTarget (a * b) v := by
   funext i
   fin_cases i <;>
-    simp [scaleTarget, Matrix.cons_val_zero, Matrix.cons_val_one,
-      Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons] <;>
+    simp [scaleTarget] <;>
     ring
 
 /-- The source action fixes everything at `s = 1`. -/
@@ -74,16 +70,14 @@ theorem scaleSource_one {R : Type u} [Field R] (p : I → R) :
     scaleSource 1 p = p := by
   funext i
   fin_cases i <;>
-    simp [scaleSource, Matrix.cons_val_zero, Matrix.cons_val_one,
-      Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons]
+    simp [scaleSource]
 
 /-- The target action fixes everything at `s = 1`. -/
 theorem scaleTarget_one {R : Type u} [Field R] (v : I → R) :
     scaleTarget 1 v = v := by
   funext i
   fin_cases i <;>
-    simp [scaleTarget, Matrix.cons_val_zero, Matrix.cons_val_one,
-      Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons]
+    simp [scaleTarget]
 
 /-- The discrete source flip is the `s = -1` instance of the action. -/
 theorem flipSource_eq_scale {R : Type u} [Field R] (p : I → R) :
@@ -91,8 +85,7 @@ theorem flipSource_eq_scale {R : Type u} [Field R] (p : I → R) :
   funext i
   fin_cases i <;>
     norm_num [flipSource, scaleSource, div_neg, div_one,
-      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-      Matrix.head_cons, Matrix.tail_cons]
+      Matrix.cons_val_two]
 
 /-- The discrete target flip is the `s = -1` instance of the action. -/
 theorem flipTarget_eq_scale {R : Type u} [Field R] (v : I → R) :
@@ -100,7 +93,6 @@ theorem flipTarget_eq_scale {R : Type u} [Field R] (v : I → R) :
   funext i
   fin_cases i <;>
     norm_num [flipTarget, scaleTarget, div_neg, div_one,
-      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-      Matrix.head_cons, Matrix.tail_cons]
+      Matrix.cons_val_two]
 
 end LeanProofs.JacobianCounterexample

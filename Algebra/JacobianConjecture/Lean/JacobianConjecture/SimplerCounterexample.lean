@@ -298,9 +298,7 @@ theorem collision₀_value (R : Type u) [CommRing R] :
   fin_cases i <;>
     norm_num [evalMap, simplerCounterexample, simplerFirst, baseQ, baseR,
       sourceA, sourceB, factorP, factorQ, collision₀, collisionValue,
-      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-      Matrix.cons_val_three, Matrix.cons_val_four, Matrix.head_cons,
-      Matrix.tail_cons]
+      Matrix.cons_val_two, Matrix.cons_val_three, Matrix.cons_val_four]
 
 set_option maxHeartbeats 800000 in
 theorem collision₁_value (R : Type u) [CommRing R] :
@@ -309,9 +307,7 @@ theorem collision₁_value (R : Type u) [CommRing R] :
   fin_cases i <;>
     norm_num [evalMap, simplerCounterexample, simplerFirst, baseQ, baseR,
       sourceA, sourceB, factorP, factorQ, collision₁, collisionValue,
-      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-      Matrix.cons_val_three, Matrix.cons_val_four, Matrix.head_cons,
-      Matrix.tail_cons]
+      Matrix.cons_val_two, Matrix.cons_val_three, Matrix.cons_val_four]
 
 theorem collision (R : Type u) [CommRing R] :
     evalMap (simplerCounterexample R) (collision₀ R) =
@@ -380,10 +376,7 @@ theorem simplerCounterexample_equivariant
   funext i
   fin_cases i <;>
     simp [evalMap, simplerCounterexample, simplerFirst, baseQ, baseR,
-      sourceA, sourceB, factorP, factorQ, flipSource5, flipTarget5,
-      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-      Matrix.cons_val_three, Matrix.cons_val_four, Matrix.head_cons,
-      Matrix.tail_cons] <;>
+      sourceA, sourceB, factorP, factorQ, flipSource5, flipTarget5] <;>
     ring
 
 /-- Mirroring the integral collision yields another one, with no new

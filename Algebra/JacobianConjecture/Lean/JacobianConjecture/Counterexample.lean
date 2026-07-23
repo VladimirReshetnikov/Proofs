@@ -140,16 +140,14 @@ theorem collision₀_value (R : Type u) [CommRing R] :
   funext i
   fin_cases i <;>
     norm_num [evalMap, counterexample, collision₀, collisionValue,
-      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-      Matrix.head_cons, Matrix.tail_cons]
+      Matrix.cons_val_two]
 
 theorem collision₁_value (R : Type u) [CommRing R] :
     evalMap (counterexample R) (collision₁ R) = collisionValue R := by
   funext i
   fin_cases i <;>
     norm_num [evalMap, counterexample, collision₁, collisionValue,
-      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-      Matrix.head_cons, Matrix.tail_cons]
+      Matrix.cons_val_two]
 
 theorem collision (R : Type u) [CommRing R] :
     evalMap (counterexample R) (collision₀ R) =

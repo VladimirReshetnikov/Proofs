@@ -50,9 +50,7 @@ theorem counterexample_equivariant
       flipTarget (evalMap (counterexample R) p) := by
   funext i
   fin_cases i <;>
-    simp [evalMap, counterexample, flipSource, flipTarget,
-      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-      Matrix.head_cons, Matrix.tail_cons] <;>
+    simp [evalMap, counterexample, flipSource, flipTarget] <;>
     ring
 
 /-- A `flipTarget`-fixed image value turns the equivariance into a collision
@@ -98,8 +96,7 @@ theorem rationalCollision₀_value (R : Type u) [Field R] [CharZero R] :
   funext i
   fin_cases i <;>
     norm_num [evalMap, counterexample, rationalCollision₀,
-      rationalCollisionValue, Matrix.cons_val_zero, Matrix.cons_val_one,
-      Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons]
+      rationalCollisionValue, Matrix.cons_val_two]
 
 theorem rationalCollision₁_value (R : Type u) [Field R] [CharZero R] :
     evalMap (counterexample R) (rationalCollision₁ R) =
@@ -107,8 +104,7 @@ theorem rationalCollision₁_value (R : Type u) [Field R] [CharZero R] :
   funext i
   fin_cases i <;>
     norm_num [evalMap, counterexample, rationalCollision₁,
-      rationalCollisionValue, Matrix.cons_val_zero, Matrix.cons_val_one,
-      Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons]
+      rationalCollisionValue, Matrix.cons_val_two]
 
 /-- The third rational point is the mirror of the second. -/
 theorem rationalCollision₂_eq_flip (R : Type u) [Field R] :
@@ -116,8 +112,7 @@ theorem rationalCollision₂_eq_flip (R : Type u) [Field R] :
   funext i
   fin_cases i <;>
     norm_num [rationalCollision₁, rationalCollision₂, flipSource,
-      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-      Matrix.head_cons, Matrix.tail_cons]
+      Matrix.cons_val_two]
 
 /-- The common image is fixed by the target involution. -/
 theorem rationalCollisionValue_flipTarget_fixed (R : Type u) [Field R] :
@@ -125,8 +120,7 @@ theorem rationalCollisionValue_flipTarget_fixed (R : Type u) [Field R] :
   funext i
   fin_cases i <;>
     norm_num [rationalCollisionValue, flipTarget,
-      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-      Matrix.head_cons, Matrix.tail_cons]
+      Matrix.cons_val_two]
 
 /-- The third point's image follows from the second's by symmetry alone. -/
 theorem rationalCollision₂_value (R : Type u) [Field R] [CharZero R] :
