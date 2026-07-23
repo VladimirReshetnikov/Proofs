@@ -80,18 +80,14 @@ Lemma argsCodeOfCodes_tail_lt : forall child rest,
   argsCodeOfCodes rest < argsCodeOfCodes (child :: rest).
 Proof.
   intros child rest. cbn [argsCodeOfCodes].
-  eapply Nat.le_lt_trans.
-  - apply polynomialPair_right_le.
-  - apply polynomialNode_payload_lt.
+  polynomial_child_lt polynomialPair_right_le.
 Qed.
 
 Lemma argsCodeOfCodes_head_lt : forall child rest,
   child < argsCodeOfCodes (child :: rest).
 Proof.
   intros child rest. cbn [argsCodeOfCodes].
-  eapply Nat.le_lt_trans.
-  - apply polynomialPair_left_le.
-  - apply polynomialNode_payload_lt.
+  polynomial_child_lt polynomialPair_left_le.
 Qed.
 
 Lemma argsCodeOfCodes_entry_lt : forall codes child,
