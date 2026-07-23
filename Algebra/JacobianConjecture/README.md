@@ -86,7 +86,12 @@ polynomial evaluation.
 Thus `F` is not injective and cannot have a set-theoretic left inverse, much
 less a polynomial two-sided inverse.  It refutes the dimension-three
 Jacobian conjecture over `C`; adjoining untouched coordinates gives the same
-conclusion in every dimension at least three.
+conclusion in every dimension at least three, and the Lean development
+formalizes that stabilization outright
+(`jacobianConjectureInDimension_false_of_three_le`): the padded map's
+Jacobian is block triangular with the renamed three-by-three Jacobian and an
+identity block, so its determinant is still `-2`, and the zero-padded
+collision still identifies two distinct points.
 
 ## A kernel-checked lower-degree representative
 

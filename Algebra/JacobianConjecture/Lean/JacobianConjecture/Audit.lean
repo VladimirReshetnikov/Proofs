@@ -133,3 +133,35 @@ open LeanProofs.JacobianSimplerCounterexample
 #print axioms simplerCounterexample_has_no_polynomial_inverse
 #print axioms jacobianConjectureInDimensionFive_false
 #print axioms jacobianConjectureInDimensionFive_false_over_complex
+
+open LeanProofs.JacobianStabilization
+
+#check stabilized_castAdd
+#check stabilized_natAdd
+#check evalMap_stabilized_castAdd
+#check evalMap_stabilized_natAdd
+#check stabilized_collision₀_value
+#check stabilized_collision₁_value
+#check stabilized_collision
+#check stabilized_collision_points_distinct
+#check jacobianDet_stabilized
+#check stabilized_not_injective
+#check stabilized_has_nonzero_constant_jacobian
+#check stabilized_has_no_polynomial_inverse
+#check jacobianConjectureInDimension_false_of_three_le
+#check jacobianConjectureInDimension_false_of_three_le_over_complex
+
+#print axioms stabilized_castAdd
+#print axioms stabilized_natAdd
+#print axioms evalMap_stabilized_castAdd
+#print axioms evalMap_stabilized_natAdd
+#print axioms stabilized_collision₀_value
+#print axioms stabilized_collision₁_value
+#print axioms stabilized_collision
+#print axioms stabilized_collision_points_distinct
+#print axioms jacobianDet_stabilized
+#print axioms stabilized_not_injective
+#print axioms stabilized_has_nonzero_constant_jacobian
+#print axioms stabilized_has_no_polynomial_inverse
+#print axioms jacobianConjectureInDimension_false_of_three_le
+#print axioms jacobianConjectureInDimension_false_of_three_le_over_complex

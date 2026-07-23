@@ -3,3 +3,4 @@ import JacobianConjecture.CollisionFamily
 import JacobianConjecture.Equivariance
 import JacobianConjecture.Scaling
 import JacobianConjecture.SimplerCounterexample
+import JacobianConjecture.Stabilization
