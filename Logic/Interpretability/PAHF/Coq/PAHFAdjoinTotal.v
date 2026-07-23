@@ -2055,10 +2055,7 @@ Lemma rename_div2StepTermAt : forall r value half bit,
       (Term.rename r bit).
 Proof.
   intros r value half bit.
-  rewrite <- subst_var_rename.
-  rewrite subst_div2StepTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_div2StepTermAt.
 Qed.
 
 Lemma rename_hfMemTermAt_zero_up : forall r setCode,
@@ -2114,10 +2111,7 @@ Lemma rename_betaDiv2StepWitnessTermAt :
       (Term.rename r code) (Term.rename r step) (Term.rename r idx).
 Proof.
   intros r code step idx.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaDiv2StepWitnessTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_betaDiv2StepWitnessTermAt.
 Qed.
 
 Lemma subst_betaDiv2StepsThroughTermTermAt :
@@ -2144,10 +2138,7 @@ Lemma rename_betaDiv2StepsThroughTermTermAt :
       (Term.rename r code) (Term.rename r step) (Term.rename r last).
 Proof.
   intros r code step last.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaDiv2StepsThroughTermTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_betaDiv2StepsThroughTermTermAt.
 Qed.
 
 (** Package the prepended head step and all transported source steps.  A
@@ -2313,10 +2304,7 @@ Lemma rename_betaDiv2BitTermAt :
       (Term.rename r step) (Term.rename r idx).
 Proof.
   intros r bit code step idx.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaDiv2BitTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_betaDiv2BitTermAt.
 Qed.
 
 Lemma subst_betaDiv2BitOneTermExAt :
@@ -2342,10 +2330,7 @@ Lemma rename_betaDiv2BitOneTermExAt :
       (Term.rename r code) (Term.rename r step) (Term.rename r idx).
 Proof.
   intros r code step idx.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaDiv2BitOneTermExAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_betaDiv2BitOneTermExAt.
 Qed.
 
 Lemma BProv_Ax_s_betaDiv2BitOneTermExAt_of_term :

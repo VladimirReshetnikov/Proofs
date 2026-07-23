@@ -7596,6 +7596,17 @@ Proof.
     + apply IHphi.
 Qed.
 
+(* Every [rename_X] commutation lemma below is the corresponding [subst_X] one
+   read along the renaming substitution: turn the renaming into a substitution
+   with [subst_var_rename], push it through with [subst_X], then turn the
+   resulting term-level substitutions back into renamings.  [L] is the
+   [subst_X] lemma to use. *)
+Ltac rename_from_subst L :=
+  rewrite <- subst_var_rename;
+  rewrite L;
+  repeat rewrite term_subst_var_rename;
+  reflexivity.
+
 Lemma subst_instTerm_var : forall phi k,
   subst (instTerm (tVar k)) phi = rename (inst k) phi.
 Proof.
@@ -10227,10 +10238,7 @@ Lemma rename_dvdTermTermAt : forall r divisor value,
       (Term.rename r divisor) (Term.rename r value).
 Proof.
   intros r divisor value.
-  rewrite <- subst_var_rename.
-  rewrite subst_dvdTermTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_dvdTermTermAt.
 Qed.
 
 Definition eqConstAt (a n : nat) : formula :=
@@ -10276,10 +10284,7 @@ Lemma rename_leTermAt : forall r a b,
     leTermAt (Term.rename r a) (Term.rename r b).
 Proof.
   intros r a b.
-  rewrite <- subst_var_rename.
-  rewrite subst_leTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_leTermAt.
 Qed.
 
 Lemma subst_ltTermAt : forall sigma a b,
@@ -10298,10 +10303,7 @@ Lemma rename_ltTermAt : forall r a b,
     ltTermAt (Term.rename r a) (Term.rename r b).
 Proof.
   intros r a b.
-  rewrite <- subst_var_rename.
-  rewrite subst_ltTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_ltTermAt.
 Qed.
 
 (* Lean: commonMultipleThroughTermAt *)
@@ -10333,10 +10335,7 @@ Lemma rename_commonMultipleThroughTermAt : forall r bound multiple,
       (Term.rename r bound) (Term.rename r multiple).
 Proof.
   intros r bound multiple.
-  rewrite <- subst_var_rename.
-  rewrite subst_commonMultipleThroughTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_commonMultipleThroughTermAt.
 Qed.
 
 (* Lean: commonMultipleExistsTermAt *)
@@ -10426,10 +10425,7 @@ Lemma rename_positiveCommonMultipleThroughTermAt :
       (Term.rename r bound) (Term.rename r multiple).
 Proof.
   intros r bound multiple.
-  rewrite <- subst_var_rename.
-  rewrite subst_positiveCommonMultipleThroughTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_positiveCommonMultipleThroughTermAt.
 Qed.
 
 Lemma subst_betaCodingStepTermAt : forall sigma bound sourceCode step,
@@ -10455,10 +10451,7 @@ Lemma rename_betaCodingStepTermAt : forall r bound sourceCode step,
       (Term.rename r step).
 Proof.
   intros r bound sourceCode step.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaCodingStepTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_betaCodingStepTermAt.
 Qed.
 
 Lemma subst_betaCodingStepExistsTermAt : forall sigma bound sourceCode,
@@ -10481,10 +10474,7 @@ Lemma rename_betaCodingStepExistsTermAt : forall r bound sourceCode,
       (Term.rename r bound) (Term.rename r sourceCode).
 Proof.
   intros r bound sourceCode.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaCodingStepExistsTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_betaCodingStepExistsTermAt.
 Qed.
 
 Lemma subst_betaPrependCodingStepTermAt :
@@ -10516,10 +10506,7 @@ Lemma rename_betaPrependCodingStepTermAt :
       (Term.rename r step).
 Proof.
   intros r bound sourceCode head step.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaPrependCodingStepTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_betaPrependCodingStepTermAt.
 Qed.
 
 Lemma subst_betaPrependCodingStepExistsTermAt :
@@ -10549,10 +10536,7 @@ Lemma rename_betaPrependCodingStepExistsTermAt :
       (Term.rename r head).
 Proof.
   intros r bound sourceCode head.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaPrependCodingStepExistsTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_betaPrependCodingStepExistsTermAt.
 Qed.
 
 (* Lean: positiveCommonMultipleExistsTermAt *)
@@ -10583,10 +10567,7 @@ Lemma rename_positiveCommonMultipleExistsTermAt : forall r bound,
     positiveCommonMultipleExistsTermAt (Term.rename r bound).
 Proof.
   intros r bound.
-  rewrite <- subst_var_rename.
-  rewrite subst_positiveCommonMultipleExistsTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_positiveCommonMultipleExistsTermAt.
 Qed.
 
 (* Lean: ltTermAt_var *)
@@ -16157,10 +16138,7 @@ Lemma rename_remTermTermAt : forall r rem value modulus,
       (Term.rename r modulus).
 Proof.
   intros r rem value modulus.
-  rewrite <- subst_var_rename.
-  rewrite subst_remTermTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_remTermTermAt.
 Qed.
 
 Lemma rename_remTermAt : forall r rem value modulus,
@@ -20248,10 +20226,7 @@ Lemma rename_betaPrefixDividesTermAt : forall r step bound product,
       (Term.rename r product).
 Proof.
   intros r step bound product.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaPrefixDividesTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_betaPrefixDividesTermAt.
 Qed.
 
 Lemma rename_succ_twice_betaPrefixDividesTermAt :
@@ -20356,10 +20331,7 @@ Lemma rename_betaTermTermAt : forall r out code step index,
       (Term.rename r index).
 Proof.
   intros r out code step index.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaTermTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_betaTermTermAt.
 Qed.
 
 (** Strict-prefix form of shifted beta coding.  For every [i < bound],
@@ -20429,10 +20401,7 @@ Lemma rename_betaShiftPrefixTermAt :
       (Term.rename r bound).
 Proof.
   intros r oldCode oldStep newCode newStep bound.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaShiftPrefixTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_betaShiftPrefixTermAt.
 Qed.
 
 Lemma subst_betaShiftPrefixCodeExistsTermAt :
@@ -20464,10 +20433,7 @@ Lemma rename_betaShiftPrefixCodeExistsTermAt :
       (Term.rename r bound).
 Proof.
   intros r oldCode oldStep newStep bound.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaShiftPrefixCodeExistsTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_betaShiftPrefixCodeExistsTermAt.
 Qed.
 
 (** A target beta sequence whose zero entry is [head] and whose successor
@@ -20567,10 +20533,7 @@ Lemma rename_betaUnshiftPrefixTermAt :
       (Term.rename r bound).
 Proof.
   intros r sourceCode sourceStep targetCode targetStep bound.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaUnshiftPrefixTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_betaUnshiftPrefixTermAt.
 Qed.
 
 Lemma subst_betaPrependPrefixTermAt :
@@ -20608,10 +20571,7 @@ Lemma rename_betaPrependPrefixTermAt :
       (Term.rename r bound).
 Proof.
   intros r sourceCode sourceStep head targetCode targetStep bound.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaPrependPrefixTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_betaPrependPrefixTermAt.
 Qed.
 
 Lemma subst_betaPrependPrefixCodeExistsTermAt :
@@ -20647,10 +20607,7 @@ Lemma rename_betaPrependPrefixCodeExistsTermAt :
       (Term.rename r bound).
 Proof.
   intros r sourceCode sourceStep head targetStep bound.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaPrependPrefixCodeExistsTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_betaPrependPrefixCodeExistsTermAt.
 Qed.
 
 Lemma subst_betaPrependExistsTermAt :
@@ -20682,10 +20639,7 @@ Lemma rename_betaPrependExistsTermAt :
       (Term.rename r bound).
 Proof.
   intros r sourceCode sourceStep head bound.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaPrependExistsTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_betaPrependExistsTermAt.
 Qed.
 
 (* Lean: BProv_Ax_s_betaTermTermAt_of_rem *)

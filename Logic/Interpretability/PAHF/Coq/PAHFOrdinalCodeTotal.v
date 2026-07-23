@@ -90,10 +90,7 @@ Lemma rename_ordinalCodeGraphBodyTermAt :
       (Term.rename r coded).
 Proof.
   intros r sequenceCode sequenceStep raw coded.
-  rewrite <- subst_var_rename.
-  rewrite subst_ordinalCodeGraphBodyTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_ordinalCodeGraphBodyTermAt.
 Qed.
 
 Lemma subst_instTerm_ordinalCodeGraphBody_inner :
@@ -363,10 +360,7 @@ Lemma rename_betaPrefixAgreementTermAt :
       (Term.rename r bound).
 Proof.
   intros r oldCode newCode step bound.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaPrefixAgreementTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_betaPrefixAgreementTermAt.
 Qed.
 
 Lemma subst_betaCodeExtensionTermAt :
@@ -400,10 +394,7 @@ Lemma rename_betaCodeExtensionTermAt :
       (Term.rename r newCode).
 Proof.
   intros r oldCode step target newOut newCode.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaCodeExtensionTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_betaCodeExtensionTermAt.
 Qed.
 
 Lemma BProv_Ax_s_betaTermTermAt_of_betaCodeExtensionTermAt :

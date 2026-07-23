@@ -129,10 +129,7 @@ Lemma rename_betaShiftSourceEntryExistsTermAt :
       (Term.rename r idx).
 Proof.
   intros r code step idx.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaShiftSourceEntryExistsTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_betaShiftSourceEntryExistsTermAt.
 Qed.
 
 Lemma BProv_Ax_s_betaShiftSourceEntryExistsTermAt_of_term :

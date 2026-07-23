@@ -174,10 +174,7 @@ Lemma rename_ordinalCodeGraphBodyExistsTermAt :
       (Term.rename r coded).
 Proof.
   intros r step raw coded.
-  rewrite <- subst_var_rename.
-  rewrite subst_ordinalCodeGraphBodyExistsTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_ordinalCodeGraphBodyExistsTermAt.
 Qed.
 
 Lemma BProv_ordinalCodeGraphBodyExistsTermAt_of_term :
@@ -454,10 +451,7 @@ Lemma rename_ordinalCodeTraceCapacityTermAt :
       (Term.rename r capacity).
 Proof.
   intros r raw coded capacity.
-  rewrite <- subst_var_rename.
-  rewrite subst_ordinalCodeTraceCapacityTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_ordinalCodeTraceCapacityTermAt.
 Qed.
 
 Lemma BProv_Ax_s_betaTermTermAt_zero_code_zero :
@@ -1111,10 +1105,7 @@ Lemma rename_betaCodeExtensionExistsTermAt :
       (Term.rename r newOut).
 Proof.
   intros r oldCode step target newOut.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaCodeExtensionExistsTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_betaCodeExtensionExistsTermAt.
 Qed.
 
 Lemma rename_succ_twice_betaPrefixDividesTermAt :

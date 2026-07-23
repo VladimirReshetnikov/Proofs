@@ -710,10 +710,7 @@ Lemma rename_ordinalCodeMulOutputTermAt : forall r
       (Term.rename r rightCode).
 Proof.
   intros r leftRaw leftCode rightRaw rightCode.
-  rewrite <- subst_var_rename.
-  rewrite subst_ordinalCodeMulOutputTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_ordinalCodeMulOutputTermAt.
 Qed.
 
 Lemma BProv_Ax_s_ordinalCodeMulOutputTermAt_at : forall
@@ -781,10 +778,7 @@ Lemma rename_ordinalCodeMulPointTermAt : forall r
       (Term.rename r rightRaw).
 Proof.
   intros r leftRaw leftCode rightRaw.
-  rewrite <- subst_var_rename.
-  rewrite subst_ordinalCodeMulPointTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_ordinalCodeMulPointTermAt.
 Qed.
 
 

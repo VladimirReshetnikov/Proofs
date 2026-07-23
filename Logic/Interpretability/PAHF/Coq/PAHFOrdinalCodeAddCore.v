@@ -101,10 +101,7 @@ Lemma rename_hfAddGraphTermAt : forall r out left right,
       (Term.rename r right).
 Proof.
   intros r out left right.
-  rewrite <- subst_var_rename.
-  rewrite subst_hfAddGraphTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_hfAddGraphTermAt.
 Qed.
 
 Lemma compositeAddCoreAt_eq_termAt : forall codedOut,
@@ -512,10 +509,7 @@ Lemma rename_ordinalCodeAddOutputTermAt : forall r
       (Term.rename r rightCode).
 Proof.
   intros r leftRaw leftCode rightRaw rightCode.
-  rewrite <- subst_var_rename.
-  rewrite subst_ordinalCodeAddOutputTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_ordinalCodeAddOutputTermAt.
 Qed.
 
 Lemma BProv_Ax_s_ordinalCodeAddOutputTermAt_at : forall
@@ -584,10 +578,7 @@ Lemma rename_ordinalCodeAddPointTermAt : forall r
       (Term.rename r rightRaw).
 Proof.
   intros r leftRaw leftCode rightRaw.
-  rewrite <- subst_var_rename.
-  rewrite subst_ordinalCodeAddPointTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  rename_from_subst subst_ordinalCodeAddPointTermAt.
 Qed.
 
 (** Successor step at already selected predecessor outputs.  In the forward
