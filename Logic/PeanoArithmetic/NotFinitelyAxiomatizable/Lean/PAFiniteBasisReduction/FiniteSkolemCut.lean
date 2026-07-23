@@ -628,22 +628,14 @@ theorem code_injective {rank : Nat} : Function.Injective (@code rank) := by
   | succ p ih =>
       have hparts := code_eq_iff_tag_payload_eq.mp hcode
       cases q with
-      | star => simp [tag] at hparts
-      | zero => simp [tag] at hparts
       | succ q =>
           apply congrArg Program.succ
           apply ih
           simpa [payload] using hparts.2
-      | add q r => simp [tag] at hparts
-      | mul q r => simp [tag] at hparts
-      | exSkolem body hRank args => simp [tag] at hparts
-      | allSkolem body hRank args => simp [tag] at hparts
+      | _ => simp [tag] at hparts
   | add left right ihLeft ihRight =>
       have hparts := code_eq_iff_tag_payload_eq.mp hcode
       cases q with
-      | star => simp [tag] at hparts
-      | zero => simp [tag] at hparts
-      | succ r => simp [tag] at hparts
       | add r s =>
           have hpayload :
               nodeCode (code left) (code right) =
@@ -651,16 +643,10 @@ theorem code_injective {rank : Nat} : Function.Injective (@code rank) := by
             simpa [payload] using hparts.2
           rcases nodeCode_injective hpayload with ⟨hpr, hqs⟩
           rw [ihLeft hpr, ihRight hqs]
-      | mul r s => simp [tag] at hparts
-      | exSkolem body hRank args => simp [tag] at hparts
-      | allSkolem body hRank args => simp [tag] at hparts
+      | _ => simp [tag] at hparts
   | mul left right ihLeft ihRight =>
       have hparts := code_eq_iff_tag_payload_eq.mp hcode
       cases q with
-      | star => simp [tag] at hparts
-      | zero => simp [tag] at hparts
-      | succ r => simp [tag] at hparts
-      | add r s => simp [tag] at hparts
       | mul r s =>
           have hpayload :
               nodeCode (code left) (code right) =
@@ -668,16 +654,10 @@ theorem code_injective {rank : Nat} : Function.Injective (@code rank) := by
             simpa [payload] using hparts.2
           rcases nodeCode_injective hpayload with ⟨hpr, hqs⟩
           rw [ihLeft hpr, ihRight hqs]
-      | exSkolem body hRank args => simp [tag] at hparts
-      | allSkolem body hRank args => simp [tag] at hparts
+      | _ => simp [tag] at hparts
   | exSkolem body hRank args ih =>
       have hparts := code_eq_iff_tag_payload_eq.mp hcode
       cases q with
-      | star => simp [tag] at hparts
-      | zero => simp [tag] at hparts
-      | succ r => simp [tag] at hparts
-      | add r s => simp [tag] at hparts
-      | mul r s => simp [tag] at hparts
       | exSkolem body' hRank' args' =>
           have hpayload : nodeCode
                 (formulaIndex rank body)
@@ -704,17 +684,10 @@ theorem code_injective {rank : Nat} : Function.Injective (@code rank) := by
             exact ih i (congrFun hcodes i)
           subst args'
           rfl
-
-      | allSkolem body' hRank' args' => simp [tag] at hparts
+      | _ => simp [tag] at hparts
   | allSkolem body hRank args ih =>
       have hparts := code_eq_iff_tag_payload_eq.mp hcode
       cases q with
-      | star => simp [tag] at hparts
-      | zero => simp [tag] at hparts
-      | succ r => simp [tag] at hparts
-      | add r s => simp [tag] at hparts
-      | mul r s => simp [tag] at hparts
-      | exSkolem body' hRank' args' => simp [tag] at hparts
       | allSkolem body' hRank' args' =>
           have hpayload : nodeCode
                 (formulaIndex rank body)
@@ -741,6 +714,7 @@ theorem code_injective {rank : Nat} : Function.Injective (@code rank) := by
             exact ih i (congrFun hcodes i)
           subst args'
           rfl
+      | _ => simp [tag] at hparts
 
 /-- Meta-level partial decoder for the polynomial code image.  The later PA
 trace relation does not execute this decoder; it is provided here to state the
