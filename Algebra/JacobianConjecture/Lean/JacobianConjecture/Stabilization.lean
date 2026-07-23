@@ -201,20 +201,11 @@ private theorem splitJacobian_bottomRight (R : Type u) [CommRing R] (m : ℕ) :
 private theorem det_stabilized_eq_det_topLeft (R : Type u) [CommRing R]
     (m : ℕ) :
     (jacobian (stabilized R m)).det = (splitJacobian R m).toBlocks₁₁.det := by
-  let M := splitJacobian R m
-  have hM : M = Matrix.fromBlocks M.toBlocks₁₁ 0 M.toBlocks₂₁ 1 := by
-    calc
-      M = Matrix.fromBlocks M.toBlocks₁₁ M.toBlocks₁₂
-          M.toBlocks₂₁ M.toBlocks₂₂ := (Matrix.fromBlocks_toBlocks M).symm
-      _ = Matrix.fromBlocks M.toBlocks₁₁ 0 M.toBlocks₂₁ 1 := by
-        rw [splitJacobian_topRight R m, splitJacobian_bottomRight R m]
   calc
-    (jacobian (stabilized R m)).det = M.det :=
+    (jacobian (stabilized R m)).det = (splitJacobian R m).det :=
       (Matrix.det_reindex_self (splitEquiv m) (jacobian (stabilized R m))).symm
-    _ = (Matrix.fromBlocks M.toBlocks₁₁ 0 M.toBlocks₂₁ 1).det :=
-      congrArg Matrix.det hM
-    _ = M.toBlocks₁₁.det := by
-      simp only [Matrix.det_fromBlocks_zero₁₂, Matrix.det_one, mul_one]
+    _ = (splitJacobian R m).toBlocks₁₁.det :=
+      det_eq_det_toBlocks₁₁ _ (splitJacobian_topRight R m) (splitJacobian_bottomRight R m)
 
 /-- **Keller calculation, stabilized.** The formal Jacobian determinant of the
 stabilized map is the constant polynomial `-2`, over every commutative ring

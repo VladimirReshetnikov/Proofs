@@ -232,20 +232,11 @@ private theorem splitReduced_bottomRight (R : Type u) [CommRing R] :
 
 private theorem det_rowReduced_eq_det_topLeft (R : Type u) [CommRing R] :
     (rowReducedJacobian R).det = (splitReduced R).toBlocks₁₁.det := by
-  let M := splitReduced R
-  have hM : M = Matrix.fromBlocks M.toBlocks₁₁ 0 M.toBlocks₂₁ 1 := by
-    calc
-      M = Matrix.fromBlocks M.toBlocks₁₁ M.toBlocks₁₂
-          M.toBlocks₂₁ M.toBlocks₂₂ := (Matrix.fromBlocks_toBlocks M).symm
-      _ = Matrix.fromBlocks M.toBlocks₁₁ 0 M.toBlocks₂₁ 1 := by
-        rw [splitReduced_topRight R, splitReduced_bottomRight R]
   calc
-    (rowReducedJacobian R).det = M.det :=
+    (rowReducedJacobian R).det = (splitReduced R).det :=
       (Matrix.det_reindex_self splitEquiv (rowReducedJacobian R)).symm
-    _ = (Matrix.fromBlocks M.toBlocks₁₁ 0 M.toBlocks₂₁ 1).det :=
-      congrArg Matrix.det hM
-    _ = M.toBlocks₁₁.det := by
-      simp only [Matrix.det_fromBlocks_zero₁₂, Matrix.det_one, mul_one]
+    _ = (splitReduced R).toBlocks₁₁.det :=
+      det_eq_det_toBlocks₁₁ _ (splitReduced_topRight R) (splitReduced_bottomRight R)
 
 private noncomputable def baseMap (R : Type u) [CommRing R] :
     I3 → MvPolynomial I5 R := ![baseP R, baseQ R, baseR R]
