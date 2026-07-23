@@ -2,7 +2,7 @@
 
 Common.v
 Counterexample.v
-CollisionFamily.v
 Scaling.v
+CollisionFamily.v
 SimplerCounterexample.v
 Audit.v

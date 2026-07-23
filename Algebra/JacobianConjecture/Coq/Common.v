@@ -36,5 +36,17 @@ Proof.
   f_equal; lra.
 Qed.
 
+(** A quotient of nonzero complex numbers is nonzero. *)
+Lemma neq_0_div (a b : C) (ha : a <> c0) (hb : b <> c0) : a / b <> c0.
+Proof.
+  intro h0; apply ha.
+  assert (ha' : a = a / b * b) by (field; exact hb).
+  rewrite ha', h0.
+  cbv [c0]; ring.
+Qed.
+
 (** Decide an inequality of two closed complex constants by real parts. *)
 Ltac re_neq := apply neq_of_Re; cbv; cbn; lra.
+
+Lemma c1_neq_0 : c1 <> c0.
+Proof. re_neq. Qed.

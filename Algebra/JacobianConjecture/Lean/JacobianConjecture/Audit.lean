@@ -70,16 +70,30 @@ open LeanProofs.JacobianCounterexample
 
 #check counterexample_scaling
 #check collision_scaling
+#check scaleSource_comp
+#check scaleTarget_comp
+#check scaleSource_one
+#check scaleTarget_one
 #check flipSource_eq_scale
 #check flipTarget_eq_scale
+#check collisionFamily₀_eq_scale
+#check collisionFamily₁_eq_scale
+#check collisionFamilyValue_eq_scale
 #check scale_collisionFamily₀
 #check scale_collisionFamily₁
 #check scale_collisionFamilyValue
 
 #print axioms counterexample_scaling
 #print axioms collision_scaling
+#print axioms scaleSource_comp
+#print axioms scaleTarget_comp
+#print axioms scaleSource_one
+#print axioms scaleTarget_one
 #print axioms flipSource_eq_scale
 #print axioms flipTarget_eq_scale
+#print axioms collisionFamily₀_eq_scale
+#print axioms collisionFamily₁_eq_scale
+#print axioms collisionFamilyValue_eq_scale
 #print axioms scale_collisionFamily₀
 #print axioms scale_collisionFamily₁
 #print axioms scale_collisionFamilyValue

@@ -43,6 +43,9 @@ Print Assumptions jacobian_conjecture_dimension_three_is_false.
 
 Import CollisionFamily.
 
+Check collision_family_0_eq_scale.
+Check collision_family_1_eq_scale.
+Check collision_family_value_eq_scale.
 Check collision_family_0_value.
 Check collision_family_1_value.
 Check collision_family.
@@ -50,10 +53,16 @@ Check collision_family_points_distinct.
 Check collision_family_0_mirror.
 Check collision_family_1_mirror.
 Check collision_family_value_mirror.
+Check scale_collision_family_0.
+Check scale_collision_family_1.
+Check scale_collision_family_value.
 Check collision_family_0_at_minus_one.
 Check collision_family_1_at_minus_one.
 Check collision_family_value_at_minus_one.
 
+Print Assumptions collision_family_0_eq_scale.
+Print Assumptions collision_family_1_eq_scale.
+Print Assumptions collision_family_value_eq_scale.
 Print Assumptions collision_family_0_value.
 Print Assumptions collision_family_1_value.
 Print Assumptions collision_family.
@@ -61,6 +70,9 @@ Print Assumptions collision_family_points_distinct.
 Print Assumptions collision_family_0_mirror.
 Print Assumptions collision_family_1_mirror.
 Print Assumptions collision_family_value_mirror.
+Print Assumptions scale_collision_family_0.
+Print Assumptions scale_collision_family_1.
+Print Assumptions scale_collision_family_value.
 Print Assumptions collision_family_0_at_minus_one.
 Print Assumptions collision_family_1_at_minus_one.
 Print Assumptions collision_family_value_at_minus_one.
@@ -69,19 +81,21 @@ Import Scaling.
 
 Check counterexample_scaling.
 Check collision_scaling.
+Check scale_source_comp.
+Check scale_target_comp.
+Check scale_source_one.
+Check scale_target_one.
 Check flip_source_eq_scale.
 Check flip_target_eq_scale.
-Check scale_collision_family_0.
-Check scale_collision_family_1.
-Check scale_collision_family_value.
 
 Print Assumptions counterexample_scaling.
 Print Assumptions collision_scaling.
+Print Assumptions scale_source_comp.
+Print Assumptions scale_target_comp.
+Print Assumptions scale_source_one.
+Print Assumptions scale_target_one.
 Print Assumptions flip_source_eq_scale.
 Print Assumptions flip_target_eq_scale.
-Print Assumptions scale_collision_family_0.
-Print Assumptions scale_collision_family_1.
-Print Assumptions scale_collision_family_value.
 
 Import LeanProofs.JacobianSimplerCounterexample.
 
