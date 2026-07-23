@@ -1,4 +1,4 @@
-import JacobianConjecture.CollisionFamily
+import JacobianConjecture.Counterexample
 
 /-!
 # Equivariance and the rational triple collision
@@ -22,9 +22,9 @@ F (0, 0, -1/4) = F (1, -3/2, 13/2) = F (-1, 3/2, 13/2) = (-1/4, 0, 0)
 ```
 
 — the third point is the mirror of the second, so its image needs no fresh
-computation — and shows the rational one-parameter family of
-`CollisionFamily` is itself closed under the symmetry, with the involution
-acting on the parameter as `t ↦ -t`.
+computation.  `Scaling` identifies the involutions as a slice of a weighted
+torus action, and `CollisionFamily` derives the rational one-parameter
+family of collisions from that action.
 -/
 
 namespace LeanProofs.JacobianCounterexample
@@ -155,40 +155,5 @@ theorem counterexample_triple_collision (R : Type u) [Field R] [CharZero R] :
     h₀₁, h₀₂, h₁₂,
     (rationalCollision₀_value R).trans (rationalCollision₁_value R).symm,
     (rationalCollision₁_value R).trans (rationalCollision₂_value R).symm⟩
-
-/-!
-## Equivariance of the rational family
-
-The source involution carries the parameter-`t` member of the rational
-family to the parameter-`-t` member, so the family is closed under the
-symmetry.
--/
-
-theorem collisionFamily₀_mirror (R : Type u) [Field R] (t : R) (ht : t ≠ 0) :
-    flipSource (collisionFamily₀ R t) = collisionFamily₀ R (-t) := by
-  funext i
-  fin_cases i <;>
-    simp [flipSource, collisionFamily₀, Matrix.cons_val_zero,
-      Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons,
-      Matrix.tail_cons]
-  field_simp
-
-theorem collisionFamily₁_mirror (R : Type u) [Field R] (t : R) (ht : t ≠ 0) :
-    flipSource (collisionFamily₁ R t) = collisionFamily₁ R (-t) := by
-  funext i
-  fin_cases i <;>
-    simp [flipSource, collisionFamily₁, Matrix.cons_val_zero,
-      Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons,
-      Matrix.tail_cons]
-  field_simp
-
-theorem collisionFamilyValue_mirror (R : Type u) [Field R] (t : R) (ht : t ≠ 0) :
-    flipTarget (collisionFamilyValue R t) = collisionFamilyValue R (-t) := by
-  funext i
-  fin_cases i <;>
-    simp [flipTarget, collisionFamilyValue, Matrix.cons_val_zero,
-      Matrix.cons_val_one, Matrix.cons_val_two, Matrix.head_cons,
-      Matrix.tail_cons]
-  field_simp
 
 end LeanProofs.JacobianCounterexample

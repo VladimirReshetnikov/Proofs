@@ -74,15 +74,24 @@ developments prove
 F(x/s, sy, s²z) = (s²P, sQ, R/s)          (s ≠ 0),
 ```
 
-that scaling therefore carries collisions to collisions, and that scaling
-the parameter-`t` family member by `t` recovers the mirrored integral
-collision — so the entire rational family is the orbit of a single integral
-collision under this action.
+and that scaling therefore carries collisions to collisions.  The family
+files are organized around this action: the parameter-`t` member is
+*defined up to one checked identification* as the scaling by `1/t` of the
+mirrored integral collision, and every family property — the common
+values, the collision, the mirror symmetry acting on the parameter by
+`t ↦ -t`, and the inverted parametrization — is derived from the torus
+action and the single integral collision by rewriting, with no further
+polynomial evaluation.
 
 Thus `F` is not injective and cannot have a set-theoretic left inverse, much
 less a polynomial two-sided inverse.  It refutes the dimension-three
 Jacobian conjecture over `C`; adjoining untouched coordinates gives the same
-conclusion in every dimension at least three.
+conclusion in every dimension at least three, and the Lean development
+formalizes that stabilization outright
+(`jacobianConjectureInDimension_false_of_three_le`): the padded map's
+Jacobian is block triangular with the renamed three-by-three Jacobian and an
+identity block, so its determinant is still `-2`, and the zero-padded
+collision still identifies two distinct points.
 
 ## A kernel-checked lower-degree representative
 
@@ -164,16 +173,16 @@ coqc -Q Algebra/JacobianConjecture/Coq JacobianConjecture `
 coqc -Q Algebra/JacobianConjecture/Coq JacobianConjecture `
   Algebra/JacobianConjecture/Coq/Counterexample.v
 coqc -Q Algebra/JacobianConjecture/Coq JacobianConjecture `
-  Algebra/JacobianConjecture/Coq/CollisionFamily.v
-coqc -Q Algebra/JacobianConjecture/Coq JacobianConjecture `
   Algebra/JacobianConjecture/Coq/Scaling.v
+coqc -Q Algebra/JacobianConjecture/Coq JacobianConjecture `
+  Algebra/JacobianConjecture/Coq/CollisionFamily.v
 coqc -Q Algebra/JacobianConjecture/Coq JacobianConjecture `
   Algebra/JacobianConjecture/Coq/SimplerCounterexample.v
 coqc -Q Algebra/JacobianConjecture/Coq JacobianConjecture `
   Algebra/JacobianConjecture/Coq/Audit.v
 coqchk -silent -Q Algebra/JacobianConjecture/Coq JacobianConjecture `
   JacobianConjecture.Common JacobianConjecture.Counterexample `
-  JacobianConjecture.CollisionFamily JacobianConjecture.Scaling `
+  JacobianConjecture.Scaling JacobianConjecture.CollisionFamily `
   JacobianConjecture.SimplerCounterexample JacobianConjecture.Audit
 
 python Algebra/JacobianConjecture/Research/verify_simpler.py

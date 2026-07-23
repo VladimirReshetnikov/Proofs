@@ -1,4 +1,5 @@
 import JacobianConjecture.Equivariance
+import Mathlib.Tactic.FieldSimp
 
 /-!
 # The weighted torus action behind the discrete symmetry
@@ -10,9 +11,9 @@ for every nonzero scalar `s`,
 F (x / s, s y, s² z) = (s² P, s Q, R / s).
 ```
 
-The flip involutions of `Equivariance` are the `s = -1` instance, and the
-rational one-parameter family of `CollisionFamily` is exactly the orbit of
-the mirrored integral collision under this action.
+The flip involutions of `Equivariance` are the `s = -1` instance, and
+`CollisionFamily` derives the rational one-parameter family of collisions
+as the orbit of the mirrored integral collision under this action.
 -/
 
 namespace LeanProofs.JacobianCounterexample
@@ -50,6 +51,40 @@ theorem collision_scaling
       evalMap (counterexample R) (scaleSource s q) := by
   rw [counterexample_scaling s hs, counterexample_scaling s hs, h]
 
+/-- The source action composes multiplicatively. -/
+theorem scaleSource_comp {R : Type u} [Field R] (a b : R) (p : I → R) :
+    scaleSource a (scaleSource b p) = scaleSource (a * b) p := by
+  funext i
+  fin_cases i <;>
+    simp [scaleSource, Matrix.cons_val_zero, Matrix.cons_val_one,
+      Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons] <;>
+    ring
+
+/-- The target action composes multiplicatively. -/
+theorem scaleTarget_comp {R : Type u} [Field R] (a b : R) (v : I → R) :
+    scaleTarget a (scaleTarget b v) = scaleTarget (a * b) v := by
+  funext i
+  fin_cases i <;>
+    simp [scaleTarget, Matrix.cons_val_zero, Matrix.cons_val_one,
+      Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons] <;>
+    ring
+
+/-- The source action fixes everything at `s = 1`. -/
+theorem scaleSource_one {R : Type u} [Field R] (p : I → R) :
+    scaleSource 1 p = p := by
+  funext i
+  fin_cases i <;>
+    simp [scaleSource, Matrix.cons_val_zero, Matrix.cons_val_one,
+      Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons]
+
+/-- The target action fixes everything at `s = 1`. -/
+theorem scaleTarget_one {R : Type u} [Field R] (v : I → R) :
+    scaleTarget 1 v = v := by
+  funext i
+  fin_cases i <;>
+    simp [scaleTarget, Matrix.cons_val_zero, Matrix.cons_val_one,
+      Matrix.cons_val_two, Matrix.head_cons, Matrix.tail_cons]
+
 /-- The discrete source flip is the `s = -1` instance of the action. -/
 theorem flipSource_eq_scale {R : Type u} [Field R] (p : I → R) :
     flipSource p = scaleSource (-1) p := by
@@ -67,44 +102,5 @@ theorem flipTarget_eq_scale {R : Type u} [Field R] (v : I → R) :
     norm_num [flipTarget, scaleTarget, div_neg, div_one,
       Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
       Matrix.head_cons, Matrix.tail_cons]
-
-/-!
-## The family is a torus orbit
-
-Scaling the parameter-`t` member by `t` recovers the mirrored integral
-collision, so the whole rational family is the orbit of one integral
-collision under the weighted action.
--/
-
-theorem scale_collisionFamily₀ {R : Type u} [Field R] (t : R) (ht : t ≠ 0) :
-    scaleSource t (collisionFamily₀ R t) = flipSource (collision₀ R) := by
-  funext i
-  fin_cases i <;>
-    simp [scaleSource, collisionFamily₀, flipSource, collision₀,
-      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-      Matrix.head_cons, Matrix.tail_cons] <;>
-    first
-      | exact ht
-      | field_simp
-
-theorem scale_collisionFamily₁ {R : Type u} [Field R] (t : R) (ht : t ≠ 0) :
-    scaleSource t (collisionFamily₁ R t) = flipSource (collision₁ R) := by
-  funext i
-  fin_cases i <;>
-    simp [scaleSource, collisionFamily₁, flipSource, collision₁,
-      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-      Matrix.head_cons, Matrix.tail_cons] <;>
-    first
-      | exact ht
-      | field_simp
-
-theorem scale_collisionFamilyValue {R : Type u} [Field R] (t : R) (ht : t ≠ 0) :
-    scaleTarget t (collisionFamilyValue R t) = flipTarget (collisionValue R) := by
-  funext i
-  fin_cases i <;>
-    simp [scaleTarget, collisionFamilyValue, flipTarget, collisionValue,
-      Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-      Matrix.head_cons, Matrix.tail_cons]
-  field_simp
 
 end LeanProofs.JacobianCounterexample
