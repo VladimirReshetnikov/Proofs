@@ -10103,6 +10103,25 @@ Proof.
   exact h.
 Qed.
 
+(* Closed-context induction, packaged.  Every closed PA induction below ends
+   with the same epilogue: discharge the successor step into an implication,
+   generalize it, and feed the base case and that generalization to the
+   induction axiom.  Naming the epilogue once leaves each induction proof to
+   supply only its two halves. *)
+Lemma BProv_Ax_s_induction_all : forall phi,
+  BProv Ax_s [] (subst substZero phi) ->
+  BProv Ax_s [phi] (subst substSuccVar phi) ->
+  BProv Ax_s [] (pAll phi).
+Proof.
+  intros phi hzero hsuccBody.
+  pose proof (BProv_impI Ax_s [] phi (subst substSuccVar phi) hsuccBody)
+    as hsuccImp.
+  pose proof (BProv_allI_of_sentences Ax_s []
+    (pImp phi (subst substSuccVar phi)) sentence_ax_s hsuccImp) as hsucc.
+  exact (BProv_inductionForm_mp Ax_s [] phi
+    (BProv_Ax_s_inductionForm phi) hzero hsucc).
+Qed.
+
 Lemma BProv_Ax_s_induction_rule : forall G phi,
   BProv Ax_s G (subst substZero phi) ->
   BProv Ax_s G (pAll (pImp phi (subst substSuccVar phi))) ->
@@ -10634,13 +10653,7 @@ Proof.
     apply BProv_orI2.
     exact hright.
   }
-  pose proof (BProv_impI Ax_s [] phi (subst substSuccVar phi) hsuccBody)
-    as hsuccImp.
-  pose proof (BProv_allI_of_sentences Ax_s [] (pImp phi (subst substSuccVar phi))
-    sentence_ax_s hsuccImp) as hsucc.
-  change (BProv Ax_s [] (pAll phi)).
-  exact (BProv_inductionForm_mp Ax_s [] phi
-    (BProv_Ax_s_inductionForm phi) hzero hsucc).
+  exact (BProv_Ax_s_induction_all phi hzero hsuccBody).
 Qed.
 
 Lemma BProv_Ax_s_zeroOrSuccPred_term : forall G t,
@@ -10770,13 +10783,7 @@ Proof.
       (pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero)
       (pEq (Term.rename S x) tZero) hsuccBody).
   }
-  pose proof (BProv_impI Ax_s [] phi (subst substSuccVar phi)
-    hsuccInner) as hsuccImp.
-  pose proof (BProv_allI_of_sentences Ax_s []
-    (pImp phi (subst substSuccVar phi)) sentence_ax_s hsuccImp) as hsucc.
-  change (BProv Ax_s [] (pAll phi)).
-  exact (BProv_inductionForm_mp Ax_s [] phi
-    (BProv_Ax_s_inductionForm phi) hzero hsucc).
+  exact (BProv_Ax_s_induction_all phi hzero hsuccInner).
 Qed.
 
 Lemma BProv_Ax_s_add_eq_zero_left_terms : forall G x y,
@@ -11430,13 +11437,7 @@ Proof.
     simpl.
     exact (BProv_eqTrans _ _ _ _ _ hstep hsucc).
   }
-  pose proof (BProv_impI Ax_s [] phi (subst substSuccVar phi)
-    hsuccBody) as hsuccImp.
-  pose proof (BProv_allI_of_sentences Ax_s []
-    (pImp phi (subst substSuccVar phi)) sentence_ax_s hsuccImp) as hsucc.
-  change (BProv Ax_s [] (pAll phi)).
-  exact (BProv_inductionForm_mp Ax_s [] phi
-    (BProv_Ax_s_inductionForm phi) hzero hsucc).
+  exact (BProv_Ax_s_induction_all phi hzero hsuccBody).
 Qed.
 
 (* Lean: BProv_Ax_s_zero_add_term *)
@@ -11525,13 +11526,7 @@ Proof.
     exact (BProv_eqTrans _ _ _ _ _
       (BProv_eqTrans _ _ _ _ _ hleft hmid) hright).
   }
-  pose proof (BProv_impI Ax_s [] phi (subst substSuccVar phi)
-    hsuccBody) as hsuccImp.
-  pose proof (BProv_allI_of_sentences Ax_s []
-    (pImp phi (subst substSuccVar phi)) sentence_ax_s hsuccImp) as hsucc.
-  change (BProv Ax_s [] (pAll phi)).
-  exact (BProv_inductionForm_mp Ax_s [] phi
-    (BProv_Ax_s_inductionForm phi) hzero hsucc).
+  exact (BProv_Ax_s_induction_all phi hzero hsuccBody).
 Qed.
 
 (* Lean: BProv_Ax_s_succ_add_terms *)
@@ -11665,13 +11660,7 @@ Proof.
     repeat rewrite term_substSuccVar_rename_succ.
     exact himp.
   }
-  pose proof (BProv_impI Ax_s [] phi (subst substSuccVar phi)
-    hsuccBody) as hsuccImp.
-  pose proof (BProv_allI_of_sentences Ax_s []
-    (pImp phi (subst substSuccVar phi)) sentence_ax_s hsuccImp) as hsucc.
-  change (BProv Ax_s [] (pAll phi)).
-  exact (BProv_inductionForm_mp Ax_s [] phi
-    (BProv_Ax_s_inductionForm phi) hzero hsucc).
+  exact (BProv_Ax_s_induction_all phi hzero hsuccBody).
 Qed.
 
 (* Lean: BProv_Ax_s_add_cancel_left_terms *)
@@ -11804,13 +11793,7 @@ Proof.
     repeat rewrite term_substSuccVar_rename_succ.
     exact himp.
   }
-  pose proof (BProv_impI Ax_s [] phi (subst substSuccVar phi)
-    hsuccBody) as hsuccImp.
-  pose proof (BProv_allI_of_sentences Ax_s []
-    (pImp phi (subst substSuccVar phi)) sentence_ax_s hsuccImp) as hsucc.
-  change (BProv Ax_s [] (pAll phi)).
-  exact (BProv_inductionForm_mp Ax_s [] phi
-    (BProv_Ax_s_inductionForm phi) hzero hsucc).
+  exact (BProv_Ax_s_induction_all phi hzero hsuccBody).
 Qed.
 
 (* Lean: BProv_Ax_s_add_cancel_right_terms *)
@@ -11940,13 +11923,7 @@ Proof.
       (BProv_eqTrans _ _ _ _ _ hleftSucc hihSucc)
       (BProv_eqSym _ _ _ _ hrightSucc)).
   }
-  pose proof (BProv_impI Ax_s [] phi (subst substSuccVar phi)
-    hsuccBody) as hsuccImp.
-  pose proof (BProv_allI_of_sentences Ax_s []
-    (pImp phi (subst substSuccVar phi)) sentence_ax_s hsuccImp) as hsucc.
-  change (BProv Ax_s [] (pAll phi)).
-  exact (BProv_inductionForm_mp Ax_s [] phi
-    (BProv_Ax_s_inductionForm phi) hzero hsucc).
+  exact (BProv_Ax_s_induction_all phi hzero hsuccBody).
 Qed.
 
 (* Lean: BProv_Ax_s_add_assoc_terms *)
@@ -12028,13 +12005,7 @@ Proof.
       (BProv_eqTrans _ _ _ _ _ hleft hihSucc)
       (BProv_eqSym _ _ _ _ hright)).
   }
-  pose proof (BProv_impI Ax_s [] phi (subst substSuccVar phi)
-    hsuccBody) as hsuccImp.
-  pose proof (BProv_allI_of_sentences Ax_s []
-    (pImp phi (subst substSuccVar phi)) sentence_ax_s hsuccImp) as hsucc.
-  change (BProv Ax_s [] (pAll phi)).
-  exact (BProv_inductionForm_mp Ax_s [] phi
-    (BProv_Ax_s_inductionForm phi) hzero hsucc).
+  exact (BProv_Ax_s_induction_all phi hzero hsuccBody).
 Qed.
 
 (* Lean: BProv_Ax_s_add_comm_terms *)
@@ -12159,13 +12130,7 @@ Proof.
     repeat rewrite term_substSuccVar_rename_succ.
     exact himp.
   }
-  pose proof (BProv_impI Ax_s [] phi (subst substSuccVar phi)
-    hsuccBody) as hsuccImp.
-  pose proof (BProv_allI_of_sentences Ax_s []
-    (pImp phi (subst substSuccVar phi)) sentence_ax_s hsuccImp) as hsucc.
-  change (BProv Ax_s [] (pAll phi)).
-  exact (BProv_inductionForm_mp Ax_s [] phi
-    (BProv_Ax_s_inductionForm phi) hzero hsucc).
+  exact (BProv_Ax_s_induction_all phi hzero hsuccBody).
 Qed.
 
 (* Lean: BProv_Ax_s_add_succ_ne_self_terms *)
@@ -12240,13 +12205,7 @@ Proof.
     exact (BProv_eqTrans _ _ _ _ _
       (BProv_eqTrans _ _ _ _ _ hstep haddZero) hphi).
   }
-  pose proof (BProv_impI Ax_s [] phi (subst substSuccVar phi)
-    hsuccBody) as hsuccImp.
-  pose proof (BProv_allI_of_sentences Ax_s []
-    (pImp phi (subst substSuccVar phi)) sentence_ax_s hsuccImp) as hsucc.
-  change (BProv Ax_s [] (pAll phi)).
-  exact (BProv_inductionForm_mp Ax_s [] phi
-    (BProv_Ax_s_inductionForm phi) hzero hsucc).
+  exact (BProv_Ax_s_induction_all phi hzero hsuccBody).
 Qed.
 
 (* Lean: BProv_Ax_s_zero_mul_term *)
@@ -12459,13 +12418,7 @@ Proof.
       (BProv_eqTrans _ _ _ _ _ hleftNorm hnorm)
       (BProv_eqSym _ _ _ _ hrightCong)).
   }
-  pose proof (BProv_impI Ax_s [] phi (subst substSuccVar phi)
-    hsuccBody) as hsuccImp.
-  pose proof (BProv_allI_of_sentences Ax_s []
-    (pImp phi (subst substSuccVar phi)) sentence_ax_s hsuccImp) as hsucc.
-  change (BProv Ax_s [] (pAll phi)).
-  exact (BProv_inductionForm_mp Ax_s [] phi
-    (BProv_Ax_s_inductionForm phi) hzero hsucc).
+  exact (BProv_Ax_s_induction_all phi hzero hsuccBody).
 Qed.
 
 (* Lean: BProv_Ax_s_succ_mul_terms *)
@@ -12554,13 +12507,7 @@ Proof.
       (BProv_eqTrans _ _ _ _ _ hleftStep hleftCong)
       (BProv_eqSym _ _ _ _ hrightStep)).
   }
-  pose proof (BProv_impI Ax_s [] phi (subst substSuccVar phi)
-    hsuccBody) as hsuccImp.
-  pose proof (BProv_allI_of_sentences Ax_s []
-    (pImp phi (subst substSuccVar phi)) sentence_ax_s hsuccImp) as hsucc.
-  change (BProv Ax_s [] (pAll phi)).
-  exact (BProv_inductionForm_mp Ax_s [] phi
-    (BProv_Ax_s_inductionForm phi) hzero hsucc).
+  exact (BProv_Ax_s_induction_all phi hzero hsuccBody).
 Qed.
 
 (* Lean: BProv_Ax_s_mul_comm_terms *)
@@ -12746,13 +12693,7 @@ Proof.
       (BProv_eqTrans _ _ _ _ _ hassoc
         (BProv_eqSym _ _ _ _ hrightCong))).
   }
-  pose proof (BProv_impI Ax_s [] phi (subst substSuccVar phi)
-    hsuccBody) as hsuccImp.
-  pose proof (BProv_allI_of_sentences Ax_s []
-    (pImp phi (subst substSuccVar phi)) sentence_ax_s hsuccImp) as hsucc.
-  change (BProv Ax_s [] (pAll phi)).
-  exact (BProv_inductionForm_mp Ax_s [] phi
-    (BProv_Ax_s_inductionForm phi) hzero hsucc).
+  exact (BProv_Ax_s_induction_all phi hzero hsuccBody).
 Qed.
 
 (* Lean: BProv_Ax_s_mul_add_terms *)
@@ -12982,13 +12923,7 @@ Proof.
       (BProv_eqTrans _ _ _ _ _ hleftStep hihCong)
       (BProv_eqSym _ _ _ _ hrightNorm)).
   }
-  pose proof (BProv_impI Ax_s [] phi (subst substSuccVar phi)
-    hsuccBody) as hsuccImp.
-  pose proof (BProv_allI_of_sentences Ax_s []
-    (pImp phi (subst substSuccVar phi)) sentence_ax_s hsuccImp) as hsucc.
-  change (BProv Ax_s [] (pAll phi)).
-  exact (BProv_inductionForm_mp Ax_s [] phi
-    (BProv_Ax_s_inductionForm phi) hzero hsucc).
+  exact (BProv_Ax_s_induction_all phi hzero hsuccBody).
 Qed.
 
 (* Lean: BProv_Ax_s_mul_assoc_terms *)
