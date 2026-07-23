@@ -9,12 +9,14 @@
   (prime divisors, coprime factors of squares), the parametrization of
   primitive Pythagorean triples, and the odd-even descent core.
 
-  The development is layered.  The wrapper sections state the consequences
-  under an explicit descent-step parameter at three assumption
-  granularities; `Fermat42_odd_even_descent_step_holds` then proves the
-  strongest parameter outright, and the `_unconditional` theorems at the end
-  export Fermat's Last Theorem for exponent 4 (natural-number form, and the
-  stronger integer form with a square right-hand side) with no hypotheses.
+  The development is layered.  Reduction theorems relate three descent-step
+  granularities (general, mixed-parity, odd-even) and derive the no-solution
+  statement from any of them; `Fermat42_odd_even_descent_step_holds` then
+  proves the strongest granularity outright, and the final theorems export
+  Fermat's Last Theorem for exponent 4 with no hypotheses:
+  `fermat_four_no_positive_nat_solutions` (natural-number form, matching the
+  Lean theorem name) and `fermat_four_no_square_right_int_solutions` (the
+  stronger integer form with a square right-hand side).
 *)
 
 From Stdlib Require Import Arith.PeanoNat.
@@ -387,92 +389,6 @@ Proof.
   - rewrite hz.
     ring.
 Qed.
-
-Section WithDescent.
-
-Variable descent_step : Fermat42_descent_step.
-
-Theorem no_square_right_int_solutions : Fermat42_descent_statement.
-Proof.
-  exact (Fermat42_descent_statement_of_step descent_step).
-Qed.
-
-Theorem fermat_four_no_square_right_int_solutions
-    {a b c : Z} (ha : a <> 0) (hb : b <> 0) :
-    ~ ((a ^ 4 + b ^ 4)%Z = (c ^ 2)%Z).
-Proof.
-  exact (fermat_four_no_square_right_int_solutions_of_statement
-    no_square_right_int_solutions ha hb).
-Qed.
-
-Theorem fermat_four_no_positive_nat_solutions
-    {a b c : nat}
-    (ha : (0 < a)%nat) (hb : (0 < b)%nat) (hc : (0 < c)%nat) :
-    (a ^ 4 + b ^ 4 <> c ^ 4)%nat.
-Proof.
-  exact (fermat_four_no_positive_nat_solutions_of_statement
-    no_square_right_int_solutions ha hb hc).
-Qed.
-
-End WithDescent.
-
-Section WithMixedParityDescent.
-
-Variable mixed_descent_step : Fermat42_mixed_parity_descent_step.
-
-Theorem no_square_right_int_solutions_of_mixed_parity_descent :
-    Fermat42_descent_statement.
-Proof.
-  exact (Fermat42_descent_statement_of_mixed_parity_step mixed_descent_step).
-Qed.
-
-Theorem fermat_four_no_square_right_int_solutions_of_mixed_parity_descent
-    {a b c : Z} (ha : a <> 0) (hb : b <> 0) :
-    ~ ((a ^ 4 + b ^ 4)%Z = (c ^ 2)%Z).
-Proof.
-  exact (fermat_four_no_square_right_int_solutions_of_statement
-    no_square_right_int_solutions_of_mixed_parity_descent ha hb).
-Qed.
-
-Theorem fermat_four_no_positive_nat_solutions_of_mixed_parity_descent
-    {a b c : nat}
-    (ha : (0 < a)%nat) (hb : (0 < b)%nat) (hc : (0 < c)%nat) :
-    (a ^ 4 + b ^ 4 <> c ^ 4)%nat.
-Proof.
-  exact (fermat_four_no_positive_nat_solutions_of_statement
-    no_square_right_int_solutions_of_mixed_parity_descent ha hb hc).
-Qed.
-
-End WithMixedParityDescent.
-
-Section WithOddEvenDescent.
-
-Variable odd_even_descent_step : Fermat42_odd_even_descent_step.
-
-Theorem no_square_right_int_solutions_of_odd_even_descent :
-    Fermat42_descent_statement.
-Proof.
-  exact (Fermat42_descent_statement_of_odd_even_step odd_even_descent_step).
-Qed.
-
-Theorem fermat_four_no_square_right_int_solutions_of_odd_even_descent
-    {a b c : Z} (ha : a <> 0) (hb : b <> 0) :
-    ~ ((a ^ 4 + b ^ 4)%Z = (c ^ 2)%Z).
-Proof.
-  exact (fermat_four_no_square_right_int_solutions_of_statement
-    no_square_right_int_solutions_of_odd_even_descent ha hb).
-Qed.
-
-Theorem fermat_four_no_positive_nat_solutions_of_odd_even_descent
-    {a b c : nat}
-    (ha : (0 < a)%nat) (hb : (0 < b)%nat) (hc : (0 < c)%nat) :
-    (a ^ 4 + b ^ 4 <> c ^ 4)%nat.
-Proof.
-  exact (fermat_four_no_positive_nat_solutions_of_statement
-    no_square_right_int_solutions_of_odd_even_descent ha hb hc).
-Qed.
-
-End WithOddEvenDescent.
 
 (* ==================== number-theory toolkit ====================
 
@@ -968,7 +884,7 @@ Proof.
 Qed.
 
 (* Fermat's Last Theorem for exponent 4, right-hand side a square, over Z. *)
-Theorem fermat_four_no_square_right_int_solutions_unconditional
+Theorem fermat_four_no_square_right_int_solutions
     {a b c : Z} (ha : a <> 0) (hb : b <> 0) :
     ~ ((a ^ 4 + b ^ 4)%Z = (c ^ 2)%Z).
 Proof.
@@ -977,7 +893,7 @@ Proof.
 Qed.
 
 (* Fermat's Last Theorem for exponent 4 over the positive naturals. *)
-Theorem fermat_four_no_positive_nat_solutions_unconditional
+Theorem fermat_four_no_positive_nat_solutions
     {a b c : nat}
     (ha : (0 < a)%nat) (hb : (0 < b)%nat) (hc : (0 < c)%nat) :
     (a ^ 4 + b ^ 4 <> c ^ 4)%nat.
