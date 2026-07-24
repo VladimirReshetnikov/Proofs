@@ -8345,10 +8345,11 @@ theorem BProv_Ax_s_succInj :
     BProv_Ax_s_succInj_rename (fun n : Nat => n)
 
 /-- Arbitrary-term instance of PA successor injectivity. -/
-theorem BProv_Ax_s_succInj_terms (s t : Term) :
-    BProv Ax_s [] (imp
+theorem BProv_Ax_s_succInj_terms {G : List Formula} (s t : Term) :
+    BProv Ax_s G (imp
       (eq (Term.succ s) (Term.succ t))
       (eq s t)) := by
+  apply BProv_weaken_nil
   have h1 := BProv_allE (B := Ax_s) (G := []) (t := s)
     BProv_Ax_s_succInj
   have h2 := BProv_allE (B := Ax_s) (G := []) (t := t) h1
@@ -8367,8 +8368,9 @@ theorem BProv_Ax_s_zeroNotSucc :
     BProv_Ax_s_zeroNotSucc_rename (fun n : Nat => n)
 
 /-- Arbitrary-term instance of PA zero-is-not-successor. -/
-theorem BProv_Ax_s_zeroNotSucc_term (t : Term) :
-    BProv Ax_s [] (imp (eq (Term.succ t) Term.zero) bot) := by
+theorem BProv_Ax_s_zeroNotSucc_term {G : List Formula} (t : Term) :
+    BProv Ax_s G (imp (eq (Term.succ t) Term.zero) bot) := by
+  apply BProv_weaken_nil
   have h := BProv_allE (B := Ax_s) (G := []) (t := t)
     BProv_Ax_s_zeroNotSucc
   simpa [zeroNotSucc, subst, instTerm, Term.subst] using h
@@ -8385,8 +8387,9 @@ theorem BProv_Ax_s_addZero :
     BProv_Ax_s_addZero_rename (fun n : Nat => n)
 
 /-- Arbitrary-term instance of PA addition by zero. -/
-theorem BProv_Ax_s_addZero_term (t : Term) :
-    BProv Ax_s [] (eq (Term.add t Term.zero) t) := by
+theorem BProv_Ax_s_addZero_term {G : List Formula} (t : Term) :
+    BProv Ax_s G (eq (Term.add t Term.zero) t) := by
+  apply BProv_weaken_nil
   have h := BProv_allE (B := Ax_s) (G := []) (t := t)
     BProv_Ax_s_addZero
   simpa [addZero, subst, instTerm, Term.subst] using h
@@ -8403,10 +8406,11 @@ theorem BProv_Ax_s_addSucc :
     BProv_Ax_s_addSucc_rename (fun n : Nat => n)
 
 /-- Arbitrary-term instance of the PA addition-successor axiom. -/
-theorem BProv_Ax_s_addSucc_terms (s t : Term) :
-    BProv Ax_s [] (eq
+theorem BProv_Ax_s_addSucc_terms {G : List Formula} (s t : Term) :
+    BProv Ax_s G (eq
       (Term.add s (Term.succ t))
       (Term.succ (Term.add s t))) := by
+  apply BProv_weaken_nil
   have h1 := BProv_allE (B := Ax_s) (G := []) (t := s)
     BProv_Ax_s_addSucc
   have h2 := BProv_allE (B := Ax_s) (G := []) (t := t) h1
@@ -8428,7 +8432,7 @@ theorem BProv_Ax_s_zero_add_all :
     have hstep : BProv Ax_s [phi]
         (eq (Term.add Term.zero (Term.succ (Term.var 0)))
           (Term.succ (Term.add Term.zero (Term.var 0)))) :=
-      BProv_weaken_nil (BProv_Ax_s_addSucc_terms Term.zero (Term.var 0))
+      (BProv_Ax_s_addSucc_terms Term.zero (Term.var 0))
     have hsucc : BProv Ax_s [phi]
         (eq (Term.succ (Term.add Term.zero (Term.var 0)))
           (Term.succ (Term.var 0))) :=
@@ -8812,8 +8816,7 @@ theorem BProv_Ax_s_succ_add_all (x : Term) :
     have hleft : BProv Ax_s [phi]
         (eq (Term.add (Term.succ xs) (Term.succ (Term.var 0)))
           (Term.succ (Term.add (Term.succ xs) (Term.var 0)))) :=
-      BProv_weaken_nil
-        (BProv_Ax_s_addSucc_terms (Term.succ xs) (Term.var 0))
+      (BProv_Ax_s_addSucc_terms (Term.succ xs) (Term.var 0))
     have hmid : BProv Ax_s [phi]
         (eq (Term.succ (Term.add (Term.succ xs) (Term.var 0)))
           (Term.succ (Term.succ (Term.add xs (Term.var 0))))) :=
@@ -8821,7 +8824,7 @@ theorem BProv_Ax_s_succ_add_all (x : Term) :
     have hrightStep : BProv Ax_s [phi]
         (eq (Term.add xs (Term.succ (Term.var 0)))
           (Term.succ (Term.add xs (Term.var 0)))) :=
-      BProv_weaken_nil (BProv_Ax_s_addSucc_terms xs (Term.var 0))
+      (BProv_Ax_s_addSucc_terms xs (Term.var 0))
     have hright : BProv Ax_s [phi]
         (eq (Term.succ (Term.succ (Term.add xs (Term.var 0))))
           (Term.succ (Term.add xs (Term.succ (Term.var 0))))) :=
@@ -8876,8 +8879,7 @@ theorem BProv_Ax_s_succ_add_cancel_terms {G : List Formula}
       (imp
         (eq (Term.succ (Term.add x y)) (Term.succ (Term.add x z)))
         (eq (Term.add x y) (Term.add x z))) :=
-    BProv_weaken_nil
-      (BProv_Ax_s_succInj_terms (Term.add x y) (Term.add x z))
+    (BProv_Ax_s_succInj_terms (Term.add x y) (Term.add x z))
   exact BProv_mp Ax_s G _ _ hinj hsuccEq
 
 /-- PA proves left-cancellation for addition, uniformly in the left addend. -/
@@ -9000,11 +9002,11 @@ theorem BProv_Ax_s_add_cancel_right_all (x y : Term) :
     have hx : BProv Ax_s
         [eq (Term.add x Term.zero) (Term.add y Term.zero)]
         (eq (Term.add x Term.zero) x) :=
-      BProv_weaken_nil (BProv_Ax_s_addZero_term x)
+      (BProv_Ax_s_addZero_term x)
     have hy : BProv Ax_s
         [eq (Term.add x Term.zero) (Term.add y Term.zero)]
         (eq (Term.add y Term.zero) y) :=
-      BProv_weaken_nil (BProv_Ax_s_addZero_term y)
+      (BProv_Ax_s_addZero_term y)
     exact BProv_eqTrans (BProv_eqTrans (BProv_eqSym hx) heq) hy
   have hzero : BProv Ax_s [] (subst substZero phi) := by
     simpa [phi, substZero, subst, instTerm, Term.subst, Term.upSubst,
@@ -9022,11 +9024,11 @@ theorem BProv_Ax_s_add_cancel_right_all (x y : Term) :
       have hxSucc : BProv Ax_s [succEq, phi]
           (eq (Term.add xs (Term.succ (Term.var 0)))
             (Term.succ (Term.add xs (Term.var 0)))) :=
-        BProv_weaken_nil (BProv_Ax_s_addSucc_terms xs (Term.var 0))
+        (BProv_Ax_s_addSucc_terms xs (Term.var 0))
       have hySucc : BProv Ax_s [succEq, phi]
           (eq (Term.add ys (Term.succ (Term.var 0)))
             (Term.succ (Term.add ys (Term.var 0)))) :=
-        BProv_weaken_nil (BProv_Ax_s_addSucc_terms ys (Term.var 0))
+        (BProv_Ax_s_addSucc_terms ys (Term.var 0))
       have hsuccEq : BProv Ax_s [succEq, phi]
           (eq (Term.succ (Term.add xs (Term.var 0)))
             (Term.succ (Term.add ys (Term.var 0)))) :=
@@ -9036,8 +9038,7 @@ theorem BProv_Ax_s_add_cancel_right_all (x y : Term) :
             (eq (Term.succ (Term.add xs (Term.var 0)))
               (Term.succ (Term.add ys (Term.var 0))))
             (eq (Term.add xs (Term.var 0)) (Term.add ys (Term.var 0)))) :=
-        BProv_weaken_nil
-          (BProv_Ax_s_succInj_terms
+        (BProv_Ax_s_succInj_terms
             (Term.add xs (Term.var 0)) (Term.add ys (Term.var 0)))
       have hpredEq : BProv Ax_s [succEq, phi]
           (eq (Term.add xs (Term.var 0)) (Term.add ys (Term.var 0))) :=
@@ -9128,8 +9129,7 @@ theorem BProv_Ax_s_add_assoc_all (x y : Term) :
     have hleftSucc : BProv Ax_s [phi]
         (eq (Term.add (Term.add xs ys) (Term.succ (Term.var 0)))
           (Term.succ (Term.add (Term.add xs ys) (Term.var 0)))) :=
-      BProv_weaken_nil
-        (BProv_Ax_s_addSucc_terms (Term.add xs ys) (Term.var 0))
+      (BProv_Ax_s_addSucc_terms (Term.add xs ys) (Term.var 0))
     have hihSucc : BProv Ax_s [phi]
         (eq (Term.succ (Term.add (Term.add xs ys) (Term.var 0)))
           (Term.succ (Term.add xs (Term.add ys (Term.var 0))))) :=
@@ -9137,8 +9137,7 @@ theorem BProv_Ax_s_add_assoc_all (x y : Term) :
     have hySucc : BProv Ax_s [phi]
         (eq (Term.add ys (Term.succ (Term.var 0)))
           (Term.succ (Term.add ys (Term.var 0)))) :=
-      BProv_weaken_nil
-        (BProv_Ax_s_addSucc_terms ys (Term.var 0))
+      (BProv_Ax_s_addSucc_terms ys (Term.var 0))
     have hrightCong : BProv Ax_s [phi]
         (eq
           (Term.add xs (Term.add ys (Term.succ (Term.var 0))))
@@ -9148,8 +9147,7 @@ theorem BProv_Ax_s_add_assoc_all (x y : Term) :
         (eq
           (Term.add xs (Term.succ (Term.add ys (Term.var 0))))
           (Term.succ (Term.add xs (Term.add ys (Term.var 0))))) :=
-      BProv_weaken_nil
-        (BProv_Ax_s_addSucc_terms xs (Term.add ys (Term.var 0)))
+      (BProv_Ax_s_addSucc_terms xs (Term.add ys (Term.var 0)))
     have hrightSucc : BProv Ax_s [phi]
         (eq
           (Term.add xs (Term.add ys (Term.succ (Term.var 0))))
@@ -9223,7 +9221,7 @@ theorem BProv_Ax_s_add_comm_all (x : Term) :
     have hleft : BProv Ax_s [phi]
         (eq (Term.add xs (Term.succ (Term.var 0)))
           (Term.succ (Term.add xs (Term.var 0)))) :=
-      BProv_weaken_nil (BProv_Ax_s_addSucc_terms xs (Term.var 0))
+      (BProv_Ax_s_addSucc_terms xs (Term.var 0))
     have hihSucc : BProv Ax_s [phi]
         (eq (Term.succ (Term.add xs (Term.var 0)))
           (Term.succ (Term.add (Term.var 0) xs))) :=
@@ -9298,7 +9296,7 @@ theorem BProv_Ax_s_add_succ_ne_self_all (y : Term) :
     have hnot : BProv Ax_s
         [eq (Term.add Term.zero (Term.succ y)) Term.zero]
         (imp (eq (Term.succ y) Term.zero) bot) :=
-      BProv_weaken_nil (BProv_Ax_s_zeroNotSucc_term y)
+      (BProv_Ax_s_zeroNotSucc_term y)
     exact BProv_mp Ax_s _ _ _ hnot hsuccZero
   have hzero : BProv Ax_s [] (subst substZero phi) := by
     simpa [phi, substZero, subst, instTerm, Term.subst, Term.upSubst,
@@ -9324,8 +9322,7 @@ theorem BProv_Ax_s_add_succ_ne_self_all (y : Term) :
             (eq (Term.succ (Term.add (Term.var 0) (Term.succ ys)))
               (Term.succ (Term.var 0)))
             (eq (Term.add (Term.var 0) (Term.succ ys)) (Term.var 0))) :=
-        BProv_weaken_nil
-          (BProv_Ax_s_succInj_terms
+        (BProv_Ax_s_succInj_terms
             (Term.add (Term.var 0) (Term.succ ys)) (Term.var 0))
       have hpredEq : BProv Ax_s [succEq, phi]
           (eq (Term.add (Term.var 0) (Term.succ ys)) (Term.var 0)) :=
@@ -9395,7 +9392,7 @@ theorem BProv_Ax_s_add_eq_zero_left_all (x : Term) :
         (by simp)
     have haddZero : BProv Ax_s [eq (Term.add x Term.zero) Term.zero]
         (eq (Term.add x Term.zero) x) :=
-      BProv_weaken_nil (BProv_Ax_s_addZero_term x)
+      (BProv_Ax_s_addZero_term x)
     exact BProv_eqTrans (BProv_eqSym haddZero) hzeroAss
   have hzero : BProv Ax_s [] (subst substZero phi) := by
     simpa [phi, substZero, subst, instTerm, Term.subst, Term.upSubst,
@@ -9423,8 +9420,7 @@ theorem BProv_Ax_s_add_eq_zero_left_all (x : Term) :
         (eq
           (Term.add (Term.rename Nat.succ x) (Term.succ (Term.var 0)))
           (Term.succ (Term.add (Term.rename Nat.succ x) (Term.var 0)))) :=
-      BProv_weaken_nil
-        (BProv_Ax_s_addSucc_terms (Term.rename Nat.succ x) (Term.var 0))
+      (BProv_Ax_s_addSucc_terms (Term.rename Nat.succ x) (Term.var 0))
     have hsuccZero : BProv Ax_s
         [eq (Term.add (Term.rename Nat.succ x) (Term.succ (Term.var 0)))
             Term.zero,
@@ -9440,8 +9436,7 @@ theorem BProv_Ax_s_add_eq_zero_left_all (x : Term) :
           (eq (Term.succ (Term.add (Term.rename Nat.succ x) (Term.var 0)))
             Term.zero)
           bot) :=
-      BProv_weaken_nil
-        (BProv_Ax_s_zeroNotSucc_term
+      (BProv_Ax_s_zeroNotSucc_term
           (Term.add (Term.rename Nat.succ x) (Term.var 0)))
     have hbot : BProv Ax_s
         [eq (Term.add (Term.rename Nat.succ x) (Term.succ (Term.var 0)))
@@ -9654,7 +9649,7 @@ theorem BProv_Ax_s_leConstAt_succ_cases {G : List Formula}
       have haddZero : BProv Ax_s (zeroAt 0 :: C)
           (eq (Term.add (Term.var (a+1)) Term.zero)
             (Term.var (a+1))) :=
-        BProv_weaken_nil (BProv_Ax_s_addZero_term (Term.var (a+1)))
+        (BProv_Ax_s_addZero_term (Term.var (a+1)))
       have hleft : BProv Ax_s (zeroAt 0 :: C)
           (eq (Term.add (Term.var (a+1)) (Term.var 0))
             (Term.var (a+1))) :=
@@ -9696,8 +9691,7 @@ theorem BProv_Ax_s_leConstAt_succ_cases {G : List Formula}
             (eq
               (Term.add (Term.var (a+2)) (Term.succ (Term.var 0)))
               (Term.succ (Term.add (Term.var (a+2)) (Term.var 0)))) :=
-          BProv_weaken_nil
-            (BProv_Ax_s_addSucc_terms (Term.var (a+2)) (Term.var 0))
+          (BProv_Ax_s_addSucc_terms (Term.var (a+2)) (Term.var 0))
         have hleft : BProv Ax_s D
             (eq
               (Term.add (Term.var (a+2)) (Term.var 1))
@@ -9720,8 +9714,7 @@ theorem BProv_Ax_s_leConstAt_succ_cases {G : List Formula}
                 (Term.succ (Term.numeral n)))
               (eq (Term.add (Term.var (a+2)) (Term.var 0))
                 (Term.numeral n))) :=
-          BProv_weaken_nil
-            (BProv_Ax_s_succInj_terms
+          (BProv_Ax_s_succInj_terms
               (Term.add (Term.var (a+2)) (Term.var 0))
               (Term.numeral n))
         have hsum : BProv Ax_s D
@@ -9767,8 +9760,9 @@ theorem BProv_Ax_s_mulZero :
     BProv_Ax_s_mulZero_rename (fun n : Nat => n)
 
 /-- Arbitrary-term instance of PA multiplication by zero. -/
-theorem BProv_Ax_s_mulZero_term (t : Term) :
-    BProv Ax_s [] (eq (Term.mul t Term.zero) Term.zero) := by
+theorem BProv_Ax_s_mulZero_term {G : List Formula} (t : Term) :
+    BProv Ax_s G (eq (Term.mul t Term.zero) Term.zero) := by
+  apply BProv_weaken_nil
   have h := BProv_allE (B := Ax_s) (G := []) (t := t)
     BProv_Ax_s_mulZero
   simpa [mulZero, subst, instTerm, Term.subst] using h
@@ -9786,10 +9780,11 @@ theorem BProv_Ax_s_mulSucc :
     BProv_Ax_s_mulSucc_rename (fun n : Nat => n)
 
 /-- Arbitrary-term instance of the PA multiplication-successor axiom. -/
-theorem BProv_Ax_s_mulSucc_terms (s t : Term) :
-    BProv Ax_s [] (eq
+theorem BProv_Ax_s_mulSucc_terms {G : List Formula} (s t : Term) :
+    BProv Ax_s G (eq
       (Term.mul s (Term.succ t))
       (Term.add (Term.mul s t) s)) := by
+  apply BProv_weaken_nil
   have h1 := BProv_allE (B := Ax_s) (G := []) (t := s)
     BProv_Ax_s_mulSucc
   have h2 := BProv_allE (B := Ax_s) (G := []) (t := t) h1
@@ -9811,13 +9806,11 @@ theorem BProv_Ax_s_zero_mul_all :
     have hstep : BProv Ax_s [phi]
         (eq (Term.mul Term.zero (Term.succ (Term.var 0)))
           (Term.add (Term.mul Term.zero (Term.var 0)) Term.zero)) :=
-      BProv_weaken_nil
-        (BProv_Ax_s_mulSucc_terms Term.zero (Term.var 0))
+      (BProv_Ax_s_mulSucc_terms Term.zero (Term.var 0))
     have haddZero : BProv Ax_s [phi]
         (eq (Term.add (Term.mul Term.zero (Term.var 0)) Term.zero)
           (Term.mul Term.zero (Term.var 0))) :=
-      BProv_weaken_nil
-        (BProv_Ax_s_addZero_term (Term.mul Term.zero (Term.var 0)))
+      (BProv_Ax_s_addZero_term (Term.mul Term.zero (Term.var 0)))
     have htarget : BProv Ax_s [phi]
         (eq (Term.mul Term.zero (Term.succ (Term.var 0))) Term.zero) :=
       BProv_eqTrans (BProv_eqTrans hstep haddZero) hphi
@@ -9888,8 +9881,7 @@ theorem BProv_Ax_s_succ_mul_all (x : Term) :
     have hleftStep : BProv Ax_s [phi]
         (eq (Term.mul (Term.succ xs) (Term.succ y))
           (Term.add (Term.mul (Term.succ xs) y) (Term.succ xs))) :=
-      BProv_weaken_nil
-        (BProv_Ax_s_mulSucc_terms (Term.succ xs) y)
+      (BProv_Ax_s_mulSucc_terms (Term.succ xs) y)
     have hleftCong : BProv Ax_s [phi]
         (eq
           (Term.add (Term.mul (Term.succ xs) y) (Term.succ xs))
@@ -9901,7 +9893,7 @@ theorem BProv_Ax_s_succ_mul_all (x : Term) :
       BProv_eqTrans hleftStep hleftCong
     have hrightMul : BProv Ax_s [phi]
         (eq (Term.mul xs (Term.succ y)) (Term.add A xs)) :=
-      BProv_weaken_nil (BProv_Ax_s_mulSucc_terms xs y)
+      (BProv_Ax_s_mulSucc_terms xs y)
     have hrightCong : BProv Ax_s [phi]
         (eq
           (Term.add (Term.mul xs (Term.succ y)) (Term.succ y))
@@ -9910,7 +9902,7 @@ theorem BProv_Ax_s_succ_mul_all (x : Term) :
     have hleftSucc : BProv Ax_s [phi]
         (eq (Term.add (Term.add A y) (Term.succ xs))
           (Term.succ (Term.add (Term.add A y) xs))) :=
-      BProv_weaken_nil (BProv_Ax_s_addSucc_terms (Term.add A y) xs)
+      (BProv_Ax_s_addSucc_terms (Term.add A y) xs)
     have hassocLeft : BProv Ax_s [phi]
         (eq (Term.add (Term.add A y) xs)
           (Term.add A (Term.add y xs))) :=
@@ -9939,7 +9931,7 @@ theorem BProv_Ax_s_succ_mul_all (x : Term) :
     have hrightSucc : BProv Ax_s [phi]
         (eq (Term.add (Term.add A xs) (Term.succ y))
           (Term.succ (Term.add (Term.add A xs) y))) :=
-      BProv_weaken_nil (BProv_Ax_s_addSucc_terms (Term.add A xs) y)
+      (BProv_Ax_s_addSucc_terms (Term.add A xs) y)
     have hnorm : BProv Ax_s [phi]
         (eq (Term.add (Term.add A y) (Term.succ xs))
           (Term.add (Term.add A xs) (Term.succ y))) :=
@@ -10012,7 +10004,7 @@ theorem BProv_Ax_s_mul_comm_all (x : Term) :
     have hleftStep : BProv Ax_s [phi]
         (eq (Term.mul xs (Term.succ y))
           (Term.add (Term.mul xs y) xs)) :=
-      BProv_weaken_nil (BProv_Ax_s_mulSucc_terms xs y)
+      (BProv_Ax_s_mulSucc_terms xs y)
     have hleftCong : BProv Ax_s [phi]
         (eq
           (Term.add (Term.mul xs y) xs)
@@ -10110,7 +10102,7 @@ theorem BProv_Ax_s_mul_add_all (x y : Term) :
       BProv_ass (B := Ax_s) (G := [phi]) (by simp [phi, xs, ys, z, xy, xz])
     have hySucc : BProv Ax_s [phi]
         (eq (Term.add ys (Term.succ z)) (Term.succ (Term.add ys z))) :=
-      BProv_weaken_nil (BProv_Ax_s_addSucc_terms ys z)
+      (BProv_Ax_s_addSucc_terms ys z)
     have hleftArg : BProv Ax_s [phi]
         (eq
           (Term.mul xs (Term.add ys (Term.succ z)))
@@ -10120,7 +10112,7 @@ theorem BProv_Ax_s_mul_add_all (x y : Term) :
         (eq
           (Term.mul xs (Term.succ (Term.add ys z)))
           (Term.add (Term.mul xs (Term.add ys z)) xs)) :=
-      BProv_weaken_nil (BProv_Ax_s_mulSucc_terms xs (Term.add ys z))
+      (BProv_Ax_s_mulSucc_terms xs (Term.add ys z))
     have hihCong : BProv Ax_s [phi]
         (eq
           (Term.add (Term.mul xs (Term.add ys z)) xs)
@@ -10133,7 +10125,7 @@ theorem BProv_Ax_s_mul_add_all (x y : Term) :
       BProv_eqTrans hleftArg (BProv_eqTrans hmulSuccYZ hihCong)
     have hmulSuccZ : BProv Ax_s [phi]
         (eq (Term.mul xs (Term.succ z)) (Term.add xz xs)) :=
-      BProv_weaken_nil (BProv_Ax_s_mulSucc_terms xs z)
+      (BProv_Ax_s_mulSucc_terms xs z)
     have hrightCong : BProv Ax_s [phi]
         (eq
           (Term.add xy (Term.mul xs (Term.succ z)))
@@ -10308,7 +10300,7 @@ theorem BProv_Ax_s_mul_assoc_all (x y : Term) :
     have hleftStep : BProv Ax_s [phi]
         (eq (Term.mul xy (Term.succ z))
           (Term.add (Term.mul xy z) xy)) :=
-      BProv_weaken_nil (BProv_Ax_s_mulSucc_terms xy z)
+      (BProv_Ax_s_mulSucc_terms xy z)
     have hihCong : BProv Ax_s [phi]
         (eq
           (Term.add (Term.mul xy z) xy)
@@ -10316,7 +10308,7 @@ theorem BProv_Ax_s_mul_assoc_all (x y : Term) :
       BProv_eq_congr_add_left xy hphi
     have hySucc : BProv Ax_s [phi]
         (eq (Term.mul ys (Term.succ z)) (Term.add yz ys)) :=
-      BProv_weaken_nil (BProv_Ax_s_mulSucc_terms ys z)
+      (BProv_Ax_s_mulSucc_terms ys z)
     have hrightArg : BProv Ax_s [phi]
         (eq
           (Term.mul xs (Term.mul ys (Term.succ z)))
@@ -10503,10 +10495,11 @@ theorem BProv_Ax_s_mul_two_right_terms {G : List Formula} (x : Term) :
   exact BProv_eqTrans hnorm hadd
 
 /-- PA proves closed addition of standard numerals. -/
-theorem BProv_Ax_s_addNumerals (m n : Nat) :
-    BProv Ax_s [] (eq
+theorem BProv_Ax_s_addNumerals {G : List Formula} (m n : Nat) :
+    BProv Ax_s G (eq
       (Term.add (Term.numeral m) (Term.numeral n))
       (Term.numeral (m + n))) := by
+  apply BProv_weaken_nil
   simpa [Term.addRightNumeral_numeral] using
     BProv_Ax_s_addRightNumeral (Term.numeral m) n
 
@@ -10535,12 +10528,13 @@ theorem BProv_Ax_s_mulRightNumeral_numeral (m n : Nat) :
       simpa [Term.mulRightNumeral, Nat.mul_succ] using h
 
 /-- PA proves closed multiplication of standard numerals. -/
-theorem BProv_Ax_s_mulNumerals (m n : Nat) :
-    BProv Ax_s [] (eq
+theorem BProv_Ax_s_mulNumerals {G : List Formula} (m n : Nat) :
+    BProv Ax_s G (eq
       (Term.mul (Term.numeral m) (Term.numeral n))
       (Term.numeral (m * n))) :=
-  BProv_eqTrans (BProv_Ax_s_mulRightNumeral (Term.numeral m) n)
-    (BProv_Ax_s_mulRightNumeral_numeral m n)
+  BProv_weaken_nil
+    (BProv_eqTrans (BProv_Ax_s_mulRightNumeral (Term.numeral m) n)
+      (BProv_Ax_s_mulRightNumeral_numeral m n))
 
 /-- PA proves `a ≤ b` from a proof that the two slots are equal. -/
 theorem BProv_Ax_s_leAt_of_eq {G : List Formula} {a b : Nat}
@@ -10548,7 +10542,7 @@ theorem BProv_Ax_s_leAt_of_eq {G : List Formula} {a b : Nat}
     BProv Ax_s G (leAt a b) := by
   have haddZero : BProv Ax_s G
       (eq (Term.add (Term.var a) Term.zero) (Term.var a)) :=
-    BProv_weaken_nil (BProv_Ax_s_addZero_term (Term.var a))
+    (BProv_Ax_s_addZero_term (Term.var a))
   have htarget : BProv Ax_s G
       (eq (Term.add (Term.var a) Term.zero) (Term.var b)) :=
     BProv_eqTrans haddZero heq
@@ -10605,7 +10599,7 @@ theorem BProv_Ax_s_leAt_of_eqConst {G : List Formula}
   have haddRaw : BProv Ax_s G
       (eq (Term.add (Term.numeral m) (Term.numeral w))
         (Term.numeral (m + w))) :=
-    BProv_weaken_nil (BProv_Ax_s_addNumerals m w)
+    (BProv_Ax_s_addNumerals m w)
   have hmw : m + w = n := by
     simp [w]
     omega
@@ -10638,7 +10632,7 @@ theorem BProv_Ax_s_leTermAt_numeral_of_eqConst {G : List Formula}
   have haddRaw : BProv Ax_s G
       (eq (Term.add (Term.numeral k) (Term.numeral w))
         (Term.numeral (k + w))) :=
-    BProv_weaken_nil (BProv_Ax_s_addNumerals k w)
+    (BProv_Ax_s_addNumerals k w)
   have hkw : k + w = n := by
     simp [w]
     omega
@@ -10680,7 +10674,7 @@ theorem BProv_Ax_s_ltAt_of_eqConst {G : List Formula}
   have haddRaw : BProv Ax_s G
       (eq (Term.add (Term.numeral m) (Term.numeral (w + 1)))
         (Term.numeral (m + (w + 1)))) :=
-    BProv_weaken_nil (BProv_Ax_s_addNumerals m (w + 1))
+    (BProv_Ax_s_addNumerals m (w + 1))
   have hmw : m + (w + 1) = n := by
     simp [w]
     omega
@@ -10856,7 +10850,7 @@ theorem BProv_Ax_s_eq_of_leAt_leAt {G : List Formula} {a b : Nat}
           (eq (Term.add x (Term.add y z)) x) :=
         BProv_eqTrans (BProv_eqSym hassoc) hloop
       have hxZero : BProv Ax_s D (eq (Term.add x Term.zero) x) :=
-        BProv_weaken_nil (BProv_Ax_s_addZero_term x)
+        (BProv_Ax_s_addZero_term x)
       have hsumEqZero : BProv Ax_s D
           (eq (Term.add x (Term.add y z)) (Term.add x Term.zero)) :=
         BProv_eqTrans hloop' (BProv_eqSym hxZero)
@@ -11103,7 +11097,7 @@ theorem BProv_Ax_s_leAt_ltAt_trans {G : List Formula} {a b c : Nat}
       have hsuccRight : BProv Ax_s D
           (eq (Term.add y (Term.succ z))
             (Term.succ (Term.add y z))) :=
-        BProv_weaken_nil (BProv_Ax_s_addSucc_terms y z)
+        (BProv_Ax_s_addSucc_terms y z)
       have hsuccCong : BProv Ax_s D
           (eq
             (Term.add x (Term.add y (Term.succ z)))
@@ -11402,8 +11396,7 @@ theorem BProv_Ax_s_succPredAt_of_ltAt {G : List Formula} {a b : Nat}
     have haddSucc : BProv Ax_s C
         (eq (Term.add (Term.var (a+1)) (Term.succ (Term.var 0)))
           (Term.succ (Term.add (Term.var (a+1)) (Term.var 0)))) :=
-      BProv_weaken_nil
-        (BProv_Ax_s_addSucc_terms (Term.var (a+1)) (Term.var 0))
+      (BProv_Ax_s_addSucc_terms (Term.var (a+1)) (Term.var 0))
     have htarget : BProv Ax_s C
         (eq (Term.var (b+1))
           (Term.succ (Term.add (Term.var (a+1)) (Term.var 0)))) :=
@@ -11599,7 +11592,7 @@ theorem BProv_Ax_s_eq_of_leTermAt_leTermAt {G : List Formula}
           (eq (Term.add ss (Term.add y z)) ss) :=
         BProv_eqTrans (BProv_eqSym hassoc) hloop
       have hsZero : BProv Ax_s D (eq (Term.add ss Term.zero) ss) :=
-        BProv_weaken_nil (BProv_Ax_s_addZero_term ss)
+        (BProv_Ax_s_addZero_term ss)
       have hsumEqZero : BProv Ax_s D
           (eq (Term.add ss (Term.add y z)) (Term.add ss Term.zero)) :=
         BProv_eqTrans hloop' (BProv_eqSym hsZero)
@@ -11662,7 +11655,7 @@ theorem BProv_ltTermAt_of_eq_right {B : Formula → Prop} {G : List Formula}
 theorem BProv_Ax_s_leTermAt_refl {G : List Formula} (t : Term) :
     BProv Ax_s G (leTermAt t t) := by
   have hadd : BProv Ax_s G (eq (Term.add t Term.zero) t) :=
-    BProv_weaken_nil (BProv_Ax_s_addZero_term t)
+    (BProv_Ax_s_addZero_term t)
   have hbody : BProv Ax_s G
       (subst (instTerm Term.zero)
         (eq (Term.add (Term.rename Nat.succ t) (Term.var 0))
@@ -11696,10 +11689,10 @@ theorem BProv_Ax_s_leTermAt_self_succ {G : List Formula} (t : Term) :
   have haddSucc : BProv Ax_s G
       (eq (Term.add t (Term.succ Term.zero))
         (Term.succ (Term.add t Term.zero))) :=
-    BProv_weaken_nil (BProv_Ax_s_addSucc_terms t Term.zero)
+    (BProv_Ax_s_addSucc_terms t Term.zero)
   have haddZero : BProv Ax_s G
       (eq (Term.add t Term.zero) t) :=
-    BProv_weaken_nil (BProv_Ax_s_addZero_term t)
+    (BProv_Ax_s_addZero_term t)
   have hsucc : BProv Ax_s G
       (eq (Term.succ (Term.add t Term.zero)) (Term.succ t)) :=
     BProv_eq_congr_succ haddZero
@@ -11765,10 +11758,10 @@ theorem BProv_Ax_s_ltTermAt_self_succ {G : List Formula} (t : Term) :
   have haddSucc : BProv Ax_s G
       (eq (Term.add t (Term.succ Term.zero))
         (Term.succ (Term.add t Term.zero))) :=
-    BProv_weaken_nil (BProv_Ax_s_addSucc_terms t Term.zero)
+    (BProv_Ax_s_addSucc_terms t Term.zero)
   have haddZero : BProv Ax_s G
       (eq (Term.add t Term.zero) t) :=
-    BProv_weaken_nil (BProv_Ax_s_addZero_term t)
+    (BProv_Ax_s_addZero_term t)
   have hsucc : BProv Ax_s G
       (eq (Term.succ (Term.add t Term.zero)) (Term.succ t)) :=
     BProv_eq_congr_succ haddZero
@@ -11941,8 +11934,7 @@ theorem BProv_Ax_s_crtInverseProductQuot_expand
   have hmulSucc : BProv Ax_s G
       (eq (Term.mul leftBase (Term.succ rightBase))
         (Term.add (Term.mul leftBase rightBase) leftBase)) :=
-    BProv_weaken_nil
-      (BProv_Ax_s_mulSucc_terms leftBase rightBase)
+    (BProv_Ax_s_mulSucc_terms leftBase rightBase)
   have hmulSuccCong : BProv Ax_s G
       (eq
         (Term.add
@@ -11961,8 +11953,7 @@ theorem BProv_Ax_s_crtInverseProductQuot_expand
           (Term.add
             (Term.add (Term.mul leftBase rightBase) leftBase)
             rightBase))) :=
-    BProv_weaken_nil
-      (BProv_Ax_s_addSucc_terms
+    (BProv_Ax_s_addSucc_terms
         (Term.add (Term.mul leftBase rightBase) leftBase)
         rightBase)
   have hexpand : BProv Ax_s G
@@ -12285,8 +12276,7 @@ theorem BProv_Ax_s_crtPositiveInverse_of_negative
           (Term.mul rightModulus inverseQuot)
           (Term.succ carry))) :=
     BProv_eqSym
-      (BProv_weaken_nil
-        (BProv_Ax_s_addSucc_terms
+      ((BProv_Ax_s_addSucc_terms
           (Term.mul rightModulus inverseQuot) carry))
   have hnegativeSym : BProv Ax_s G
       (eq (Term.succ carry)
@@ -12457,15 +12447,13 @@ theorem BProv_Ax_s_betaPair_negative_bezout
           (Term.add
             (Term.mul rightScale leftPred) rightScale)) := by
       simpa [leftModulus] using
-        BProv_weaken_nil
-          (BProv_Ax_s_mulSucc_terms rightScale leftPred)
+        (BProv_Ax_s_mulSucc_terms rightScale leftPred)
     have hrightExpand : BProv Ax_s G
         (eq (Term.mul leftScale rightModulus)
           (Term.add
             (Term.mul leftScale rightPred) leftScale)) := by
       simpa [rightModulus] using
-        BProv_weaken_nil
-          (BProv_Ax_s_mulSucc_terms leftScale rightPred)
+        (BProv_Ax_s_mulSucc_terms leftScale rightPred)
     have hparts : BProv Ax_s G
         (eq
           (Term.add
@@ -12584,8 +12572,7 @@ theorem BProv_Ax_s_betaPair_negative_bezout
         (Term.mul rightModulus (Term.succ crossCoeff))
         (Term.add
           (Term.mul rightModulus crossCoeff) rightModulus)) :=
-    BProv_weaken_nil
-      (BProv_Ax_s_mulSucc_terms rightModulus crossCoeff)
+    (BProv_Ax_s_mulSucc_terms rightModulus crossCoeff)
   have hcomm : BProv Ax_s G
       (eq
         (Term.add
@@ -12753,7 +12740,7 @@ theorem BProv_Ax_s_crtInverseExistsTermAt_one
     BProv_Ax_s_mul_one_term (Term.numeral 1)
   have hzero : BProv Ax_s G
       (eq (Term.mul modulus Term.zero) Term.zero) :=
-    BProv_weaken_nil (BProv_Ax_s_mulZero_term modulus)
+    (BProv_Ax_s_mulZero_term modulus)
   have hsucc : BProv Ax_s G
       (eq (Term.succ (Term.mul modulus Term.zero))
         (Term.numeral 1)) := by
@@ -13455,8 +13442,7 @@ theorem BProv_Ax_s_crtSuccessorCorrectionTerm
   have hmulSucc : BProv Ax_s G
       (eq (Term.mul oldCode (Term.succ modulusPred))
         (Term.add (Term.mul oldCode modulusPred) oldCode)) :=
-    BProv_weaken_nil
-      (BProv_Ax_s_mulSucc_terms oldCode modulusPred)
+    (BProv_Ax_s_mulSucc_terms oldCode modulusPred)
   have hinner : BProv Ax_s G
       (eq (Term.add oldCode (Term.mul modulusPred oldCode))
         (Term.mul oldCode (Term.succ modulusPred))) :=
@@ -13809,8 +13795,7 @@ theorem BProv_Ax_s_remTermTermAt_zero_modulus_one
   have hadd : BProv Ax_s G
       (eq (Term.add (Term.mul value (Term.succ Term.zero)) Term.zero)
         (Term.mul value (Term.succ Term.zero))) :=
-    BProv_weaken_nil
-      (BProv_Ax_s_addZero_term (Term.mul value (Term.succ Term.zero)))
+    (BProv_Ax_s_addZero_term (Term.mul value (Term.succ Term.zero)))
   have hvalue : BProv Ax_s G
       (eq value
         (Term.add (Term.mul value (Term.succ Term.zero)) Term.zero)) :=
@@ -13874,7 +13859,7 @@ theorem BProv_Ax_s_betaModTermTerm_eq_one_of_eq_step_zero
     BProv_eq_congr_mul_right idxSucc hstep
   have hmulZero : BProv Ax_s G
       (eq (Term.mul idxSucc Term.zero) Term.zero) :=
-    BProv_weaken_nil (BProv_Ax_s_mulZero_term idxSucc)
+    (BProv_Ax_s_mulZero_term idxSucc)
   have hmul : BProv Ax_s G (eq (Term.mul idxSucc step) Term.zero) :=
     BProv_eqTrans hmulLeft hmulZero
   have hsucc : BProv Ax_s G
@@ -15837,7 +15822,7 @@ theorem BProv_Ax_s_ltTermAt_succ_right_of_leTermAt
     have haddSucc : BProv Ax_s C
         (eq (Term.add ss (Term.succ d))
           (Term.succ (Term.add ss d))) :=
-      BProv_weaken_nil (BProv_Ax_s_addSucc_terms ss d)
+      (BProv_Ax_s_addSucc_terms ss d)
     have hsuccEq : BProv Ax_s C
         (eq (Term.succ (Term.add ss d)) (Term.succ tt)) :=
       BProv_eq_congr_succ hleEq
@@ -15905,14 +15890,14 @@ theorem BProv_Ax_s_leTermAt_of_ltTermAt_succ_right
     have haddSucc : BProv Ax_s C
         (eq (Term.add ss (Term.succ d))
           (Term.succ (Term.add ss d))) :=
-      BProv_weaken_nil (BProv_Ax_s_addSucc_terms ss d)
+      (BProv_Ax_s_addSucc_terms ss d)
     have hsuccEq : BProv Ax_s C
         (eq (Term.succ (Term.add ss d)) (Term.succ tt)) :=
       BProv_eqTrans (BProv_eqSym haddSucc) hltEq
     have hinj : BProv Ax_s C
         (imp (eq (Term.succ (Term.add ss d)) (Term.succ tt))
           (eq (Term.add ss d) tt)) :=
-      BProv_weaken_nil (BProv_Ax_s_succInj_terms (Term.add ss d) tt)
+      (BProv_Ax_s_succInj_terms (Term.add ss d) tt)
     have hleEq : BProv Ax_s C (eq (Term.add ss d) tt) :=
       BProv_mp Ax_s C _ _ hinj hsuccEq
     have hsNorm :
@@ -16397,8 +16382,7 @@ theorem BProv_Ax_s_eq_zero_of_ltTermAt_eqConst_one {G : List Formula}
                 (Term.succ Term.zero))
               (eq (Term.add (Term.var 0) (Term.succ (Term.var 1)))
                 Term.zero)) :=
-          BProv_weaken_nil
-            (BProv_Ax_s_succInj_terms
+          (BProv_Ax_s_succInj_terms
               (Term.add (Term.var 0) (Term.succ (Term.var 1))) Term.zero)
         have hsumZero : BProv Ax_s D
             (eq (Term.add (Term.var 0) (Term.succ (Term.var 1)))
@@ -16410,7 +16394,7 @@ theorem BProv_Ax_s_eq_zero_of_ltTermAt_eqConst_one {G : List Formula}
             (x := Term.var 0) (y := Term.succ (Term.var 1)) hsumZero
         have hnot : BProv Ax_s D
             (imp (eq (Term.succ (Term.var 1)) Term.zero) bot) :=
-          BProv_weaken_nil (BProv_Ax_s_zeroNotSucc_term (Term.var 1))
+          (BProv_Ax_s_zeroNotSucc_term (Term.var 1))
         exact BProv_mp Ax_s D _ _ hnot hsuccZero
       have hbot : BProv Ax_s (ex succBody :: C) bot :=
         BProv_Ax_s_exE
@@ -16441,7 +16425,7 @@ theorem BProv_Ax_s_ltConst_of_eqConst {G : List Formula}
   have haddRaw : BProv Ax_s G
       (eq (Term.add (Term.numeral m) (Term.numeral (w + 1)))
         (Term.numeral (m + (w + 1)))) :=
-    BProv_weaken_nil (BProv_Ax_s_addNumerals m (w + 1))
+    (BProv_Ax_s_addNumerals m (w + 1))
   have hmw : m + (w + 1) = n := by
     simp [w]
     omega
@@ -16473,7 +16457,7 @@ theorem BProv_Ax_s_ltConst_closed {G : List Formula}
   have haddRaw : BProv Ax_s G
       (eq (Term.add (Term.numeral m) (Term.numeral (w + 1)))
         (Term.numeral (m + (w + 1)))) :=
-    BProv_weaken_nil (BProv_Ax_s_addNumerals m (w + 1))
+    (BProv_Ax_s_addNumerals m (w + 1))
   have hmw : m + (w + 1) = n := by
     simp [w]
     omega
@@ -16506,7 +16490,7 @@ theorem BProv_Ax_s_dvdAt_of_eqConst_mul {G : List Formula}
   have hmulRaw : BProv Ax_s G
       (eq (Term.mul (Term.numeral m) (Term.numeral q))
         (Term.numeral (m * q))) :=
-    BProv_weaken_nil (BProv_Ax_s_mulNumerals m q)
+    (BProv_Ax_s_mulNumerals m q)
   have hmul' : BProv Ax_s G
       (eq (Term.mul (Term.numeral m) (Term.numeral q))
         (Term.numeral n)) := by
@@ -16717,8 +16701,7 @@ theorem BProv_Ax_s_leTermAt_succ_left_of_ltTermAt
   have haddSucc : BProv Ax_s D
       (eq (Term.add lower1 (Term.succ (Term.var 0)))
         (Term.succ (Term.add lower1 (Term.var 0)))) :=
-    BProv_weaken_nil
-      (BProv_Ax_s_addSucc_terms lower1 (Term.var 0))
+    (BProv_Ax_s_addSucc_terms lower1 (Term.var 0))
   have hleEq : BProv Ax_s D
       (eq (Term.add (Term.succ lower1) (Term.var 0)) upper1) :=
     BProv_eqTrans hsuccAdd
@@ -16843,8 +16826,7 @@ theorem BProv_Ax_s_ltTermAt_of_succ_leTermAt
   have haddSucc : BProv Ax_s D
       (eq (Term.add lower1 (Term.succ (Term.var 0)))
         (Term.succ (Term.add lower1 (Term.var 0)))) :=
-    BProv_weaken_nil
-      (BProv_Ax_s_addSucc_terms lower1 (Term.var 0))
+    (BProv_Ax_s_addSucc_terms lower1 (Term.var 0))
   have hstrictEq : BProv Ax_s D
       (eq (Term.add lower1 (Term.succ (Term.var 0))) upper1) :=
     BProv_eqTrans haddSucc
@@ -16891,7 +16873,7 @@ theorem BProv_Ax_s_ltTermAt_gapPred_of_eq_add_succ_terms
     have hleftSucc : BProv Ax_s G
         (eq (Term.add gapPred (Term.succ left))
           (Term.succ (Term.add gapPred left))) :=
-      BProv_weaken_nil (BProv_Ax_s_addSucc_terms gapPred left)
+      (BProv_Ax_s_addSucc_terms gapPred left)
     have hcomm : BProv Ax_s G
         (eq (Term.add gapPred left) (Term.add left gapPred)) :=
       BProv_Ax_s_add_comm_terms gapPred left
@@ -16902,7 +16884,7 @@ theorem BProv_Ax_s_ltTermAt_gapPred_of_eq_add_succ_terms
     have hrightSucc : BProv Ax_s G
         (eq (Term.add left (Term.succ gapPred))
           (Term.succ (Term.add left gapPred))) :=
-      BProv_weaken_nil (BProv_Ax_s_addSucc_terms left gapPred)
+      (BProv_Ax_s_addSucc_terms left gapPred)
     exact BProv_eqTrans hleftSucc
       (BProv_eqTrans hcommSucc (BProv_eqSym hrightSucc))
   have hvalue : BProv Ax_s G
@@ -16976,8 +16958,7 @@ theorem BProv_Ax_s_ltTermAt_zero_mul_succ_right
           (Term.add
             (Term.mul (Term.var 0) (Term.succ factor1))
             factor1))) :=
-    BProv_weaken_nil
-      (BProv_Ax_s_addSucc_terms
+    (BProv_Ax_s_addSucc_terms
         (Term.mul (Term.var 0) (Term.succ factor1)) factor1)
   have hproduct : BProv Ax_s D
       (eq (Term.mul value1 (Term.succ factor1))
@@ -18685,7 +18666,7 @@ theorem BProv_Ax_s_eqConstAt_zero_of_dvdAt_ltAt {G : List Formula}
         BProv_eq_congr_mul_right (Term.var (modulus+1)) hqZero
       have hmulZero : BProv Ax_s (zeroAt 0 :: C)
           (eq (Term.mul (Term.var (modulus+1)) Term.zero) Term.zero) :=
-        BProv_weaken_nil (BProv_Ax_s_mulZero_term (Term.var (modulus+1)))
+        (BProv_Ax_s_mulZero_term (Term.var (modulus+1)))
       have hprodZero : BProv Ax_s (zeroAt 0 :: C)
           (eq (Term.mul (Term.var (modulus+1)) (Term.var 0)) Term.zero) :=
         BProv_eqTrans hmulZeroArg hmulZero
@@ -18715,7 +18696,7 @@ theorem BProv_Ax_s_eqConstAt_zero_of_dvdAt_ltAt {G : List Formula}
           simpa [succBody, m, q] using BProv_eq_congr_mul_right m hsucc
         have hmulSucc : BProv Ax_s D
             (eq (Term.mul m (Term.succ q)) (Term.add (Term.mul m q) m)) :=
-          BProv_weaken_nil (BProv_Ax_s_mulSucc_terms m q)
+          (BProv_Ax_s_mulSucc_terms m q)
         have hprodSucc : BProv Ax_s D
             (eq (Term.mul m (Term.var 1)) (Term.add (Term.mul m q) m)) :=
           BProv_eqTrans hsuccMulArg hmulSucc
@@ -18836,7 +18817,7 @@ theorem BProv_Ax_s_div2StepAt_of_eqConst {G : List Formula}
       (eq
         (Term.add (Term.numeral h) (Term.numeral h))
         (Term.numeral (h + h))) :=
-    BProv_weaken_nil (BProv_Ax_s_addNumerals h h)
+    (BProv_Ax_s_addNumerals h h)
   have hdouble : BProv Ax_s G
       (eq
         (Term.add (Term.var half) (Term.var half))
@@ -18857,7 +18838,7 @@ theorem BProv_Ax_s_div2StepAt_of_eqConst {G : List Formula}
       (eq
         (Term.add (Term.numeral (h + h)) (Term.numeral b))
         (Term.numeral (h + h + b))) :=
-    BProv_weaken_nil (BProv_Ax_s_addNumerals (h + h) b)
+    (BProv_Ax_s_addNumerals (h + h) b)
   have hadd : BProv Ax_s G
       (eq
         (Term.add (Term.numeral (h + h)) (Term.numeral b))
@@ -18904,7 +18885,7 @@ theorem BProv_Ax_s_div2StepAt_zero_one_bot {G : List Formula}
   have haddSucc : BProv Ax_s G
       (eq (Term.add t (Term.succ Term.zero))
         (Term.succ (Term.add t Term.zero))) :=
-    BProv_weaken_nil (BProv_Ax_s_addSucc_terms t Term.zero)
+    (BProv_Ax_s_addSucc_terms t Term.zero)
   have hrightSucc : BProv Ax_s G
       (eq (Term.add t (Term.var bit))
         (Term.succ (Term.add t Term.zero))) :=
@@ -18914,7 +18895,7 @@ theorem BProv_Ax_s_div2StepAt_zero_one_bot {G : List Formula}
     BProv_eqTrans (BProv_eqSym hrightSucc) hrightZero
   have hnot : BProv Ax_s G
       (imp (eq (Term.succ (Term.add t Term.zero)) Term.zero) bot) :=
-    BProv_weaken_nil (BProv_Ax_s_zeroNotSucc_term (Term.add t Term.zero))
+    (BProv_Ax_s_zeroNotSucc_term (Term.add t Term.zero))
   exact BProv_mp Ax_s G _ _ hnot hsuccZero
 
 /-- In a binary-halving step, current value `0` forces the half/next slot to
@@ -19022,7 +19003,7 @@ theorem BProv_Ax_s_doubleEqAt_of_eqConst_double {G : List Formula}
   have hadd : BProv Ax_s G
       (eq (Term.add (Term.numeral h) (Term.numeral h))
         (Term.numeral (h + h))) :=
-    BProv_weaken_nil (BProv_Ax_s_addNumerals h h)
+    (BProv_Ax_s_addNumerals h h)
   have hdoubleValue : BProv Ax_s G
       (eq (Term.add (Term.var half) (Term.var half))
         (Term.numeral v)) := by
@@ -19064,7 +19045,7 @@ theorem BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero {G : List Formula}
     simpa [eqConstAt, Term.numeral] using
       BProv_eq_congr_add_right d hbit
   have haddZero : BProv Ax_s G (eq (Term.add d Term.zero) d) :=
-    BProv_weaken_nil (BProv_Ax_s_addZero_term d)
+    (BProv_Ax_s_addZero_term d)
   have hright : BProv Ax_s G (eq (Term.add d (Term.var bit)) d) :=
     BProv_eqTrans hbitZero haddZero
   have hdouble : BProv Ax_s G (eq (Term.var value) d) :=
@@ -19094,11 +19075,11 @@ theorem BProv_Ax_s_oddDoubleEqAt_of_div2StepAt_bit_one {G : List Formula}
   have haddSucc : BProv Ax_s G
       (eq (Term.add d (Term.succ Term.zero))
         (Term.succ (Term.add d Term.zero))) :=
-    BProv_weaken_nil (BProv_Ax_s_addSucc_terms d Term.zero)
+    (BProv_Ax_s_addSucc_terms d Term.zero)
   have haddZero : BProv Ax_s G
       (eq (Term.succ (Term.add d Term.zero)) (Term.succ d)) :=
     BProv_eq_congr_succ
-      (BProv_weaken_nil (BProv_Ax_s_addZero_term d))
+      (BProv_Ax_s_addZero_term d)
   have hright : BProv Ax_s G
       (eq (Term.add d (Term.var bit)) (Term.succ d)) :=
     BProv_eqTrans hbitOne (BProv_eqTrans haddSucc haddZero)
@@ -19134,7 +19115,7 @@ theorem BProv_Ax_s_succ_oddDoubleEqAt_eq_double_succ
   have hrightStep : BProv Ax_s G
       (eq (Term.add h (Term.succ h)) (Term.succ double)) := by
     simpa [h, double] using
-      (BProv_weaken_nil (BProv_Ax_s_addSucc_terms h h))
+      (BProv_Ax_s_addSucc_terms h h)
   have hright : BProv Ax_s G
       (eq (Term.succ (Term.add h (Term.succ h)))
         (Term.succ (Term.succ double))) :=
@@ -19169,11 +19150,11 @@ theorem BProv_Ax_s_div2StepTermAt_succ_of_doubleEqAt
   have haddSucc : BProv Ax_s G
       (eq (Term.add d (Term.succ Term.zero))
         (Term.succ (Term.add d Term.zero))) :=
-    BProv_weaken_nil (BProv_Ax_s_addSucc_terms d Term.zero)
+    (BProv_Ax_s_addSucc_terms d Term.zero)
   have haddZero : BProv Ax_s G
       (eq (Term.succ (Term.add d Term.zero)) (Term.succ d)) :=
     BProv_eq_congr_succ
-      (BProv_weaken_nil (BProv_Ax_s_addZero_term d))
+      (BProv_Ax_s_addZero_term d)
   have hsum : BProv Ax_s G
       (eq (Term.add d (Term.succ Term.zero)) (Term.succ d)) :=
     BProv_eqTrans haddSucc haddZero
@@ -19203,7 +19184,7 @@ theorem BProv_Ax_s_div2StepTermAt_succ_of_oddDoubleEqAt
   have hvalue : BProv Ax_s G (eq (Term.succ (Term.var value)) d) := by
     simpa [d] using BProv_Ax_s_succ_oddDoubleEqAt_eq_double_succ hodd
   have haddZero : BProv Ax_s G (eq (Term.add d Term.zero) d) :=
-    BProv_weaken_nil (BProv_Ax_s_addZero_term d)
+    (BProv_Ax_s_addZero_term d)
   have heq : BProv Ax_s G
       (eq (Term.succ (Term.var value)) (Term.add d Term.zero)) :=
     BProv_eqTrans hvalue (BProv_eqSym haddZero)
@@ -19666,7 +19647,7 @@ theorem BProv_Ax_s_div2StepAt_closedSubst {G : List Formula}
       (eq
         (Term.add (Term.numeral half) (Term.numeral half))
         (Term.numeral (half + half))) :=
-    BProv_weaken_nil (BProv_Ax_s_addNumerals half half)
+    (BProv_Ax_s_addNumerals half half)
   have haddLeft : BProv Ax_s G
       (eq
         (Term.add
@@ -19678,7 +19659,7 @@ theorem BProv_Ax_s_div2StepAt_closedSubst {G : List Formula}
       (eq
         (Term.add (Term.numeral (half + half)) (Term.numeral bit))
         (Term.numeral (half + half + bit))) :=
-    BProv_weaken_nil (BProv_Ax_s_addNumerals (half + half) bit)
+    (BProv_Ax_s_addNumerals (half + half) bit)
   have hadd : BProv Ax_s G
       (eq
         (Term.add (Term.numeral (half + half)) (Term.numeral bit))
@@ -19737,7 +19718,7 @@ theorem BProv_Ax_s_div2StepAt_constValueHalfSubst_of_eqConst
       (eq
         (Term.add (Term.numeral h) (Term.numeral h))
         (Term.numeral (h + h))) :=
-    BProv_weaken_nil (BProv_Ax_s_addNumerals h h)
+    (BProv_Ax_s_addNumerals h h)
   have haddLeft : BProv Ax_s G
       (eq
         (Term.add
@@ -19754,7 +19735,7 @@ theorem BProv_Ax_s_div2StepAt_constValueHalfSubst_of_eqConst
       (eq
         (Term.add (Term.numeral (h + h)) (Term.numeral b))
         (Term.numeral (h + h + b))) :=
-    BProv_weaken_nil (BProv_Ax_s_addNumerals (h + h) b)
+    (BProv_Ax_s_addNumerals (h + h) b)
   have hadd : BProv Ax_s G
       (eq
         (Term.add (Term.numeral (h + h)) (Term.numeral b))
@@ -19810,7 +19791,7 @@ theorem BProv_Ax_s_remAt_of_eqConst {G : List Formula}
   have hmulRaw : BProv Ax_s G
       (eq (Term.mul (Term.numeral q) (Term.numeral m))
         (Term.numeral (q * m))) :=
-    BProv_weaken_nil (BProv_Ax_s_mulNumerals q m)
+    (BProv_Ax_s_mulNumerals q m)
   have hmul : BProv Ax_s G
       (eq (Term.mul (Term.numeral q) (Term.var modulus))
         (Term.numeral (q * m))) :=
@@ -19830,7 +19811,7 @@ theorem BProv_Ax_s_remAt_of_eqConst {G : List Formula}
       (eq
         (Term.add (Term.numeral (q * m)) (Term.numeral r))
         (Term.numeral (q * m + r))) :=
-    BProv_weaken_nil (BProv_Ax_s_addNumerals (q * m) r)
+    (BProv_Ax_s_addNumerals (q * m) r)
   have hadd : BProv Ax_s G
       (eq
         (Term.add (Term.numeral (q * m)) (Term.numeral r))
@@ -19893,7 +19874,7 @@ theorem BProv_Ax_s_remAt_constMod_of_eqConst {G : List Formula}
   have hmulRaw : BProv Ax_s G
       (eq (Term.mul (Term.numeral q) (Term.numeral m))
         (Term.numeral (q * m))) :=
-    BProv_weaken_nil (BProv_Ax_s_mulNumerals q m)
+    (BProv_Ax_s_mulNumerals q m)
   have haddLeft : BProv Ax_s G
       (eq
         (Term.add (Term.mul (Term.numeral q) (Term.numeral m))
@@ -19909,7 +19890,7 @@ theorem BProv_Ax_s_remAt_constMod_of_eqConst {G : List Formula}
       (eq
         (Term.add (Term.numeral (q * m)) (Term.numeral r))
         (Term.numeral (q * m + r))) :=
-    BProv_weaken_nil (BProv_Ax_s_addNumerals (q * m) r)
+    (BProv_Ax_s_addNumerals (q * m) r)
   have hadd : BProv Ax_s G
       (eq
         (Term.add (Term.numeral (q * m)) (Term.numeral r))
@@ -19977,7 +19958,7 @@ theorem BProv_Ax_s_remAt_constRemMod_of_eqConst {G : List Formula}
   have hmulRaw : BProv Ax_s G
       (eq (Term.mul (Term.numeral q) (Term.numeral m))
         (Term.numeral (q * m))) :=
-    BProv_weaken_nil (BProv_Ax_s_mulNumerals q m)
+    (BProv_Ax_s_mulNumerals q m)
   have haddLeft : BProv Ax_s G
       (eq
         (Term.add (Term.mul (Term.numeral q) (Term.numeral m))
@@ -19988,7 +19969,7 @@ theorem BProv_Ax_s_remAt_constRemMod_of_eqConst {G : List Formula}
       (eq
         (Term.add (Term.numeral (q * m)) (Term.numeral r))
         (Term.numeral (q * m + r))) :=
-    BProv_weaken_nil (BProv_Ax_s_addNumerals (q * m) r)
+    (BProv_Ax_s_addNumerals (q * m) r)
   have hadd : BProv Ax_s G
       (eq
         (Term.add (Term.numeral (q * m)) (Term.numeral r))
@@ -20365,7 +20346,7 @@ theorem BProv_Ax_s_leTermAt_step_betaModTermTerm
   have haddSucc : BProv Ax_s G
       (eq (Term.add step (Term.succ core))
         (Term.succ (Term.add step core))) :=
-    BProv_weaken_nil (BProv_Ax_s_addSucc_terms step core)
+    (BProv_Ax_s_addSucc_terms step core)
   have hmod : BProv Ax_s G
       (eq (betaModTermTerm step idx)
         (Term.add step (Term.succ core))) := by
@@ -20707,7 +20688,7 @@ theorem BProv_Ax_s_twoEntryBetaTerm_zero
   have hcurAddSucc : BProv Ax_s G
       (eq (Term.add cur (Term.succ next)) s) := by
     simpa [s, twoEntryBetaStepTerm] using
-      BProv_weaken_nil (BProv_Ax_s_addSucc_terms cur next)
+      (BProv_Ax_s_addSucc_terms cur next)
   have hcurLeStep : BProv Ax_s G (leTermAt cur s) :=
     BProv_Ax_s_leTermAt_of_eq_add_right_terms
       (lower := cur) (upper := s) (diff := Term.succ next)
@@ -20822,7 +20803,7 @@ theorem BProv_Ax_s_twoEntryBetaTerm_two_mul_modulus_zero
       (eq (Term.add step modulusZero)
         (Term.succ (Term.add step step))) := by
     simpa [modulusZero] using
-      BProv_weaken_nil (BProv_Ax_s_addSucc_terms step step)
+      (BProv_Ax_s_addSucc_terms step step)
   have hsuccCong : BProv Ax_s G
       (eq (Term.succ (Term.add step modulusZero))
         (Term.succ (Term.succ (Term.add step step)))) :=
@@ -20863,7 +20844,7 @@ theorem BProv_Ax_s_twoEntryBetaTerm_modulus_one_square
       (eq (Term.numeral 4)
         (Term.add (Term.numeral 2) (Term.numeral 2))) := by
     simpa using BProv_eqSym
-      (BProv_weaken_nil (G := G) (BProv_Ax_s_addNumerals 2 2))
+      ((BProv_Ax_s_addNumerals (G := G) 2 2))
   have hfourArg : BProv Ax_s G
       (eq fourStep
         (Term.mul (Term.add (Term.numeral 2) (Term.numeral 2)) step)) := by
@@ -20943,7 +20924,7 @@ theorem BProv_Ax_s_twoEntryBetaTerm_modulus_one_square
       (eq (Term.mul fourStep modulusZero)
         (Term.add (Term.mul fourStep step) fourStep)) := by
     simpa [modulusZero] using
-      BProv_weaken_nil (BProv_Ax_s_mulSucc_terms fourStep step)
+      (BProv_Ax_s_mulSucc_terms fourStep step)
   have hcore : BProv Ax_s G
       (eq
         (Term.add (Term.add (Term.mul doubleStep doubleStep) doubleStep)
@@ -20955,7 +20936,7 @@ theorem BProv_Ax_s_twoEntryBetaTerm_modulus_one_square
       (eq (Term.mul modulusOne modulusOne)
         (Term.add (Term.mul modulusOne doubleStep) modulusOne)) := by
     simpa [modulusOne] using
-      BProv_weaken_nil (BProv_Ax_s_mulSucc_terms modulusOne doubleStep)
+      (BProv_Ax_s_mulSucc_terms modulusOne doubleStep)
   have hsuccMul : BProv Ax_s G
       (eq (Term.mul modulusOne doubleStep)
         (Term.add (Term.mul doubleStep doubleStep) doubleStep)) := by
@@ -20976,8 +20957,7 @@ theorem BProv_Ax_s_twoEntryBetaTerm_modulus_one_square
           (Term.add
             (Term.add (Term.mul doubleStep doubleStep) doubleStep)
             doubleStep))) := by
-    simpa [modulusOne] using BProv_weaken_nil
-      (BProv_Ax_s_addSucc_terms
+    simpa [modulusOne] using (BProv_Ax_s_addSucc_terms
         (Term.add (Term.mul doubleStep doubleStep) doubleStep)
         doubleStep)
   have hcoreSucc : BProv Ax_s G
@@ -21408,7 +21388,7 @@ theorem BProv_Ax_s_leTermAt_modulus_of_eq_mul_succ_add
   have hmulSucc : BProv Ax_s G
       (eq (Term.mul modulus (Term.succ diff))
         (Term.add (Term.mul modulus diff) modulus)) :=
-    BProv_weaken_nil (BProv_Ax_s_mulSucc_terms modulus diff)
+    (BProv_Ax_s_mulSucc_terms modulus diff)
   have hmulCong : BProv Ax_s G
       (eq
         (Term.add (Term.mul modulus (Term.succ diff)) rem)
@@ -21597,7 +21577,7 @@ theorem BProv_Ax_s_eq_highRem_of_bounded_remainder_difference_terms
       BProv_eq_congr_mul_right modulus hzero
     have hmulZero : BProv Ax_s C
         (eq (Term.mul modulus Term.zero) Term.zero) :=
-      BProv_weaken_nil (BProv_Ax_s_mulZero_term modulus)
+      (BProv_Ax_s_mulZero_term modulus)
     have hmul : BProv Ax_s C (eq (Term.mul modulus diff) Term.zero) :=
       BProv_eqTrans hmulArg hmulZero
     have haddCong : BProv Ax_s C
@@ -21885,7 +21865,7 @@ theorem BProv_Ax_s_eq_of_bounded_remainder_decomposition_quotients_terms
         BProv_eq_congr_add_right lowQuot' hdiffZero
       have haddZero : BProv Ax_s D
           (eq (Term.add lowQuot' Term.zero) lowQuot') :=
-        BProv_weaken_nil (BProv_Ax_s_addZero_term lowQuot')
+        (BProv_Ax_s_addZero_term lowQuot')
       exact BProv_eqTrans (BProv_eqSym hleEq)
         (BProv_eqTrans haddArg haddZero)
     exact BProv_Ax_s_exE
@@ -21950,7 +21930,7 @@ theorem BProv_Ax_s_eq_of_bounded_remainder_decomposition_quotients_terms
           hhighLtD hdiff
       have hnot : BProv Ax_s D
           (imp (eq (Term.succ (Term.var 0)) Term.zero) bot) :=
-        BProv_weaken_nil (BProv_Ax_s_zeroNotSucc_term (Term.var 0))
+        (BProv_Ax_s_zeroNotSucc_term (Term.var 0))
       have hbot : BProv Ax_s D bot :=
         BProv_mp Ax_s D _ _ hnot hdiffZero
       exact BProv_botE (a := rename Nat.succ (eq highQuot lowQuot)) hbot
@@ -22054,7 +22034,7 @@ theorem BProv_Ax_s_eq_of_doubleEqAt_div2StepAt
       (eq (Term.add (Term.mul lowQuot modulus) lowRem)
         (Term.mul lowQuot modulus)) := by
     simpa [lowRem, Term.numeral] using
-      BProv_weaken_nil (BProv_Ax_s_addZero_term
+      (BProv_Ax_s_addZero_term
         (Term.mul lowQuot modulus))
   have hlowShape : BProv Ax_s G
       (eq (Term.add (Term.mul lowQuot modulus) lowRem) lowDouble) :=
@@ -22129,13 +22109,13 @@ theorem BProv_Ax_s_eq_of_oddDoubleEqAt_div2StepAt
       (eq (Term.add (Term.mul lowQuot modulus) lowRem)
         (Term.succ (Term.add (Term.mul lowQuot modulus) Term.zero))) := by
     simpa [lowRem, Term.numeral] using
-      BProv_weaken_nil (BProv_Ax_s_addSucc_terms
+      (BProv_Ax_s_addSucc_terms
         (Term.mul lowQuot modulus) Term.zero)
   have hlowZero : BProv Ax_s G
       (eq (Term.succ (Term.add (Term.mul lowQuot modulus) Term.zero))
         (Term.succ (Term.mul lowQuot modulus))) :=
     BProv_eq_congr_succ
-      (BProv_weaken_nil (BProv_Ax_s_addZero_term
+      ((BProv_Ax_s_addZero_term
         (Term.mul lowQuot modulus)))
   have hlowMulSucc : BProv Ax_s G
       (eq (Term.succ (Term.mul lowQuot modulus))
@@ -22240,7 +22220,7 @@ theorem BProv_Ax_s_eqConstAt_mod_two_of_div2StepAt_eqConst
   have hmulRaw : BProv Ax_s G
       (eq (Term.mul lowQuot modulus) (Term.numeral ((v / 2) * 2))) := by
     simpa [lowQuot, modulus] using
-      BProv_weaken_nil (BProv_Ax_s_mulNumerals (v / 2) 2)
+      (BProv_Ax_s_mulNumerals (v / 2) 2)
   have hmulAdd : BProv Ax_s G
       (eq (Term.add (Term.mul lowQuot modulus) lowRem)
         (Term.add (Term.numeral ((v / 2) * 2)) lowRem)) :=
@@ -22249,7 +22229,7 @@ theorem BProv_Ax_s_eqConstAt_mod_two_of_div2StepAt_eqConst
       (eq (Term.add (Term.numeral ((v / 2) * 2)) lowRem)
         (Term.numeral (((v / 2) * 2) + v % 2))) := by
     simpa [lowRem] using
-      BProv_weaken_nil (BProv_Ax_s_addNumerals ((v / 2) * 2) (v % 2))
+      (BProv_Ax_s_addNumerals ((v / 2) * 2) (v % 2))
   have hdecomp : ((v / 2) * 2) + v % 2 = v := by
     have hdiv := Nat.div_add_mod v 2
     omega
@@ -22340,7 +22320,7 @@ theorem BProv_Ax_s_eqConstAt_div_two_of_div2StepAt_eqConst
   have hmulRaw : BProv Ax_s G
       (eq (Term.mul lowQuot modulus) (Term.numeral ((v / 2) * 2))) := by
     simpa [lowQuot, modulus] using
-      BProv_weaken_nil (BProv_Ax_s_mulNumerals (v / 2) 2)
+      (BProv_Ax_s_mulNumerals (v / 2) 2)
   have hmulAdd : BProv Ax_s G
       (eq (Term.add (Term.mul lowQuot modulus) lowRem)
         (Term.add (Term.numeral ((v / 2) * 2)) lowRem)) :=
@@ -22349,7 +22329,7 @@ theorem BProv_Ax_s_eqConstAt_div_two_of_div2StepAt_eqConst
       (eq (Term.add (Term.numeral ((v / 2) * 2)) lowRem)
         (Term.numeral (((v / 2) * 2) + v % 2))) := by
     simpa [lowRem] using
-      BProv_weaken_nil (BProv_Ax_s_addNumerals ((v / 2) * 2) (v % 2))
+      (BProv_Ax_s_addNumerals ((v / 2) * 2) (v % 2))
   have hdecomp : ((v / 2) * 2) + v % 2 = v := by
     have hdiv := Nat.div_add_mod v 2
     omega
@@ -22437,7 +22417,7 @@ theorem BProv_Ax_s_eqConstAt_of_remAt_eqConst {G : List Formula}
     have hmulRaw : BProv Ax_s C
         (eq (Term.mul (Term.numeral q) (Term.numeral m))
           (Term.numeral (q * m))) :=
-      BProv_weaken_nil (BProv_Ax_s_mulNumerals q m)
+      (BProv_Ax_s_mulNumerals q m)
     have hmul : BProv Ax_s C
         (eq (Term.mul (Term.numeral q) (Term.var (modulus+1)))
           (Term.numeral (q * m))) :=
@@ -22453,7 +22433,7 @@ theorem BProv_Ax_s_eqConstAt_of_remAt_eqConst {G : List Formula}
         (eq
           (Term.add (Term.numeral (q * m)) (Term.numeral r))
           (Term.numeral (q * m + r))) :=
-      BProv_weaken_nil (BProv_Ax_s_addNumerals (q * m) r)
+      (BProv_Ax_s_addNumerals (q * m) r)
     have hadd : BProv Ax_s C
         (eq
           (Term.add (Term.numeral (q * m)) (Term.numeral r))
@@ -23008,7 +22988,7 @@ theorem BProv_Ax_s_mul_succ_right_eq_succ_terms
   have hmulSucc : BProv Ax_s G
       (eq (Term.mul modulus (Term.succ diff))
         (Term.add (Term.mul modulus diff) modulus)) :=
-    BProv_weaken_nil (BProv_Ax_s_mulSucc_terms modulus diff)
+    (BProv_Ax_s_mulSucc_terms modulus diff)
   have hmodCong : BProv Ax_s G
       (eq (Term.add (Term.mul modulus diff) modulus)
         (Term.add (Term.mul modulus diff) (Term.succ pred))) :=
@@ -23016,8 +22996,7 @@ theorem BProv_Ax_s_mul_succ_right_eq_succ_terms
   have haddSucc : BProv Ax_s G
       (eq (Term.add (Term.mul modulus diff) (Term.succ pred))
         (Term.succ (Term.add (Term.mul modulus diff) pred))) :=
-    BProv_weaken_nil
-      (BProv_Ax_s_addSucc_terms (Term.mul modulus diff) pred)
+    (BProv_Ax_s_addSucc_terms (Term.mul modulus diff) pred)
   exact BProv_eqTrans (BProv_eqTrans hmulSucc hmodCong) haddSucc
 
 /-- A successor-sized summand cannot be inserted after a base term and then
@@ -23492,8 +23471,7 @@ theorem BProv_Ax_s_dvdAt_of_remTermAt_zero
           (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
             Term.zero)
           (Term.mul (Term.var 0) (Term.var (modulus+1)))) :=
-      BProv_weaken_nil
-        (BProv_Ax_s_addZero_term
+      (BProv_Ax_s_addZero_term
           (Term.mul (Term.var 0) (Term.var (modulus+1))))
     have hvalueMul : BProv Ax_s C
         (eq (Term.var (value+1))
@@ -23813,8 +23791,7 @@ theorem BProv_Ax_s_dvdAt_of_remAt_eqConst_zero
           (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
             Term.zero)
           (Term.mul (Term.var 0) (Term.var (modulus+1)))) :=
-      BProv_weaken_nil
-        (BProv_Ax_s_addZero_term
+      (BProv_Ax_s_addZero_term
           (Term.mul (Term.var 0) (Term.var (modulus+1))))
     have hvalueQMul : BProv Ax_s C
         (eq (Term.var (value+1))
@@ -23943,7 +23920,7 @@ theorem BProv_Ax_s_betaModTerm_of_eqConst {G : List Formula}
       (eq
         (Term.mul (Term.numeral (i + 1)) (Term.numeral s))
         (Term.numeral ((i + 1) * s))) :=
-    BProv_weaken_nil (BProv_Ax_s_mulNumerals (i + 1) s)
+    (BProv_Ax_s_mulNumerals (i + 1) s)
   have hsucc : BProv Ax_s G
       (eq
         (Term.succ
@@ -23985,7 +23962,7 @@ theorem BProv_Ax_s_betaModTerm_eq_one_of_eqConst_step_zero
       BProv_eq_congr_mul_right idxSucc hstep
   have hmulZero : BProv Ax_s G
       (eq (Term.mul idxSucc Term.zero) Term.zero) :=
-    BProv_weaken_nil (BProv_Ax_s_mulZero_term idxSucc)
+    (BProv_Ax_s_mulZero_term idxSucc)
   have hmul : BProv Ax_s G
       (eq (Term.mul idxSucc (Term.var step)) Term.zero) :=
     BProv_eqTrans hmulLeft hmulZero
@@ -24034,7 +24011,7 @@ theorem BProv_Ax_s_eq_succ_eq_zero_bot
   have hbad : BProv Ax_s G (eq (Term.succ t) Term.zero) :=
     BProv_eqTrans (BProv_eqSym hsucc) hzero
   have hnot : BProv Ax_s G (imp (eq (Term.succ t) Term.zero) bot) :=
-    BProv_weaken_nil (BProv_Ax_s_zeroNotSucc_term t)
+    (BProv_Ax_s_zeroNotSucc_term t)
   exact BProv_mp Ax_s G _ _ hnot hbad
 
 /-- A slot cannot be both `0` and `1`. -/
@@ -24721,7 +24698,7 @@ theorem BProv_Ax_s_betaModTermTerm_numeral {G : List Formula}
       (eq
         (Term.mul (Term.numeral (i + 1)) (Term.numeral s))
         (Term.numeral ((i + 1) * s))) :=
-    BProv_weaken_nil (BProv_Ax_s_mulNumerals (i + 1) s)
+    (BProv_Ax_s_mulNumerals (i + 1) s)
   have hmul : BProv Ax_s G
       (eq
         (Term.mul (Term.succ (Term.numeral i)) (Term.numeral s))
@@ -24761,7 +24738,7 @@ theorem BProv_Ax_s_betaTermTermAt_numeral_entry
   have hmulRaw : BProv Ax_s G
       (eq (Term.mul (Term.numeral q) (Term.numeral m))
         (Term.numeral (q * m))) :=
-    BProv_weaken_nil (BProv_Ax_s_mulNumerals q m)
+    (BProv_Ax_s_mulNumerals q m)
   have haddLeft : BProv Ax_s G
       (eq
         (Term.add (Term.mul (Term.numeral q) (Term.numeral m))
@@ -24771,7 +24748,7 @@ theorem BProv_Ax_s_betaTermTermAt_numeral_entry
   have haddRaw : BProv Ax_s G
       (eq (Term.add (Term.numeral (q * m)) (Term.numeral o))
         (Term.numeral (q * m + o))) :=
-    BProv_weaken_nil (BProv_Ax_s_addNumerals (q * m) o)
+    (BProv_Ax_s_addNumerals (q * m) o)
   have hsum : BProv Ax_s G
       (eq
         (Term.add (Term.mul (Term.numeral q) (Term.numeral m))
@@ -28680,7 +28657,7 @@ theorem BProv_Ax_s_betaModTerm_constIdx_of_eqConst {G : List Formula}
       (eq
         (Term.mul (Term.numeral (i + 1)) (Term.numeral s))
         (Term.numeral ((i + 1) * s))) :=
-    BProv_weaken_nil (BProv_Ax_s_mulNumerals (i + 1) s)
+    (BProv_Ax_s_mulNumerals (i + 1) s)
   have hsucc : BProv Ax_s G
       (eq
         (Term.succ
@@ -37104,7 +37081,7 @@ theorem BProv_Ax_s_oddCurrent_beta_code_decomp
     simpa [q] using BProv_eq_congr_succ hcur
   have hqAddSucc : BProv Ax_s G
       (eq (Term.add q q) (Term.succ (Term.add q half))) := by
-    simpa [q] using BProv_weaken_nil (BProv_Ax_s_addSucc_terms q half)
+    simpa [q] using (BProv_Ax_s_addSucc_terms q half)
   have hsuccCur : BProv Ax_s G
       (eq (Term.succ cur) (Term.add q q)) :=
     BProv_eqTrans hsuccCurRaw (BProv_eqSym hqAddSucc)
@@ -37144,7 +37121,7 @@ theorem BProv_Ax_s_oddCurrent_beta_code_decomp
   have hrightSucc : BProv Ax_s G
       (eq (Term.mul q (Term.succ (Term.add cur cur)))
         (Term.add (Term.mul q (Term.add cur cur)) q)) :=
-    BProv_weaken_nil (BProv_Ax_s_mulSucc_terms q (Term.add cur cur))
+    (BProv_Ax_s_mulSucc_terms q (Term.add cur cur))
   have hrightDist : BProv Ax_s G
       (eq (Term.mul q (Term.add cur cur)) base) := by
     simpa [base] using BProv_Ax_s_mul_add_terms q cur cur
@@ -37448,11 +37425,11 @@ theorem BProv_Ax_s_evenSuccBeta_div2Step_one
   have haddSucc : BProv Ax_s G
       (eq (Term.add double (Term.succ Term.zero))
         (Term.succ (Term.add double Term.zero))) :=
-    BProv_weaken_nil (BProv_Ax_s_addSucc_terms double Term.zero)
+    (BProv_Ax_s_addSucc_terms double Term.zero)
   have haddZero : BProv Ax_s G
       (eq (Term.succ (Term.add double Term.zero)) (Term.succ double)) :=
     BProv_eq_congr_succ
-      (BProv_weaken_nil (BProv_Ax_s_addZero_term double))
+      (BProv_Ax_s_addZero_term double)
   have haddOne : BProv Ax_s G
       (eq (Term.add double (Term.succ Term.zero)) (Term.succ double)) :=
     BProv_eqTrans haddSucc haddZero
@@ -37520,11 +37497,11 @@ theorem BProv_Ax_s_oddCurrentBeta_div2Step_one
   have haddSucc : BProv Ax_s G
       (eq (Term.add double (Term.succ Term.zero))
         (Term.succ (Term.add double Term.zero))) :=
-    BProv_weaken_nil (BProv_Ax_s_addSucc_terms double Term.zero)
+    (BProv_Ax_s_addSucc_terms double Term.zero)
   have haddZero : BProv Ax_s G
       (eq (Term.succ (Term.add double Term.zero)) (Term.succ double)) :=
     BProv_eq_congr_succ
-      (BProv_weaken_nil (BProv_Ax_s_addZero_term double))
+      (BProv_Ax_s_addZero_term double)
   have haddOne : BProv Ax_s G
       (eq (Term.add double (Term.succ Term.zero)) (Term.succ double)) :=
     BProv_eqTrans haddSucc haddZero
@@ -44375,8 +44352,7 @@ theorem BProv_Ax_s_succ_double_le_double_of_ltTermAt
         (Term.add lowHalf lowHalf)) :=
     BProv_Ax_s_leTermAt_trans hfirst hsecond
   exact BProv_leTermAt_of_eq_left
-    (BProv_weaken_nil
-      (BProv_Ax_s_addSucc_terms highHalf highHalf)) hsum
+    (BProv_Ax_s_addSucc_terms highHalf highHalf) hsum
 
 /-- The common order core for binary heads: strict order of the halves,
 together with the sharp one-bit upper/lower bounds, orders the heads. -/
@@ -44575,11 +44551,11 @@ theorem BProv_Ax_s_eqConstAt_one_of_oddDoubleEqAt_div2StepAt
   have haddSucc : BProv Ax_s G
       (eq (Term.add d (Term.succ Term.zero))
         (Term.succ (Term.add d Term.zero))) :=
-    BProv_weaken_nil (BProv_Ax_s_addSucc_terms d Term.zero)
+    (BProv_Ax_s_addSucc_terms d Term.zero)
   have haddZero : BProv Ax_s G
       (eq (Term.succ (Term.add d Term.zero)) (Term.succ d)) :=
     BProv_eq_congr_succ
-      (BProv_weaken_nil (BProv_Ax_s_addZero_term d))
+      (BProv_Ax_s_addZero_term d)
   have honeSucc : BProv Ax_s G
       (eq (Term.add d (Term.succ Term.zero)) (Term.succ d)) :=
     BProv_eqTrans haddSucc haddZero
@@ -45918,7 +45894,7 @@ theorem BProv_Ax_s_leTermAt_half_of_div2StepAt_eq_succ
         (eq (Term.add pred (Term.succ pred))
           (Term.succ doublePred)) := by
       simpa [doublePred] using
-        BProv_weaken_nil (BProv_Ax_s_addSucc_terms pred pred)
+        (BProv_Ax_s_addSucc_terms pred pred)
     have htwoSucc : BProv Ax_s C
         (eq (Term.add (Term.succ pred) (Term.succ pred))
           (Term.succ (Term.succ doublePred))) :=
@@ -47962,8 +47938,7 @@ theorem BProv_Ax_s_hfAdjoin_zero_head_lift
         BProv_eqTrans (BProv_eqSym (by simpa [succEq] using heq)) hzeroD
       have hnot : BProv Ax_s D
           (imp (eq (Term.succ (Term.var elem)) Term.zero) bot) :=
-        BProv_weaken_nil
-          (BProv_Ax_s_zeroNotSucc_term (Term.var elem))
+        (BProv_Ax_s_zeroNotSucc_term (Term.var elem))
       exact BProv_botE
         (BProv_mp Ax_s D
           (eq (Term.succ (Term.var elem)) Term.zero) bot hnot hbad)
@@ -48089,8 +48064,7 @@ theorem BProv_Ax_s_hfAdjoin_positive_head_lift
         BProv_ass_head
       have hinj : BProv Ax_s D (imp headEq tailEq) := by
         simpa [headEq, tailEq] using
-          BProv_weaken_nil (G := D)
-            (BProv_Ax_s_succInj_terms
+          (BProv_Ax_s_succInj_terms (G := D)
               (Term.var 0) (Term.var elem))
       have heq : BProv Ax_s D tailEq :=
         BProv_mp Ax_s D headEq tailEq hinj hheadEq
@@ -48580,8 +48554,7 @@ theorem BProv_Ax_s_hfAdjoinGraph_zero_of_shared_tail
             BProv_ass_head
           have hnot : BProv Ax_s D (imp badEq bot) := by
             simpa [badEq] using
-              BProv_weaken_nil (G := D)
-                (BProv_Ax_s_zeroNotSucc_term (Term.var 0))
+              (BProv_Ax_s_zeroNotSucc_term (G := D) (Term.var 0))
           exact BProv_botE
             (BProv_mp Ax_s D badEq bot hnot hbad)
         exact BProv_impI (BProv_orE hcases hleft hright)
@@ -48635,11 +48608,11 @@ theorem BProv_Ax_s_div2StepAt_of_oddDoubleEqAt_bit_one
   have haddSucc : BProv Ax_s G
       (eq (Term.add d (Term.succ Term.zero))
         (Term.succ (Term.add d Term.zero))) :=
-    BProv_weaken_nil (BProv_Ax_s_addSucc_terms d Term.zero)
+    (BProv_Ax_s_addSucc_terms d Term.zero)
   have haddZero : BProv Ax_s G
       (eq (Term.succ (Term.add d Term.zero)) (Term.succ d)) :=
     BProv_eq_congr_succ
-      (BProv_weaken_nil (BProv_Ax_s_addZero_term d))
+      (BProv_Ax_s_addZero_term d)
   have hsum : BProv Ax_s G
       (eq (Term.add d (Term.var bit)) (Term.succ d)) :=
     BProv_eqTrans hreplace (BProv_eqTrans haddSucc haddZero)
@@ -49207,7 +49180,7 @@ theorem BProv_Ax_s_div2StepAt_of_doubleEqAt_bit_zero
     BProv_eq_congr_add_right d hbit'
   have haddZero : BProv Ax_s G
       (eq (Term.add d Term.zero) d) :=
-    BProv_weaken_nil (BProv_Ax_s_addZero_term d)
+    (BProv_Ax_s_addZero_term d)
   have hsum : BProv Ax_s G
       (eq (Term.add d (Term.var bit)) d) :=
     BProv_eqTrans haddBit haddZero

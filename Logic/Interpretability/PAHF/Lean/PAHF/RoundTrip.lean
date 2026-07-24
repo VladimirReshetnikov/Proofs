@@ -6182,7 +6182,7 @@ theorem BProv_Ax_s_ordinalCodeAddCore_zero
       hrightEmpty (BProv_eqRefl leftCode)
   have haddZero : BProv Ax_s G
       (eq (Term.add leftRaw Term.zero) leftRaw) :=
-    BProv_weaken_nil (BProv_Ax_s_addZero_term leftRaw)
+    (BProv_Ax_s_addZero_term leftRaw)
   have hforward : BProv Ax_s G
       (imp
         (hfAddGraphTermAt out leftCode rightCode)
@@ -6404,8 +6404,7 @@ theorem BProv_Ax_s_ordinalCodeAddCore_succ_of_pred
       (eq
         (Term.add leftRaw (Term.succ rightRaw))
         (Term.succ (Term.add leftRaw rightRaw))) :=
-    BProv_weaken_nil
-      (BProv_Ax_s_addSucc_terms leftRaw rightRaw)
+    (BProv_Ax_s_addSucc_terms leftRaw rightRaw)
   have hforward : BProv Ax_s G
       (imp
         (hfAddGraphTermAt out leftCode rightSuccCode)
@@ -8066,7 +8065,7 @@ theorem BProv_Ax_s_ordinalCodeMulCore_zero
       hrightEmpty hzeroEmpty
   have hmulZero : BProv Ax_s G
       (eq (Term.mul leftRaw Term.zero) Term.zero) :=
-    BProv_weaken_nil (BProv_Ax_s_mulZero_term leftRaw)
+    (BProv_Ax_s_mulZero_term leftRaw)
   have hzeroGraph : BProv Ax_s G
       (ordinalCodeGraphTermAt Term.zero Term.zero) :=
     BProv_Ax_s_ordinalCodeGraphTermAt_zero
@@ -8162,8 +8161,7 @@ theorem BProv_Ax_s_ordinalCodeMulCore_succ_of_pred
     BProv_mp Ax_s G _ _ hrightStepReverse hrightSucc
   have hmulSucc : BProv Ax_s G (eq targetRaw sumRaw) := by
     simpa [targetRaw, sumRaw] using
-      (BProv_weaken_nil
-        (BProv_Ax_s_mulSucc_terms leftRaw rightRaw))
+      (BProv_Ax_s_mulSucc_terms leftRaw rightRaw)
   have hforward : BProv Ax_s G
       (imp
         (hfMulGraphTermAt out leftCode rightSuccCode)

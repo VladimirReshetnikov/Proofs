@@ -402,8 +402,7 @@ Proof.
     (tAdd highHalf (tSucc highHalf))
     (tSucc (tAdd highHalf highHalf))
     (tAdd lowHalf lowHalf)
-    (BProv_weaken_nil Ax_s G _
-      (BProv_Ax_s_addSucc_terms highHalf highHalf)) hsum).
+    (BProv_Ax_s_addSucc_terms G highHalf highHalf) hsum).
 Qed.
 
 Lemma BProv_Ax_s_leAt_of_half_lt_and_binary_head_bounds :
@@ -595,11 +594,10 @@ Proof.
       (BProv_eqSym Ax_s G _ _ hstepEq) hoddEq). }
   assert (haddSucc : BProv Ax_s G
       (pEq (tAdd d (tSucc tZero)) (tSucc (tAdd d tZero)))).
-  { exact (BProv_weaken_nil Ax_s G _ (BProv_Ax_s_addSucc_terms d tZero)). }
+  { exact (BProv_Ax_s_addSucc_terms G d tZero). }
   assert (haddZero : BProv Ax_s G
       (pEq (tSucc (tAdd d tZero)) (tSucc d))).
-  { apply BProv_eq_congr_succ. exact (BProv_weaken_nil Ax_s G _
-      (BProv_Ax_s_addZero_term d)). }
+  { apply BProv_eq_congr_succ. exact (BProv_Ax_s_addZero_term G d). }
   assert (honeSucc : BProv Ax_s G
       (pEq (tAdd d (tSucc tZero)) (tSucc d))).
   { exact (BProv_eqTrans Ax_s G _ _ _ haddSucc haddZero). }

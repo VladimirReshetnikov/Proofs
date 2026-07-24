@@ -396,8 +396,7 @@ Proof.
       P G leftCode leftCode rightCode hrightEmpty
       (BProv_eqRefl Ax_s G leftCode)).
   }
-  pose proof (BProv_weaken_nil Ax_s G _
-    (BProv_Ax_s_addZero_term leftRaw)) as haddZero.
+  pose proof (BProv_Ax_s_addZero_term G leftRaw) as haddZero.
   assert (hforward : BProv Ax_s G
       (pImp
         (hfAddGraphTermAt out leftCode rightCode)
@@ -617,8 +616,7 @@ Proof.
     pose proof (BProv_andE2 Ax_s G _ _ hrightStep) as himp.
     exact (BProv_mp Ax_s G _ _ himp hrightSucc).
   }
-  pose proof (BProv_weaken_nil Ax_s G _
-    (BProv_Ax_s_addSucc_terms leftRaw rightRaw)) as haddSucc.
+  pose proof (BProv_Ax_s_addSucc_terms G leftRaw rightRaw) as haddSucc.
   assert (hforward : BProv Ax_s G
       (pImp
         (hfAddGraphTermAt out leftCode rightSuccCode)
@@ -759,9 +757,8 @@ Proof.
           (Term.rename S leftCode) (Term.rename S rightSuccCode)
           hrightSuccDomainD haddOutD haddKnown).
       }
-      pose proof (BProv_weaken_nil Ax_s D _
-        (BProv_Ax_s_addSucc_terms
-          (Term.rename S leftRaw) (Term.rename S rightRaw)))
+      pose proof (BProv_Ax_s_addSucc_terms D
+          (Term.rename S leftRaw) (Term.rename S rightRaw))
         as haddSuccD.
       pose proof (BProv_ordinalCodeGraphTermAt_congr
         Ax_s D

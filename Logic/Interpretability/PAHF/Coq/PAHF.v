@@ -9657,6 +9657,45 @@ Proof.
     intro n; lia.
 Qed.
 
+(* One normalizer for the substitution/renaming composition facts above.
+   Instantiated axioms and unfolded shift-by-k witnesses leave goals littered
+   with [Term.subst ... (Term.rename ...)] compositions; every proof below
+   used to chain a hand-picked prefix of these rewrites.  The family is a
+   terminating rewrite system (each step removes one substitution layer), so
+   a single [repeat first] pass reaches the same normal form as any
+   sequential arrangement.  [Term.rename_comp] is deliberately excluded:
+   fusing [rename f (rename g t)] into a single renaming is propositional,
+   not definitional, so it must fire only where the target shape wants the
+   fused form -- use [normalize_subst_rename_comp] there. *)
+Ltac normalize_subst_rename :=
+  repeat first
+    [ rewrite Term.subst_rename_succ_up
+    | rewrite term_subst_instTerm_rename_succ
+    | rewrite term_subst_instTerm_rename_two_succ
+    | rewrite term_subst_upSubst_instTerm_rename_two_succ
+    | rewrite term_subst_upSubst_instTerm_rename_add_two
+    | rewrite term_subst_upSubst_instTerm_rename_three_succ
+    | rewrite term_subst_up_up_instTerm_rename_two_var_zero
+    | rewrite term_subst_up_up_instTerm_rename_three_succ
+    | rewrite term_subst_up_up_instTerm_rename_four_succ
+    | rewrite term_subst_up_up_up_instTerm_rename_four_succ
+    | rewrite term_subst_up_up_up_instTerm_rename_five_succ
+    | rewrite term_subst_up_up_up_instTerm_rename_succ_add_three
+    | rewrite term_subst_up_up_up_up_instTerm_rename_five_succ
+    | rewrite term_subst_up_up_up_up_up_instTerm_rename_six_succ
+    | rewrite term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ
+    | rewrite term_substZero_rename_succ
+    | rewrite term_substSuccVar_rename_succ
+    | rewrite term_subst_up_substZero_rename_two_succ
+    | rewrite term_subst_up_up_up_substZero_rename_four_succ
+    | rewrite term_subst_up_substSuccVar_rename_two_succ
+    | rewrite term_subst_up_up_up_substSuccVar_rename_four_succ ].
+
+Ltac normalize_subst_rename_comp :=
+  repeat first
+    [ progress normalize_subst_rename
+    | rewrite Term.rename_comp ].
+
 Definition substSuccAt (p : nat) : nat -> term :=
   fun n => if n =? p then tSucc (tVar p) else tVar n.
 
@@ -9830,12 +9869,13 @@ Proof.
   exact h.
 Qed.
 
-Lemma BProv_Ax_s_succInj_terms : forall s t,
-  BProv Ax_s [] (pImp
+Lemma BProv_Ax_s_succInj_terms : forall G s t,
+  BProv Ax_s G (pImp
     (pEq (tSucc s) (tSucc t))
     (pEq s t)).
 Proof.
-  intros s t.
+  intros G s t.
+  apply BProv_weaken_nil.
   pose proof (BProv_allE Ax_s [] _ s BProv_Ax_s_succInj) as h1.
   pose proof (BProv_allE Ax_s [] _ t h1) as h2.
   simpl in h2.
@@ -9858,10 +9898,11 @@ Proof.
   exact h.
 Qed.
 
-Lemma BProv_Ax_s_zeroNotSucc_term : forall t,
-  BProv Ax_s [] (pImp (pEq (tSucc t) tZero) pBot).
+Lemma BProv_Ax_s_zeroNotSucc_term : forall G t,
+  BProv Ax_s G (pImp (pEq (tSucc t) tZero) pBot).
 Proof.
-  intro t.
+  intros G t.
+  apply BProv_weaken_nil.
   pose proof (BProv_allE Ax_s [] _ t BProv_Ax_s_zeroNotSucc) as h.
   simpl in h.
   exact h.
@@ -9881,10 +9922,11 @@ Proof.
   exact h.
 Qed.
 
-Lemma BProv_Ax_s_addZero_term : forall t,
-  BProv Ax_s [] (pEq (tAdd t tZero) t).
+Lemma BProv_Ax_s_addZero_term : forall G t,
+  BProv Ax_s G (pEq (tAdd t tZero) t).
 Proof.
-  intro t.
+  intros G t.
+  apply BProv_weaken_nil.
   pose proof (BProv_allE Ax_s [] _ t BProv_Ax_s_addZero) as h.
   simpl in h.
   exact h.
@@ -9904,12 +9946,13 @@ Proof.
   exact h.
 Qed.
 
-Lemma BProv_Ax_s_addSucc_terms : forall s t,
-  BProv Ax_s [] (pEq
+Lemma BProv_Ax_s_addSucc_terms : forall G s t,
+  BProv Ax_s G (pEq
     (tAdd s (tSucc t))
     (tSucc (tAdd s t))).
 Proof.
-  intros s t.
+  intros G s t.
+  apply BProv_weaken_nil.
   pose proof (BProv_allE Ax_s [] _ s BProv_Ax_s_addSucc) as h1.
   pose proof (BProv_allE Ax_s [] _ t h1) as h2.
   simpl in h2.
@@ -9931,10 +9974,11 @@ Proof.
   exact h.
 Qed.
 
-Lemma BProv_Ax_s_mulZero_term : forall t,
-  BProv Ax_s [] (pEq (tMul t tZero) tZero).
+Lemma BProv_Ax_s_mulZero_term : forall G t,
+  BProv Ax_s G (pEq (tMul t tZero) tZero).
 Proof.
-  intro t.
+  intros G t.
+  apply BProv_weaken_nil.
   pose proof (BProv_allE Ax_s [] _ t BProv_Ax_s_mulZero) as h.
   simpl in h.
   exact h.
@@ -9954,12 +9998,13 @@ Proof.
   exact h.
 Qed.
 
-Lemma BProv_Ax_s_mulSucc_terms : forall s t,
-  BProv Ax_s [] (pEq
+Lemma BProv_Ax_s_mulSucc_terms : forall G s t,
+  BProv Ax_s G (pEq
     (tMul s (tSucc t))
     (tAdd (tMul s t) s)).
 Proof.
-  intros s t.
+  intros G s t.
+  apply BProv_weaken_nil.
   pose proof (BProv_allE Ax_s [] _ s BProv_Ax_s_mulSucc) as h1.
   pose proof (BProv_allE Ax_s [] _ t h1) as h2.
   simpl in h2.
@@ -10025,12 +10070,13 @@ Proof.
       (tAdd (Term.mulRightNumeral t n) t) hstep hadd).
 Qed.
 
-Lemma BProv_Ax_s_addNumerals : forall m n,
-  BProv Ax_s [] (pEq
+Lemma BProv_Ax_s_addNumerals : forall G m n,
+  BProv Ax_s G (pEq
     (tAdd (Term.numeral m) (Term.numeral n))
     (Term.numeral (m + n))).
 Proof.
-  intros m n.
+  intros G m n.
+  apply BProv_weaken_nil.
   pose proof (BProv_Ax_s_addRightNumeral (Term.numeral m) n) as h.
   rewrite Term.addRightNumeral_numeral in h.
   exact h.
@@ -10072,12 +10118,13 @@ Proof.
       (Term.numeral (m * n + m)) hcongr hadd).
 Qed.
 
-Lemma BProv_Ax_s_mulNumerals : forall m n,
-  BProv Ax_s [] (pEq
+Lemma BProv_Ax_s_mulNumerals : forall G m n,
+  BProv Ax_s G (pEq
     (tMul (Term.numeral m) (Term.numeral n))
     (Term.numeral (m * n))).
 Proof.
-  intros m n.
+  intros G m n.
+  apply BProv_weaken_nil.
   exact (BProv_eqTrans Ax_s []
     (tMul (Term.numeral m) (Term.numeral n))
     (Term.mulRightNumeral (Term.numeral m) n)
@@ -10706,7 +10753,6 @@ Proof.
     assert (haddZero : BProv Ax_s [pEq (tAdd x tZero) tZero]
         (pEq (tAdd x tZero) x)).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addZero_term.
     }
     exact (BProv_eqTrans Ax_s [pEq (tAdd x tZero) tZero]
@@ -10739,7 +10785,6 @@ Proof.
         (pEq (tAdd (Term.rename S x) (tSucc (tVar 0)))
           (tSucc (tAdd (Term.rename S x) (tVar 0))))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addSucc_terms.
     }
     assert (hsuccZero : BProv Ax_s
@@ -10763,7 +10808,6 @@ Proof.
           (pEq (tSucc (tAdd (Term.rename S x) (tVar 0))) tZero)
           pBot)).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_zeroNotSucc_term.
     }
     pose proof (BProv_mp Ax_s
@@ -10950,7 +10994,6 @@ Proof.
       assert (haddZero : BProv Ax_s (zeroAt 0 :: C)
           (pEq (tAdd (tVar (S a)) tZero) (tVar (S a)))).
       {
-        apply BProv_weaken_nil.
         apply BProv_Ax_s_addZero_term.
       }
       assert (hleft : BProv Ax_s (zeroAt 0 :: C)
@@ -11035,7 +11078,6 @@ Proof.
               (tAdd (tVar (S (S a))) (tSucc (tVar 0)))
               (tSucc (tAdd (tVar (S (S a))) (tVar 0))))).
         {
-          apply BProv_weaken_nil.
           apply BProv_Ax_s_addSucc_terms.
         }
         assert (hleft : BProv Ax_s D
@@ -11079,7 +11121,6 @@ Proof.
               (pEq (tAdd (tVar (S (S a))) (tVar 0))
                 (Term.numeral n)))).
         {
-          apply BProv_weaken_nil.
           apply BProv_Ax_s_succInj_terms.
         }
         pose proof (BProv_mp Ax_s D
@@ -11145,7 +11186,6 @@ Proof.
       (pEq (tAdd (Term.numeral m) (Term.numeral w))
         (Term.numeral (m + w)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addNumerals.
   }
   assert (hadd : BProv Ax_s G
@@ -11198,10 +11238,7 @@ Proof.
       (pEq (tAdd (Term.numeral m) (tSucc (Term.numeral w)))
         (Term.numeral (m + S w)))).
   {
-    pose proof (BProv_weaken_nil Ax_s G
-      (pEq (tAdd (Term.numeral m) (Term.numeral (S w)))
-        (Term.numeral (m + S w)))
-      (BProv_Ax_s_addNumerals m (S w))) as h.
+    pose proof (BProv_Ax_s_addNumerals G m (S w)) as h.
     simpl in h.
     exact h.
   }
@@ -11257,10 +11294,7 @@ Proof.
       (pEq (tAdd (Term.numeral m) (tSucc (Term.numeral w)))
         (Term.numeral (m + S w)))).
   {
-    pose proof (BProv_weaken_nil Ax_s G
-      (pEq (tAdd (Term.numeral m) (Term.numeral (S w)))
-        (Term.numeral (m + S w)))
-      (BProv_Ax_s_addNumerals m (S w))) as h.
+    pose proof (BProv_Ax_s_addNumerals G m (S w)) as h.
     simpl in h.
     exact h.
   }
@@ -11306,10 +11340,7 @@ Proof.
       (pEq (tAdd (Term.numeral m) (tSucc (Term.numeral w)))
         (Term.numeral (m + S w)))).
   {
-    pose proof (BProv_weaken_nil Ax_s G
-      (pEq (tAdd (Term.numeral m) (Term.numeral (S w)))
-        (Term.numeral (m + S w)))
-      (BProv_Ax_s_addNumerals m (S w))) as h.
+    pose proof (BProv_Ax_s_addNumerals G m (S w)) as h.
     simpl in h.
     exact h.
   }
@@ -11352,7 +11383,6 @@ Proof.
       (pEq (tMul (Term.numeral m) (Term.numeral q))
         (Term.numeral (m * q)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_mulNumerals.
   }
   assert (hmul' : BProv Ax_s G
@@ -11424,7 +11454,6 @@ Proof.
         (pEq (tAdd tZero (tSucc (tVar 0)))
           (tSucc (tAdd tZero (tVar 0))))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addSucc_terms.
     }
     assert (hsucc : BProv Ax_s [phi]
@@ -11496,7 +11525,6 @@ Proof.
         (pEq (tAdd (tSucc (Term.rename S x)) (tSucc (tVar 0)))
           (tSucc (tAdd (tSucc (Term.rename S x)) (tVar 0))))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addSucc_terms.
     }
     assert (hmid : BProv Ax_s [phi]
@@ -11510,7 +11538,6 @@ Proof.
         (pEq (tAdd (Term.rename S x) (tSucc (tVar 0)))
           (tSucc (tAdd (Term.rename S x) (tVar 0))))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addSucc_terms.
     }
     assert (hright : BProv Ax_s [phi]
@@ -11570,7 +11597,6 @@ Proof.
         (pEq (tSucc (tAdd x y)) (tSucc (tAdd x z)))
         (pEq (tAdd x y) (tAdd x z)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_succInj_terms.
   }
   exact (BProv_mp _ _ _ _ hinj hsuccEq).
@@ -11707,13 +11733,11 @@ Proof.
     assert (hx : BProv Ax_s [pEq (tAdd x tZero) (tAdd y tZero)]
         (pEq (tAdd x tZero) x)).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addZero_term.
     }
     assert (hy : BProv Ax_s [pEq (tAdd x tZero) (tAdd y tZero)]
         (pEq (tAdd y tZero) y)).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addZero_term.
     }
     exact (BProv_eqTrans _ _ _ _ _
@@ -11746,14 +11770,12 @@ Proof.
           (pEq (tAdd (Term.rename S x) (tSucc (tVar 0)))
             (tSucc (tAdd (Term.rename S x) (tVar 0))))).
       {
-        apply BProv_weaken_nil.
         apply BProv_Ax_s_addSucc_terms.
       }
       assert (hySucc : BProv Ax_s [succEq; phi]
           (pEq (tAdd (Term.rename S y) (tSucc (tVar 0)))
             (tSucc (tAdd (Term.rename S y) (tVar 0))))).
       {
-        apply BProv_weaken_nil.
         apply BProv_Ax_s_addSucc_terms.
       }
       assert (hsuccEq : BProv Ax_s [succEq; phi]
@@ -11771,7 +11793,6 @@ Proof.
             (pEq (tAdd (Term.rename S x) (tVar 0))
               (tAdd (Term.rename S y) (tVar 0))))).
       {
-        apply BProv_weaken_nil.
         apply BProv_Ax_s_succInj_terms.
       }
       pose proof (BProv_mp _ _ _ _ hinj hsuccEq) as hpredEq.
@@ -11871,7 +11892,6 @@ Proof.
             (tAdd (tAdd (Term.rename S x) (Term.rename S y))
               (tVar 0))))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addSucc_terms.
     }
     assert (hihSucc : BProv Ax_s [phi]
@@ -11890,7 +11910,6 @@ Proof.
         (pEq (tAdd (Term.rename S y) (tSucc (tVar 0)))
           (tSucc (tAdd (Term.rename S y) (tVar 0))))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addSucc_terms.
     }
     assert (hrightCong : BProv Ax_s [phi]
@@ -11911,7 +11930,6 @@ Proof.
             (tAdd (Term.rename S x)
               (tAdd (Term.rename S y) (tVar 0)))))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addSucc_terms.
     }
     pose proof (BProv_eqTrans _ _ _ _ _ hrightCong hxSucc)
@@ -11982,7 +12000,6 @@ Proof.
         (pEq (tAdd (Term.rename S x) (tSucc (tVar 0)))
           (tSucc (tAdd (Term.rename S x) (tVar 0))))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addSucc_terms.
     }
     assert (hihSucc : BProv Ax_s [phi]
@@ -12062,7 +12079,6 @@ Proof.
     assert (hnot : BProv Ax_s [pEq (tAdd tZero (tSucc y)) tZero]
         (pImp (pEq (tSucc y) tZero) pBot)).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_zeroNotSucc_term.
     }
     exact (BProv_mp _ _ _ _ hnot hsuccZero).
@@ -12109,7 +12125,6 @@ Proof.
             (pEq (tAdd (tVar 0) (tSucc (Term.rename S y)))
               (tVar 0)))).
       {
-        apply BProv_weaken_nil.
         apply BProv_Ax_s_succInj_terms.
       }
       pose proof (BProv_mp _ _ _ _ hinj hsuccEq) as hpredEq.
@@ -12190,14 +12205,12 @@ Proof.
         (pEq (tMul tZero (tSucc (tVar 0)))
           (tAdd (tMul tZero (tVar 0)) tZero))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_mulSucc_terms.
     }
     assert (haddZero : BProv Ax_s [phi]
         (pEq (tAdd (tMul tZero (tVar 0)) tZero)
           (tMul tZero (tVar 0)))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addZero_term.
     }
     unfold phi.
@@ -12274,7 +12287,6 @@ Proof.
           (tAdd (tMul (tSucc (Term.rename S x)) (tVar 0))
             (tSucc (Term.rename S x))))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_mulSucc_terms.
     }
     assert (hleftCong : BProv Ax_s [phi]
@@ -12294,7 +12306,6 @@ Proof.
           (tAdd (tMul (Term.rename S x) (tVar 0))
             (Term.rename S x)))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_mulSucc_terms.
     }
     assert (hrightCong : BProv Ax_s [phi]
@@ -12317,7 +12328,6 @@ Proof.
             (tAdd (tAdd (tMul (Term.rename S x) (tVar 0)) (tVar 0))
               (Term.rename S x))))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addSucc_terms.
     }
     assert (hassocLeft : BProv Ax_s [phi]
@@ -12395,7 +12405,6 @@ Proof.
                 (Term.rename S x))
               (tVar 0))))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addSucc_terms.
     }
     assert (hnorm : BProv Ax_s [phi]
@@ -12480,7 +12489,6 @@ Proof.
           (tAdd (tMul (Term.rename S x) (tVar 0))
             (Term.rename S x)))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_mulSucc_terms.
     }
     assert (hleftCong : BProv Ax_s [phi]
@@ -12598,7 +12606,6 @@ Proof.
         (pEq (tAdd (Term.rename S y) (tSucc (tVar 0)))
           (tSucc (tAdd (Term.rename S y) (tVar 0))))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addSucc_terms.
     }
     assert (hleftArg : BProv Ax_s [phi]
@@ -12620,7 +12627,6 @@ Proof.
               (tAdd (Term.rename S y) (tVar 0)))
             (Term.rename S x)))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_mulSucc_terms.
     }
     assert (hihCong : BProv Ax_s [phi]
@@ -12656,7 +12662,6 @@ Proof.
           (tAdd (tMul (Term.rename S x) (tVar 0))
             (Term.rename S x)))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_mulSucc_terms.
     }
     assert (hrightCong : BProv Ax_s [phi]
@@ -12866,7 +12871,6 @@ Proof.
               (tVar 0))
             (tMul (Term.rename S x) (Term.rename S y))))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_mulSucc_terms.
     }
     assert (hihCong : BProv Ax_s [phi]
@@ -12888,7 +12892,6 @@ Proof.
           (tAdd (tMul (Term.rename S y) (tVar 0))
             (Term.rename S y)))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_mulSucc_terms.
     }
     assert (hrightArg : BProv Ax_s [phi]
@@ -13067,7 +13070,6 @@ Proof.
   intros G a b heq.
   assert (haddZero : BProv Ax_s G (pEq (tAdd (tVar a) tZero) (tVar a))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addZero_term.
   }
   assert (htarget : BProv Ax_s G (pEq (tAdd (tVar a) tZero) (tVar b))).
@@ -13139,7 +13141,6 @@ Proof.
       (pEq (tAdd (Term.numeral k) (Term.numeral w))
         (Term.numeral (k + w)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addNumerals.
   }
   assert (hadd : BProv Ax_s G
@@ -13370,7 +13371,6 @@ Proof.
       assert (hxZero : BProv Ax_s D
           (pEq (tAdd (tVar (S (S a))) tZero) (tVar (S (S a))))).
       {
-        apply BProv_weaken_nil.
         apply BProv_Ax_s_addZero_term.
       }
       assert (hsumEqZero : BProv Ax_s D
@@ -13709,7 +13709,6 @@ Proof.
           (pEq (tAdd (tVar 1) (tSucc (tVar 0)))
             (tSucc (tAdd (tVar 1) (tVar 0))))).
       {
-        apply BProv_weaken_nil.
         apply BProv_Ax_s_addSucc_terms.
       }
       assert (hsuccCong : BProv Ax_s D
@@ -14104,7 +14103,6 @@ Proof.
         (pEq (tAdd (tVar (S a)) (tSucc (tVar 0)))
           (tSucc (tAdd (tVar (S a)) (tVar 0))))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addSucc_terms.
     }
     assert (htarget : BProv Ax_s C
@@ -14351,7 +14349,6 @@ Proof.
   intros G t.
   assert (hadd : BProv Ax_s G (pEq (tAdd t tZero) t)).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addZero_term.
   }
   assert (hinst : BProv Ax_s G
@@ -14400,12 +14397,10 @@ Proof.
   assert (haddSucc : BProv Ax_s G
       (pEq (tAdd t (tSucc tZero)) (tSucc (tAdd t tZero)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addSucc_terms.
   }
   assert (haddZero : BProv Ax_s G (pEq (tAdd t tZero) t)).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addZero_term.
   }
   assert (hsucc : BProv Ax_s G
@@ -14652,7 +14647,6 @@ Proof.
         (pEq (tAdd (Term.rename S s) (tSucc (tVar 0)))
           (tSucc (tAdd (Term.rename S s) (tVar 0))))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addSucc_terms.
     }
     assert (hsuccEq : BProv Ax_s C
@@ -14726,7 +14720,6 @@ Proof.
     assert (haddSucc : BProv Ax_s C
         (pEq (tAdd ss (tSucc d)) (tSucc (tAdd ss d)))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addSucc_terms.
     }
     assert (hsuccEq : BProv Ax_s C
@@ -14739,7 +14732,6 @@ Proof.
         (pImp (pEq (tSucc (tAdd ss d)) (tSucc tt))
           (pEq (tAdd ss d) tt))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_succInj_terms.
     }
     pose proof (BProv_mp Ax_s C _ _ hinj hsuccEq) as hleEq.
@@ -15327,7 +15319,6 @@ Proof.
                 (tSucc tZero))
               (pEq (tAdd (tVar 0) (tSucc (tVar 1))) tZero))).
         {
-          apply BProv_weaken_nil.
           apply BProv_Ax_s_succInj_terms.
         }
         pose proof (BProv_mp Ax_s D
@@ -15344,7 +15335,6 @@ Proof.
         assert (hnot : BProv Ax_s D
             (pImp (pEq (tSucc (tVar 1)) tZero) pBot)).
         {
-          apply BProv_weaken_nil.
           apply BProv_Ax_s_zeroNotSucc_term.
         }
         exact (BProv_mp Ax_s D
@@ -15479,7 +15469,6 @@ Proof.
                 (tSucc tZero))
               (pEq (tAdd (tVar 0) (tSucc (tVar 1))) tZero))).
         {
-          apply BProv_weaken_nil.
           apply BProv_Ax_s_succInj_terms.
         }
         pose proof (BProv_mp Ax_s D
@@ -15496,7 +15485,6 @@ Proof.
         assert (hnot : BProv Ax_s D
             (pImp (pEq (tSucc (tVar 1)) tZero) pBot)).
         {
-          apply BProv_weaken_nil.
           apply BProv_Ax_s_zeroNotSucc_term.
         }
         exact (BProv_mp Ax_s D
@@ -15587,7 +15575,6 @@ Proof.
         (tAdd (Term.numeral h) (Term.numeral h))
         (Term.numeral (h + h)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addNumerals.
   }
   assert (hdouble : BProv Ax_s G
@@ -15622,7 +15609,6 @@ Proof.
         (tAdd (Term.numeral (h + h)) (Term.numeral b))
         (Term.numeral (h + h + b)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addNumerals.
   }
   assert (hadd : BProv Ax_s G
@@ -15715,7 +15701,6 @@ Proof.
       (pEq (tAdd t (tSucc tZero))
         (tSucc (tAdd t tZero)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addSucc_terms.
   }
   assert (hrightSucc : BProv Ax_s G
@@ -15738,7 +15723,6 @@ Proof.
   assert (hnot : BProv Ax_s G
       (pImp (pEq (tSucc (tAdd t tZero)) tZero) pBot)).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_zeroNotSucc_term.
   }
   exact (BProv_mp Ax_s G
@@ -15820,7 +15804,6 @@ Proof.
         (tAdd (Term.numeral half) (Term.numeral half))
         (Term.numeral (half + half)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addNumerals.
   }
   assert (haddLeft : BProv Ax_s G
@@ -15839,7 +15822,6 @@ Proof.
         (tAdd (Term.numeral (half + half)) (Term.numeral bit))
         (Term.numeral (half + half + bit)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addNumerals.
   }
   assert (hadd : BProv Ax_s G
@@ -15936,7 +15918,6 @@ Proof.
         (tAdd (Term.numeral h) (Term.numeral h))
         (Term.numeral (h + h)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addNumerals.
   }
   assert (haddLeft : BProv Ax_s G
@@ -15961,7 +15942,6 @@ Proof.
         (tAdd (Term.numeral (h + h)) (Term.numeral b))
         (Term.numeral (h + h + b)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addNumerals.
   }
   assert (hadd : BProv Ax_s G
@@ -16165,7 +16145,6 @@ Proof.
       (pEq (tAdd (tMul value (tSucc tZero)) tZero)
         (tMul value (tSucc tZero)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addZero_term.
   }
   assert (hvalue : BProv Ax_s G
@@ -16220,7 +16199,6 @@ Proof.
       (pEq (tMul (Term.numeral q) (Term.numeral m))
         (Term.numeral (q * m)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_mulNumerals.
   }
   assert (hmul : BProv Ax_s G
@@ -16254,7 +16232,6 @@ Proof.
         (tAdd (Term.numeral (q * m)) (Term.numeral r))
         (Term.numeral (q * m + r)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addNumerals.
   }
   assert (hadd : BProv Ax_s G
@@ -16356,7 +16333,6 @@ Proof.
       (pEq (tMul (Term.numeral q) (Term.numeral m))
         (Term.numeral (q * m)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_mulNumerals.
   }
   assert (haddLeft : BProv Ax_s G
@@ -16381,7 +16357,6 @@ Proof.
         (tAdd (Term.numeral (q * m)) (Term.numeral r))
         (Term.numeral (q * m + r)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addNumerals.
   }
   assert (hadd : BProv Ax_s G
@@ -16478,7 +16453,6 @@ Proof.
       (pEq (tMul (Term.numeral q) (Term.numeral m))
         (Term.numeral (q * m)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_mulNumerals.
   }
   assert (haddLeft : BProv Ax_s G
@@ -16496,7 +16470,6 @@ Proof.
         (tAdd (Term.numeral (q * m)) (Term.numeral r))
         (Term.numeral (q * m + r)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addNumerals.
   }
   assert (hadd : BProv Ax_s G
@@ -16769,7 +16742,6 @@ Proof.
       assert (hmulZero : BProv Ax_s (zeroAt 0 :: C)
           (pEq (tMul (tVar (S modulus)) tZero) tZero)).
       {
-        apply BProv_weaken_nil.
         apply BProv_Ax_s_mulZero_term.
       }
       assert (hprodZero : BProv Ax_s (zeroAt 0 :: C)
@@ -16845,7 +16817,6 @@ Proof.
               (tAdd (tMul (tVar (S (S modulus))) (tVar 0))
                 (tVar (S (S modulus)))))).
         {
-          apply BProv_weaken_nil.
           apply BProv_Ax_s_mulSucc_terms.
         }
         assert (hprodSucc : BProv Ax_s D
@@ -17133,7 +17104,6 @@ Proof.
         (tAdd (Term.numeral h) (Term.numeral h))
         (Term.numeral (h + h)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addNumerals.
   }
   assert (hdoubleValue : BProv Ax_s G
@@ -17208,7 +17178,6 @@ Proof.
   }
   assert (haddZero : BProv Ax_s G (pEq (tAdd d tZero) d)).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addZero_term.
   }
   assert (hright : BProv Ax_s G (pEq (tAdd d (tVar bit)) d)).
@@ -17258,14 +17227,12 @@ Proof.
   assert (haddSucc : BProv Ax_s G
       (pEq (tAdd d (tSucc tZero)) (tSucc (tAdd d tZero)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addSucc_terms.
   }
   assert (haddZero : BProv Ax_s G
       (pEq (tSucc (tAdd d tZero)) (tSucc d))).
   {
     apply BProv_eq_congr_succ.
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addZero_term.
   }
   assert (hright : BProv Ax_s G
@@ -17774,7 +17741,6 @@ Proof.
       (pEq (tMul modulus (tSucc diff))
         (tAdd (tMul modulus diff) modulus))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_mulSucc_terms.
   }
   assert (hmulCong : BProv Ax_s G
@@ -18000,7 +17966,6 @@ Proof.
     assert (hmulZero : BProv Ax_s C
         (pEq (tMul modulus tZero) tZero)).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_mulZero_term.
     }
     assert (hmul : BProv Ax_s C (pEq (tMul modulus diff) tZero)).
@@ -18547,7 +18512,6 @@ Proof.
           (pEq (tAdd (Term.rename S lowQuot) tZero)
             (Term.rename S lowQuot))).
       {
-        apply BProv_weaken_nil.
         apply BProv_Ax_s_addZero_term.
       }
       exact (BProv_eqTrans Ax_s D _ _ _
@@ -18620,7 +18584,6 @@ Proof.
       assert (hnot : BProv Ax_s D
           (pImp (pEq (tSucc (tVar 0)) tZero) pBot)).
       {
-        apply BProv_weaken_nil.
         apply BProv_Ax_s_zeroNotSucc_term.
       }
       apply (BProv_botE Ax_s D).
@@ -18696,7 +18659,6 @@ Proof.
       (pEq (tMul (Term.numeral (v / 2)) (Term.numeral 2))
         (Term.numeral ((v / 2) * 2)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_mulNumerals.
   }
   assert (hmulAdd : BProv Ax_s G
@@ -18720,7 +18682,6 @@ Proof.
           (tAdd (Term.numeral ((v / 2) * 2)) (Term.numeral (v mod 2)))
           (Term.numeral ((v / 2) * 2 + v mod 2)))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addNumerals.
     }
     rewrite hdecomp in haddRaw.
@@ -18818,7 +18779,6 @@ Proof.
       (pEq (tMul (Term.numeral (v / 2)) (Term.numeral 2))
         (Term.numeral ((v / 2) * 2)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_mulNumerals.
   }
   assert (hmulAdd : BProv Ax_s G
@@ -18842,7 +18802,6 @@ Proof.
           (tAdd (Term.numeral ((v / 2) * 2)) (Term.numeral (v mod 2)))
           (Term.numeral ((v / 2) * 2 + v mod 2)))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addNumerals.
     }
     rewrite hdecomp in haddRaw.
@@ -18947,7 +18906,6 @@ Proof.
       (pEq (tMul (Term.numeral q) (Term.numeral m))
         (Term.numeral (q * m)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_mulNumerals.
   }
   assert (hmul : BProv Ax_s C
@@ -18970,7 +18928,6 @@ Proof.
         (Term.numeral v))).
   {
     rewrite <- hval.
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addNumerals.
   }
   assert (hcomputed : BProv Ax_s C
@@ -19317,7 +19274,6 @@ Proof.
       (pEq (tMul modulus (tSucc diff))
         (tAdd (tMul modulus diff) modulus))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_mulSucc_terms.
   }
   assert (hmodCong : BProv Ax_s G
@@ -19331,7 +19287,6 @@ Proof.
       (pEq (tAdd (tMul modulus diff) (tSucc pred))
         (tSucc (tAdd (tMul modulus diff) pred)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addSucc_terms.
   }
   exact (BProv_eqTrans Ax_s G _ _ _
@@ -19816,7 +19771,6 @@ Proof.
       (pEq (tAdd (tMul (tVar 0) (tVar (S modulus))) tZero)
         (tMul (tVar 0) (tVar (S modulus))))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addZero_term.
   }
   assert (hvalueQMul : BProv Ax_s C
@@ -19985,7 +19939,6 @@ Proof.
       (pEq (tAdd (tMul (tVar 0) (tVar (S modulus))) tZero)
         (tMul (tVar 0) (tVar (S modulus))))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addZero_term.
   }
   assert (hvalueQMul : BProv Ax_s C
@@ -20199,7 +20152,6 @@ Proof.
   assert (hmulZero : BProv Ax_s G
       (pEq (tMul idxSucc tZero) tZero)).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_mulZero_term.
   }
   assert (hmul : BProv Ax_s G (pEq (tMul idxSucc step) tZero)).
@@ -20602,13 +20554,7 @@ Proof.
   {
     unfold remTermTermAt, ltTermAt.
     simpl.
-    repeat rewrite Term.subst_rename_succ_up.
-    repeat rewrite term_subst_instTerm_rename_succ.
-    repeat rewrite term_subst_instTerm_rename_two_succ.
-    repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-    repeat rewrite term_subst_upSubst_instTerm_rename_add_two.
-    repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
-    repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
+    normalize_subst_rename.
     exact hrem.
   }
   assert (hbody : BProv Ax_s G
@@ -20779,7 +20725,6 @@ Proof.
         (tMul (Term.numeral (i + 1)) (Term.numeral s))
         (Term.numeral ((i + 1) * s)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_mulNumerals.
   }
   assert (hmulComputed : BProv Ax_s G
@@ -20839,7 +20784,6 @@ Proof.
         (tMul (Term.numeral (i + 1)) (Term.numeral s))
         (Term.numeral ((i + 1) * s)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_mulNumerals.
   }
   assert (hmulComputed : BProv Ax_s G
@@ -21420,10 +21364,7 @@ Proof.
     - exact hdvd.
     - unfold a, dvdTermTermAt.
       simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+      normalize_subst_rename.
       reflexivity.
   }
   pose proof (BProv_eqElim Ax_s G oldDivisor newDivisor a
@@ -21433,10 +21374,7 @@ Proof.
   - exact hnew.
   - unfold a, dvdTermTermAt.
     simpl.
-    repeat rewrite Term.subst_rename_succ_up.
-    repeat rewrite term_subst_instTerm_rename_succ.
-    repeat rewrite term_subst_instTerm_rename_two_succ.
-    repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+    normalize_subst_rename.
     reflexivity.
 Qed.
 
@@ -21456,10 +21394,7 @@ Proof.
     - exact hdvd.
     - unfold a, dvdTermTermAt.
       simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+      normalize_subst_rename.
       reflexivity.
   }
   pose proof (BProv_eqElim Ax_s G oldValue newValue a heq hold) as hnew.
@@ -21468,10 +21403,7 @@ Proof.
   - exact hnew.
   - unfold a, dvdTermTermAt.
     simpl.
-    repeat rewrite Term.subst_rename_succ_up.
-    repeat rewrite term_subst_instTerm_rename_succ.
-    repeat rewrite term_subst_instTerm_rename_two_succ.
-    repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+    normalize_subst_rename.
     reflexivity.
 Qed.
 
@@ -21503,10 +21435,7 @@ Proof.
     - exact himpRaw.
     - unfold body, ltTermAt, dvdTermTermAt.
       simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+      normalize_subst_rename.
       reflexivity.
   }
   exact (BProv_mp Ax_s G _ _ himp hlt).
@@ -21689,12 +21618,7 @@ Proof.
     - exact hthrough.
     - unfold commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt.
       simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
-      repeat rewrite Term.rename_comp.
+      normalize_subst_rename_comp.
       repeat rewrite term_rename_up_succ_rename_succ.
       reflexivity.
   }
@@ -21783,9 +21707,7 @@ Proof.
     - unfold phi, commonMultipleExistsTermAt,
         commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt, substZero.
       simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_substZero_rename_succ.
-      repeat rewrite Term.rename_comp.
+      normalize_subst_rename_comp.
       repeat rewrite term_rename_up_succ_rename_succ.
       reflexivity.
   }
@@ -21808,9 +21730,7 @@ Proof.
         commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt,
         substSuccVar.
       simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_substSuccVar_rename_succ.
-      repeat rewrite Term.rename_comp.
+      normalize_subst_rename_comp.
       repeat rewrite term_rename_up_succ_rename_succ.
       reflexivity.
   }
@@ -21988,13 +21908,7 @@ Proof.
     - exact hrem.
     - unfold a, remTermTermAt, ltTermAt.
       simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_two_var_zero.
-      repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
+      normalize_subst_rename.
       reflexivity.
   }
   pose proof (BProv_eqElim Ax_s G oldModulus newModulus a
@@ -22004,13 +21918,7 @@ Proof.
   - exact hnew.
   - unfold a, remTermTermAt, ltTermAt.
     simpl.
-    repeat rewrite Term.subst_rename_succ_up.
-    repeat rewrite term_subst_instTerm_rename_succ.
-    repeat rewrite term_subst_instTerm_rename_two_succ.
-    repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-    repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
-    repeat rewrite term_subst_up_up_instTerm_rename_two_var_zero.
-    repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
+    normalize_subst_rename.
     reflexivity.
 Qed.
 
@@ -22089,7 +21997,6 @@ Proof.
       (pEq (tMul leftBase (tSucc rightBase))
         (tAdd (tMul leftBase rightBase) leftBase))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_mulSucc_terms.
   }
   assert (hmulSuccCong : BProv Ax_s G
@@ -22108,7 +22015,6 @@ Proof.
         (tSucc
           (tAdd (tAdd (tMul leftBase rightBase) leftBase) rightBase)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addSucc_terms.
   }
   assert (hexpand : BProv Ax_s G
@@ -22426,9 +22332,8 @@ Proof.
         (tAdd (tMul rightModulus inverseQuot) (tSucc carry)))).
   {
     exact (BProv_eqSym Ax_s G _ _
-      (BProv_weaken_nil Ax_s G _
-        (BProv_Ax_s_addSucc_terms
-          (tMul rightModulus inverseQuot) carry))).
+      (BProv_Ax_s_addSucc_terms G
+        (tMul rightModulus inverseQuot) carry)).
   }
   assert (hnegativeSym : BProv Ax_s G
       (pEq (tSucc carry) (tMul rightModulus positiveCoeff))).
@@ -22600,16 +22505,14 @@ Proof.
           (tAdd (tMul rightScale leftPred) rightScale))).
     {
       unfold leftModulus.
-      exact (BProv_weaken_nil Ax_s G _
-        (BProv_Ax_s_mulSucc_terms rightScale leftPred)).
+      exact (BProv_Ax_s_mulSucc_terms G rightScale leftPred).
     }
     assert (hrightExpand : BProv Ax_s G
         (pEq (tMul leftScale rightModulus)
           (tAdd (tMul leftScale rightPred) leftScale))).
     {
       unfold rightModulus.
-      exact (BProv_weaken_nil Ax_s G _
-        (BProv_Ax_s_mulSucc_terms leftScale rightPred)).
+      exact (BProv_Ax_s_mulSucc_terms G leftScale rightPred).
     }
     assert (hparts : BProv Ax_s G
         (pEq
@@ -22720,8 +22623,7 @@ Proof.
         (tMul rightModulus (tSucc crossCoeff))
         (tAdd (tMul rightModulus crossCoeff) rightModulus))).
   {
-    exact (BProv_weaken_nil Ax_s G _
-      (BProv_Ax_s_mulSucc_terms rightModulus crossCoeff)).
+    exact (BProv_Ax_s_mulSucc_terms G rightModulus crossCoeff).
   }
   assert (hcomm : BProv Ax_s G
       (pEq
@@ -22858,11 +22760,7 @@ Proof.
     - unfold outerBody, crtInverseExistsTermAtQuotEx,
         innerBody, crtInverseTermAt.
       simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_add_two.
+      normalize_subst_rename.
       reflexivity.
   }
   unfold crtInverseExistsTermAt.
@@ -22883,7 +22781,6 @@ Proof.
   assert (hzero : BProv Ax_s G
       (pEq (tMul modulus tZero) tZero)).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_mulZero_term.
   }
   assert (hsucc : BProv Ax_s G
@@ -22988,7 +22885,6 @@ Proof.
         (pEq (tAdd lower1 (tSucc (tVar 0)))
           (tSucc (tAdd lower1 (tVar 0))))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addSucc_terms.
     }
     assert (hstrictEq : BProv Ax_s D
@@ -23036,7 +22932,6 @@ Proof.
         (pEq (tAdd gapPred (tSucc left))
           (tSucc (tAdd gapPred left)))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addSucc_terms.
     }
     assert (hcomm : BProv Ax_s G
@@ -23050,7 +22945,6 @@ Proof.
         (pEq (tAdd left (tSucc gapPred))
           (tSucc (tAdd left gapPred)))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addSucc_terms.
     }
     exact (BProv_eqTrans Ax_s G _ _ _ hleftSucc
@@ -23126,7 +23020,6 @@ Proof.
           (tAdd (tMul (tVar 0) (tSucc factor1)) (tSucc factor1))
           (tSucc (tAdd (tMul (tVar 0) (tSucc factor1)) factor1)))).
     {
-      apply BProv_weaken_nil.
       apply BProv_Ax_s_addSucc_terms.
     }
     assert (hproduct : BProv Ax_s D
@@ -23361,10 +23254,7 @@ Proof.
     - exact himpRaw.
     - unfold body, ltTermAt, dvdTermTermAt, betaModTermTerm.
       simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+      normalize_subst_rename.
       reflexivity.
   }
   exact (BProv_mp Ax_s G _ _ himp hlt).
@@ -23948,12 +23838,7 @@ Proof.
         betaPrefixDividesTermAt, crtInverseExistsTermAt,
         crtInverseTermAt, betaModTermTerm, dvdTermTermAt, ltTermAt.
       simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
-      repeat rewrite Term.rename_comp.
+      normalize_subst_rename_comp.
       repeat rewrite term_rename_up_succ_rename_succ.
       rewrite (hsubst3 target), (hsubst3 step).
       repeat rewrite hsubst3.
@@ -24161,11 +24046,7 @@ Proof.
         crtInverseExistsTermAt, crtInverseTermAt,
         betaModTermTerm, dvdTermTermAt, ltTermAt, leTermAt.
       simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_substZero_rename_succ.
-      repeat rewrite term_subst_up_substZero_rename_two_succ.
-      repeat rewrite term_subst_up_up_up_substZero_rename_four_succ.
-      repeat rewrite Term.rename_comp.
+      normalize_subst_rename_comp.
       repeat rewrite hzero4.
       reflexivity.
   }
@@ -24259,11 +24140,7 @@ Proof.
         betaModTermTerm, dvdTermTermAt, ltTermAt, leTermAt.
       unfold step1, target1.
       simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_substSuccVar_rename_succ.
-      repeat rewrite term_subst_up_substSuccVar_rename_two_succ.
-      repeat rewrite term_subst_up_up_up_substSuccVar_rename_four_succ.
-      repeat rewrite Term.rename_comp.
+      normalize_subst_rename_comp.
       repeat rewrite hsucc4.
       reflexivity.
   }
@@ -24328,13 +24205,7 @@ Proof.
         crtInverseExistsTermAt, crtInverseTermAt,
         betaModTermTerm, dvdTermTermAt, ltTermAt, leTermAt.
       simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
-      repeat rewrite term_subst_up_up_up_instTerm_rename_four_succ.
-      repeat rewrite Term.rename_comp.
+      normalize_subst_rename_comp.
       repeat rewrite term_rename_up_succ_rename_succ.
       repeat rewrite hsubst4.
       reflexivity.
@@ -26405,7 +26276,6 @@ Proof.
   assert (hmulZero : BProv Ax_s G
       (pEq (tMul (tSucc (tVar idx)) tZero) tZero)).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_mulZero_term.
   }
   pose proof (BProv_eqTrans Ax_s G
@@ -26448,9 +26318,7 @@ Proof.
   intros G s t hsucc hzero.
   pose proof (BProv_eqTrans Ax_s G (tSucc t) s tZero
     (BProv_eqSym Ax_s G s (tSucc t) hsucc) hzero) as hbad.
-  pose proof (BProv_weaken_nil Ax_s G
-    (pImp (pEq (tSucc t) tZero) pBot)
-    (BProv_Ax_s_zeroNotSucc_term t)) as hnot.
+  pose proof (BProv_Ax_s_zeroNotSucc_term G t) as hnot.
   exact (BProv_mp Ax_s G (pEq (tSucc t) tZero) pBot hnot hbad).
 Qed.
 
@@ -27671,12 +27539,7 @@ Proof.
     apply BProv_eqRefl.
   - unfold betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm in *.
     simpl in *.
-    repeat rewrite Term.subst_rename_succ_up.
-    repeat rewrite term_subst_instTerm_rename_succ.
-    repeat rewrite term_subst_instTerm_rename_two_succ.
-    repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
-    repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
-    repeat rewrite term_subst_up_up_up_instTerm_rename_five_succ.
+    normalize_subst_rename.
     repeat rewrite Term.rename_numeral in *.
     exact hbeta.
 Qed.
@@ -28669,14 +28532,7 @@ Proof.
     - exact hbetaCode.
     - unfold modulusBody, betaTermTermAt, remTermTermAt, ltTermAt.
       simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_add_two.
-      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_two_var_zero.
-      repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
-      repeat rewrite Term.rename_comp.
+      normalize_subst_rename_comp.
       reflexivity.
   }
   pose proof (BProv_eqElim B G
@@ -28688,14 +28544,7 @@ Proof.
   - exact hmodulusNew.
   - unfold modulusBody, betaTermTermAt, remTermTermAt, ltTermAt.
     simpl.
-    repeat rewrite Term.subst_rename_succ_up.
-    repeat rewrite term_subst_instTerm_rename_succ.
-    repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-    repeat rewrite term_subst_upSubst_instTerm_rename_add_two.
-    repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
-    repeat rewrite term_subst_up_up_instTerm_rename_two_var_zero.
-    repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
-    repeat rewrite Term.rename_comp.
+    normalize_subst_rename_comp.
     reflexivity.
 Qed.
 
@@ -28783,7 +28632,6 @@ Proof.
       (pEq (tAdd cur (tSucc next)) s)).
   {
     unfold s, twoEntryBetaStepTerm.
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addSucc_terms.
   }
   assert (hcurLeStep : BProv Ax_s G (leTermAt cur s)).
@@ -28932,7 +28780,6 @@ Proof.
         (tSucc (tAdd step step)))).
   {
     unfold modulusZero.
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addSucc_terms.
   }
   assert (hsuccCong : BProv Ax_s G
@@ -28974,8 +28821,7 @@ Proof.
       (pEq (Term.numeral 4)
         (tAdd (Term.numeral 2) (Term.numeral 2)))).
   {
-    apply BProv_weaken_nil.
-    exact (BProv_eqSym Ax_s [] _ _ (BProv_Ax_s_addNumerals 2 2)).
+    exact (BProv_eqSym Ax_s _ _ _ (BProv_Ax_s_addNumerals _ 2 2)).
   }
   assert (hfourArg : BProv Ax_s G
       (pEq fourStep
@@ -29077,7 +28923,6 @@ Proof.
         (tAdd (tMul fourStep step) fourStep))).
   {
     unfold modulusZero.
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_mulSucc_terms.
   }
   assert (hcore : BProv Ax_s G
@@ -29095,7 +28940,6 @@ Proof.
         (tAdd (tMul modulusOne doubleStep) modulusOne))).
   {
     unfold modulusOne.
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_mulSucc_terms.
   }
   assert (hsuccMul : BProv Ax_s G
@@ -29124,7 +28968,6 @@ Proof.
             doubleStep)))).
   {
     unfold modulusOne.
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addSucc_terms.
   }
   assert (hcoreSucc : BProv Ax_s G
@@ -30400,17 +30243,7 @@ Proof.
     - exact hcur.
     - unfold betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm.
       simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_two_var_zero.
-      repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
-      repeat rewrite term_subst_up_up_up_instTerm_rename_four_succ.
-      repeat rewrite term_subst_up_up_up_instTerm_rename_five_succ.
-      repeat rewrite Term.rename_comp.
+      normalize_subst_rename_comp.
       repeat rewrite
         (term_subst_three_instTerm_rename_add_three step cur next bit).
       repeat rewrite
@@ -30445,18 +30278,7 @@ Proof.
         (term_subst_three_instTerm_rename_add_three step cur next bit).
       repeat rewrite
         (term_subst_three_instTerm_rename_add_three code cur next bit).
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_two_var_zero.
-      repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
-      repeat rewrite term_subst_up_up_up_instTerm_rename_four_succ.
-      repeat rewrite term_subst_up_up_up_instTerm_rename_five_succ.
-      repeat rewrite term_subst_up_up_up_up_instTerm_rename_five_succ.
-      repeat rewrite Term.rename_comp.
+      normalize_subst_rename_comp.
       repeat rewrite
         (term_subst_three_instTerm_rename_add_three step cur next bit).
       repeat rewrite
@@ -30482,16 +30304,7 @@ Proof.
       simpl.
       repeat rewrite Term.subst_rename_succ_up.
       repeat rewrite term_rename_up_succ_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_two_var_zero.
-      repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
-      repeat rewrite term_subst_up_up_up_instTerm_rename_four_succ.
-      repeat rewrite term_subst_up_up_up_instTerm_rename_five_succ.
-      repeat rewrite Term.rename_comp.
+      normalize_subst_rename_comp.
       reflexivity.
   }
   assert (htailBody : BProv Ax_s G
@@ -30589,13 +30402,7 @@ Proof.
     - exact hcur.
     - unfold betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm.
       simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
-      repeat rewrite Term.rename_comp.
+      normalize_subst_rename_comp.
       repeat rewrite (term_subst_two_instTerm_rename_add_two code cur next).
       repeat rewrite (term_subst_two_instTerm_rename_add_two step cur next).
       repeat rewrite (term_subst_two_instTerm_rename_add_two idx cur next).
@@ -30620,13 +30427,7 @@ Proof.
     - exact hnext.
     - unfold betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm.
       simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
-      repeat rewrite Term.rename_comp.
+      normalize_subst_rename_comp.
       repeat rewrite (term_subst_two_instTerm_rename_add_two code cur next).
       repeat rewrite (term_subst_two_instTerm_rename_add_two step cur next).
       repeat rewrite (term_subst_two_instTerm_rename_add_two idx cur next).
@@ -30649,12 +30450,7 @@ Proof.
       simpl.
       repeat rewrite Term.subst_rename_succ_up.
       repeat rewrite term_rename_up_succ_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
-      repeat rewrite Term.rename_comp.
+      normalize_subst_rename_comp.
       repeat rewrite (term_subst_two_instTerm_rename_add_two bit cur next).
       repeat rewrite Term.rename_comp.
       reflexivity.
@@ -31193,25 +30989,14 @@ Proof.
       simpl.
       repeat rewrite Term.subst_rename_succ_up.
       repeat rewrite term_rename_up_succ_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_two_var_zero.
-      repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
+      normalize_subst_rename.
       repeat rewrite
         (term_subst_up_up_up_instTerm_rename_succ_add_three
           stepTerm idxTerm).
       repeat rewrite
         (term_subst_up_up_up_instTerm_rename_succ_add_three
           codeTerm idxTerm).
-      repeat rewrite term_subst_up_up_up_instTerm_rename_four_succ.
-      repeat rewrite term_subst_up_up_up_instTerm_rename_succ_add_three.
-      repeat rewrite term_subst_up_up_up_instTerm_rename_five_succ.
-      repeat rewrite term_subst_up_up_up_up_instTerm_rename_five_succ.
-      repeat rewrite term_subst_up_up_up_up_up_instTerm_rename_six_succ.
-      repeat rewrite Term.rename_comp.
+      normalize_subst_rename_comp.
       repeat rewrite
         (term_subst_up_up_up_instTerm_rename_succ_add_three
           stepTerm idxTerm).
@@ -31266,12 +31051,7 @@ Proof.
     betaTermTermAt, remTermAt, remTermTermAt, ltTermAt, betaModTerm,
     betaModTermTerm, eqConstAt.
   simpl.
-  repeat rewrite Term.subst_rename_succ_up.
-  repeat rewrite term_subst_instTerm_rename_succ.
-  repeat rewrite term_subst_instTerm_rename_two_succ.
-  repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
-  repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
-  repeat rewrite term_subst_up_up_up_instTerm_rename_five_succ.
+  normalize_subst_rename.
   replace (set + 2) with (S (S set)) by lia.
   simpl.
   reflexivity.
@@ -31426,17 +31206,7 @@ Proof.
     simpl.
     repeat rewrite Term.subst_rename_succ_up.
     repeat rewrite term_rename_up_succ_rename_succ.
-    repeat rewrite term_subst_instTerm_rename_succ.
-    repeat rewrite term_subst_instTerm_rename_two_succ.
-    repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-    repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
-    repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
-    repeat rewrite term_subst_up_up_instTerm_rename_two_var_zero.
-    repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
-    repeat rewrite term_subst_up_up_up_instTerm_rename_four_succ.
-    repeat rewrite term_subst_up_up_up_instTerm_rename_five_succ.
-    repeat rewrite term_subst_up_up_up_up_instTerm_rename_five_succ.
-    repeat rewrite term_subst_up_up_up_up_up_instTerm_rename_six_succ.
+    normalize_subst_rename.
     repeat rewrite hcode6.
     repeat rewrite hcode7.
     repeat rewrite hcodeRename6.
@@ -31485,20 +31255,7 @@ Proof.
         betaTermTermAt, remTermTermAt, div2StepTermAt, boolTermAt,
         ltTermAt, betaModTermTerm, oneAt, zeroAt, eqConstAt.
       simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_two_var_zero.
-      repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
-      repeat rewrite term_subst_up_up_up_instTerm_rename_four_succ.
-      repeat rewrite term_subst_up_up_up_instTerm_rename_five_succ.
-      repeat rewrite term_subst_up_up_up_up_instTerm_rename_five_succ.
-      repeat rewrite term_subst_up_up_up_up_up_instTerm_rename_six_succ.
-      repeat rewrite term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ.
-      repeat rewrite Term.rename_comp.
+      normalize_subst_rename_comp.
       reflexivity.
   }
   pose proof
@@ -31520,20 +31277,7 @@ Proof.
     rewrite subst_comp.
     try rewrite Term.upSubst_comp.
     simpl.
-    repeat rewrite Term.subst_rename_succ_up.
-    repeat rewrite term_subst_instTerm_rename_succ.
-    repeat rewrite term_subst_instTerm_rename_two_succ.
-    repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-    repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
-    repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
-    repeat rewrite term_subst_up_up_instTerm_rename_two_var_zero.
-    repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
-    repeat rewrite term_subst_up_up_up_instTerm_rename_four_succ.
-    repeat rewrite term_subst_up_up_up_instTerm_rename_five_succ.
-    repeat rewrite term_subst_up_up_up_up_instTerm_rename_five_succ.
-    repeat rewrite term_subst_up_up_up_up_up_instTerm_rename_six_succ.
-    repeat rewrite term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ.
-    repeat rewrite Term.rename_comp.
+    normalize_subst_rename_comp.
     reflexivity.
 Qed.
 
@@ -31587,14 +31331,7 @@ Proof.
     - unfold betaShiftTailThroughTermAt, leTermAt, betaTermTermAt,
         remTermTermAt, ltTermAt, betaModTermTerm.
       simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_add_two.
-      repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
-      repeat rewrite term_subst_up_up_up_instTerm_rename_five_succ.
+      normalize_subst_rename.
       replace (oldCode + 2) with (S (S oldCode)) by lia.
       replace (oldStep + 2) with (S (S oldStep)) by lia.
       simpl.
@@ -31636,14 +31373,7 @@ Proof.
     - exact houtRaw.
     - unfold betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm.
       simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_add_two.
-      repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
-      repeat rewrite term_subst_up_up_up_instTerm_rename_five_succ.
+      normalize_subst_rename.
       simpl.
       reflexivity.
   }

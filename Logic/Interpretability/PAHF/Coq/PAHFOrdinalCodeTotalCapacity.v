@@ -241,7 +241,6 @@ Proof.
     (pEq (tAdd lower1 (tSucc (tVar 0)))
       (tSucc (tAdd lower1 (tVar 0))))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addSucc_terms.
   }
   pose proof (BProv_eqTrans Ax_s D _ _ _ hsuccAdd
@@ -360,7 +359,6 @@ Proof.
     (pEq (tAdd step (tSucc core))
       (tSucc (tAdd step core)))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addSucc_terms.
   }
   assert (hmod : BProv Ax_s G
@@ -471,7 +469,6 @@ Proof.
   assert (haddZero : BProv Ax_s G
     (pEq (tAdd tZero tZero) tZero)).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_addZero_term.
   }
   pose proof (BProv_eq_congr_add_left Ax_s G _ _ tZero hzeroMul)
@@ -915,7 +912,6 @@ Proof.
     (pEq (tMul oldCode (tSucc modulusPred))
       (tAdd (tMul oldCode modulusPred) oldCode))).
   {
-    apply BProv_weaken_nil.
     apply BProv_Ax_s_mulSucc_terms.
   }
   assert (hinner : BProv Ax_s G

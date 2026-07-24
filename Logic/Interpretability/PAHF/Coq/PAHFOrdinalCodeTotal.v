@@ -267,11 +267,7 @@ Proof.
   rewrite !subst_betaTermTermAt.
   rewrite !subst_hfAdjoinGraphTermAt.
   simpl.
-  repeat rewrite term_subst_upSubst_instTerm_rename_add_two.
-  repeat rewrite term_subst_instTerm_rename_succ.
-  repeat rewrite term_subst_instTerm_rename_two_succ.
-  repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
-  repeat rewrite term_subst_instTerm_rename_succ.
+  normalize_subst_rename.
   unfold components in hcomponents.
   exact hcomponents.
 Qed.

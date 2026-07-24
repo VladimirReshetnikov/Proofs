@@ -185,8 +185,7 @@ Proof.
         (pEq (tAdd lower1 (tSucc (tVar 0)))
           (tSucc (tAdd lower1 (tVar 0))))).
     {
-      exact (BProv_weaken_nil Ax_s D _
-        (BProv_Ax_s_addSucc_terms lower1 (tVar 0))).
+      exact (BProv_Ax_s_addSucc_terms D lower1 (tVar 0)).
     }
     assert (hleEq : BProv Ax_s D
         (pEq (tAdd (tSucc lower1) (tVar 0)) upper1)).
