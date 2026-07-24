@@ -3970,7 +3970,7 @@ def OrdinalCodeGraphCodomain : Prop :=
 
 /-- The proved finite-ordinal decomposition reduces the local range package to
 successor closure and codomain safety alone. -/
-def OrdinalCodeGraphRangeLocalFacts_of_succ_codomain
+theorem OrdinalCodeGraphRangeLocalFacts_of_succ_codomain
     (hsucc : OrdinalCodeGraphSuccClosure)
     (hcodomain : OrdinalCodeGraphCodomain) :
     OrdinalCodeGraphRangeLocalFacts where
@@ -9477,7 +9477,7 @@ theorem ordinalCodeTermMulCompatibility :
 
 /-- Modular compatibility constructor retaining explicit addition and
 multiplication arguments. -/
-def OrdinalCodeTermCompatibilityProofs_of_add_mul
+theorem OrdinalCodeTermCompatibilityProofs_of_add_mul
     (hadd : OrdinalCodeTermAddCompatibility)
     (hmul : OrdinalCodeTermMulCompatibility) :
     OrdinalCodeTermCompatibilityProofs where
@@ -9489,7 +9489,7 @@ def OrdinalCodeTermCompatibilityProofs_of_add_mul
 
 /-- Functionality, zero, successor, and addition are concrete;
 multiplication alone now constructs the full operation interface. -/
-def OrdinalCodeTermCompatibilityProofs_of_mul
+theorem OrdinalCodeTermCompatibilityProofs_of_mul
     (hmul : OrdinalCodeTermMulCompatibility) :
     OrdinalCodeTermCompatibilityProofs where
   graph_functional := ordinalCodeGraphFunctional
@@ -10355,7 +10355,7 @@ theorem ordinalCodeGraphInjective :
 
 /-- Concrete graph range reduces the remaining graph package to raw-side
 injectivity alone. -/
-def OrdinalCodeGraphRemainingProofs_of_injective
+theorem OrdinalCodeGraphRemainingProofs_of_injective
     (hinjective : OrdinalCodeGraphInjective) :
     OrdinalCodeGraphRemainingProofs where
   range := BProv_Ax_s_ordinalCodeGraph_range_exact
@@ -10363,7 +10363,7 @@ def OrdinalCodeGraphRemainingProofs_of_injective
 
 /-- The remaining graph laws plus four term-operation laws construct the
 complete package; graph totality is already unconditional. -/
-def OrdinalCodeGraphProofs_of_remaining_and_compatibility
+theorem OrdinalCodeGraphProofs_of_remaining_and_compatibility
     (P : OrdinalCodeGraphRemainingProofs)
     (C : OrdinalCodeTermCompatibilityProofs) :
     OrdinalCodeGraphProofs where
@@ -10376,7 +10376,7 @@ def OrdinalCodeGraphProofs_of_remaining_and_compatibility
 
 /-- The entire ordinal-code graph package now reduces to raw injectivity and
 the addition/multiplication term constructors. -/
-def OrdinalCodeGraphProofs_of_injective_add_mul
+theorem OrdinalCodeGraphProofs_of_injective_add_mul
     (hinjective : OrdinalCodeGraphInjective)
     (hadd : OrdinalCodeTermAddCompatibility)
     (hmul : OrdinalCodeTermMulCompatibility) :
@@ -10387,7 +10387,7 @@ def OrdinalCodeGraphProofs_of_injective_add_mul
 
 /-- Convenience constructor exposing multiplication as the only explicit
 argument to the otherwise concrete ordinal-code graph package. -/
-def OrdinalCodeGraphProofs_of_mul
+theorem OrdinalCodeGraphProofs_of_mul
     (hmul : OrdinalCodeTermMulCompatibility) :
     OrdinalCodeGraphProofs :=
   OrdinalCodeGraphProofs_of_remaining_and_compatibility
@@ -10396,7 +10396,7 @@ def OrdinalCodeGraphProofs_of_mul
     (OrdinalCodeTermCompatibilityProofs_of_mul hmul)
 
 /-- Complete ordinal-code graph package for all PA term constructors. -/
-def ordinalCodeGraphProofs : OrdinalCodeGraphProofs :=
+theorem ordinalCodeGraphProofs : OrdinalCodeGraphProofs :=
   OrdinalCodeGraphProofs_of_mul ordinalCodeTermMulCompatibility
 
 /-- Totality of the ordinal-code graph turns equality of raw terms into
@@ -11335,7 +11335,7 @@ theorem BProv_Ax_s_paCompositeAt_formula_exact
 
 /-- The ordinal-Code graph proof package canonically supplies the full
 paired-variable structural induction. -/
-def PACompositeStructuralProofs_of_graphProofs
+theorem PACompositeStructuralProofs_of_graphProofs
     (P : OrdinalCodeGraphProofs) : PACompositeStructuralProofs where
   toOrdinalCodeGraphProofs := P
   formula_exact := fun G phi rawMap codedMap hcode ↦

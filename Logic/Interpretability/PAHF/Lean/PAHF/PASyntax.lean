@@ -66853,7 +66853,7 @@ structure TranslatedHFFinAxiomProofs extends TranslatedHFAxiomProofs where
 
 /-- The complete collection of PA proofs of the translated foundation-HF
 axioms. -/
-def translatedHFAxiomProofs : TranslatedHFAxiomProofs where
+theorem translatedHFAxiomProofs : TranslatedHFAxiomProofs where
   empty := BProv_Ax_s_translated_HF_empty
   extensionality := BProv_Ax_s_translated_HF_extensionality
   adjoin := BProv_Ax_s_translated_HF_adjoin
@@ -66865,7 +66865,7 @@ abbrev translatedHFAxiomProofs_of_remaining : TranslatedHFAxiomProofs :=
   translatedHFAxiomProofs
 
 /-- The complete collection of PA proofs of the translated finite-HF axioms. -/
-def translatedHFFinAxiomProofs : TranslatedHFFinAxiomProofs where
+theorem translatedHFFinAxiomProofs : TranslatedHFFinAxiomProofs where
   empty := BProv_Ax_s_translated_HF_empty
   extensionality := BProv_Ax_s_translated_HF_extensionality
   adjoin := BProv_Ax_s_translated_HF_adjoin
