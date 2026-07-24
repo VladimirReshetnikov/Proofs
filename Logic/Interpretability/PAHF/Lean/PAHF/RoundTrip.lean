@@ -3550,8 +3550,9 @@ theorem translateHFFormula_ordinalCodeZeroOrSuccSentence :
 
 /-- PA proves the direct Ackermann translation of the HFFin ordinal
 predecessor sentence. -/
-theorem BProv_Ax_s_ordinalCodeMemZeroOrSuccSentence :
-    BProv Ax_s [] (all ordinalCodeMemZeroOrSuccPoint) := by
+theorem BProv_Ax_s_ordinalCodeMemZeroOrSuccSentence {G : List Formula} :
+    BProv Ax_s G (all ordinalCodeMemZeroOrSuccPoint) := by
+  apply BProv_weaken_nil
   have htranslated : BProv translatedHFFinAx []
       (translateHFFormula HF_ordinalCodeZeroOrSuccSentence) :=
     BProv_translateHFFormula_of_BProv_HFFin
@@ -3638,8 +3639,9 @@ theorem subst_instTerm_ordinalCodeMemZeroOrSuccPoint
     subst, instTerm, Term.subst, Term.upSubst]
 
 /-- The closed PA numeral zero codes an empty HF object. -/
-theorem BProv_Ax_s_hfEmptyTermAt_zero :
-    BProv Ax_s [] (hfEmptyTermAt Term.zero) := by
+theorem BProv_Ax_s_hfEmptyTermAt_zero {G : List Formula} :
+    BProv Ax_s G (hfEmptyTermAt Term.zero) := by
+  apply BProv_weaken_nil
   have hraw := BProv_Ax_s_HF_empty_zero_body_of_member_bot
     BProv_Ax_s_HF_empty_zero_member_bot
   simpa [hfEmptyTermAt, subst,
@@ -3731,7 +3733,7 @@ theorem BProv_Ax_s_eq_zero_of_hfEmptyAt
     BProv Ax_s G (eq (Term.var set) Term.zero) := by
   apply BProv_Ax_s_eq_of_hfEmptyTermAt_hfEmptyTermAt
     (by simpa [hfEmptyAt] using hempty)
-  exact BProv_weaken_nil BProv_Ax_s_hfEmptyTermAt_zero
+  exact BProv_Ax_s_hfEmptyTermAt_zero
 
 /-- The only coded endpoint of the ordinal-code graph at raw zero is the
 closed Ackermann empty code. -/
@@ -3750,7 +3752,7 @@ theorem BProv_Ax_s_ordinalCodeMemZeroOrSuccTermAt_of_domain
       (subst (instTerm current) codedOrdinalDomain)) :
     BProv Ax_s G (ordinalCodeMemZeroOrSuccTermAt current) := by
   have hall : BProv Ax_s G (all ordinalCodeMemZeroOrSuccPoint) :=
-    BProv_weaken_nil BProv_Ax_s_ordinalCodeMemZeroOrSuccSentence
+    BProv_Ax_s_ordinalCodeMemZeroOrSuccSentence
   have hpointRaw := BProv_allE
     (B := Ax_s) (G := G) (t := current) hall
   have hpoint : BProv Ax_s G
@@ -3824,7 +3826,7 @@ theorem BProv_Ax_s_ordinalCodeDomainZeroOrSuccAt_of_domain
         subst, instTerm, Term.subst, Term.upSubst,
         Term.rename] using himpRaw
     have hempty : BProv Ax_s Z (hfEmptyTermAt Term.zero) :=
-      BProv_weaken_nil BProv_Ax_s_hfEmptyTermAt_zero
+      BProv_Ax_s_hfEmptyTermAt_zero
     have heq : BProv Ax_s Z (eq (Term.var 0) Term.zero) :=
       BProv_mp Ax_s Z _ _ himp hempty
     exact BProv_orI1 (B := Ax_s) (G := Z)
@@ -3911,11 +3913,12 @@ theorem subst_ordinalCodeDomainZeroOrSuccTermAt
     Term.subst_rename_succ_up]
 
 /-- PA proves the universal finite-ordinal predecessor decomposition. -/
-theorem BProv_Ax_s_all_ordinalCodeDomainZeroOrSucc :
-    BProv Ax_s []
+theorem BProv_Ax_s_all_ordinalCodeDomainZeroOrSucc {G : List Formula} :
+    BProv Ax_s G
       (all
         (imp codedOrdinalDomain
           (ordinalCodeDomainZeroOrSuccTermAt (Term.var 0)))) := by
+  apply BProv_weaken_nil
   let D : List Formula := [codedOrdinalDomain]
   have hdomain : BProv Ax_s D codedOrdinalDomain :=
     BProv_ass (B := Ax_s) (G := D) (by simp [D])
@@ -3941,7 +3944,7 @@ theorem OrdinalCodeGraphRangeLocalFacts_domain_decompose :
       (all
         (imp codedOrdinalDomain
           (ordinalCodeDomainZeroOrSuccTermAt (Term.var 0)))) :=
-    BProv_weaken_nil BProv_Ax_s_all_ordinalCodeDomainZeroOrSucc
+    BProv_Ax_s_all_ordinalCodeDomainZeroOrSucc
   have himpRaw := BProv_allE
     (B := Ax_s) (G := G) (t := current) hall
   have himp : BProv Ax_s G
@@ -4263,8 +4266,9 @@ theorem translateHFFormula_zeroDomainSentence :
       all (imp (hfEmptyAt 0) codedOrdinalDomain) := by
   rfl
 
-theorem BProv_Ax_s_zeroDomainSentence :
-    BProv Ax_s [] (all (imp (hfEmptyAt 0) codedOrdinalDomain)) := by
+theorem BProv_Ax_s_zeroDomainSentence {G : List Formula} :
+    BProv Ax_s G (all (imp (hfEmptyAt 0) codedOrdinalDomain)) := by
+  apply BProv_weaken_nil
   have htranslated : BProv translatedHFFinAx []
       (translateHFFormula HF_zeroDomainSentence) :=
     BProv_translateHFFormula_of_BProv_HFFin
@@ -4281,7 +4285,7 @@ theorem BProv_Ax_s_codedOrdinalDomain_zero
     BProv Ax_s G (subst (instTerm Term.zero) codedOrdinalDomain) := by
   have hall : BProv Ax_s G
       (all (imp (hfEmptyAt 0) codedOrdinalDomain)) :=
-    BProv_weaken_nil BProv_Ax_s_zeroDomainSentence
+    BProv_Ax_s_zeroDomainSentence
   have himpRaw := BProv_allE (B := Ax_s) (G := G)
     (t := Term.zero) hall
   have himp : BProv Ax_s G
@@ -4291,7 +4295,7 @@ theorem BProv_Ax_s_codedOrdinalDomain_zero
     simpa [hfEmptyAt, subst_hfEmptyTermAt,
       subst, instTerm, Term.subst, Term.upSubst] using himpRaw
   exact BProv_mp Ax_s G _ _ himp
-    (BProv_weaken_nil BProv_Ax_s_hfEmptyTermAt_zero)
+    (BProv_Ax_s_hfEmptyTermAt_zero)
 
 def HF_domainSuccSentence : SetTheory.Form :=
   SetTheory.Form.fAll (SetTheory.Form.fAll
@@ -4343,14 +4347,15 @@ theorem translateHFFormula_domainSuccSentence :
             codedOrdinalDomain))) := by
   rfl
 
-theorem BProv_Ax_s_domainSuccSentence :
-    BProv Ax_s []
+theorem BProv_Ax_s_domainSuccSentence {G : List Formula} :
+    BProv Ax_s G
       (all (all
         (imp
           (rename Nat.succ codedOrdinalDomain)
           (imp
             (hfAdjoinGraphAt 0 1 1)
             codedOrdinalDomain)))) := by
+  apply BProv_weaken_nil
   have htranslated : BProv translatedHFFinAx []
       (translateHFFormula HF_domainSuccSentence) :=
     BProv_translateHFFormula_of_BProv_HFFin
@@ -4377,7 +4382,7 @@ theorem BProv_Ax_s_codedOrdinalDomain_adjoin_self
           (imp
             (hfAdjoinGraphAt 0 1 1)
             codedOrdinalDomain)))) :=
-    BProv_weaken_nil BProv_Ax_s_domainSuccSentence
+    BProv_Ax_s_domainSuccSentence
   have hpredRaw := BProv_allE (B := Ax_s) (G := G)
     (t := pred) hall
   have hcurrentRaw := BProv_allE (B := Ax_s) (G := G)
@@ -4746,10 +4751,11 @@ theorem BProv_Ax_s_ordinalCodeCodomainTermAt_succ
 
 /-- PA induction over the raw input proves codomain safety uniformly in the
 graph output. -/
-theorem BProv_Ax_s_all_ordinalCodeCodomain :
-    BProv Ax_s []
+theorem BProv_Ax_s_all_ordinalCodeCodomain {G : List Formula} :
+    BProv Ax_s G
       (all
         (ordinalCodeCodomainTermAt (Term.var 0))) := by
+  apply BProv_weaken_nil
   let phi : Formula :=
     ordinalCodeCodomainTermAt (Term.var 0)
   have hzero : BProv Ax_s [] (subst substZero phi) := by
@@ -4805,7 +4811,7 @@ theorem ordinalCodeGraphCodomain :
     have hall : BProv Ax_s C
         (all
           (ordinalCodeCodomainTermAt (Term.var 0))) :=
-      BProv_weaken_nil BProv_Ax_s_all_ordinalCodeCodomain
+      BProv_Ax_s_all_ordinalCodeCodomain
     have hrawPoint := BProv_allE
       (B := Ax_s) (G := C) (t := Term.var 0) hall
     have hpoint : BProv Ax_s C
@@ -8058,7 +8064,7 @@ theorem BProv_Ax_s_ordinalCodeMulCore_zero
   have hrightEmpty : BProv Ax_s G (hfEmptyTermAt rightCode) :=
     BProv_Ax_s_hfEmptyTermAt_of_eq_zero hrightEq
   have hzeroEmpty : BProv Ax_s G (hfEmptyTermAt Term.zero) :=
-    BProv_weaken_nil BProv_Ax_s_hfEmptyTermAt_zero
+    BProv_Ax_s_hfEmptyTermAt_zero
   have hbase : BProv Ax_s G
       (hfMulGraphTermAt Term.zero leftCode rightCode) :=
     BProv_Ax_s_hfMulGraphTermAt_zero_right
@@ -9602,8 +9608,9 @@ theorem translateHFFormula_selfSuccInjectiveSentence :
       selfSuccInjectivePAFormula := by
   rfl
 
-theorem BProv_Ax_s_selfSuccInjectiveSentence :
-    BProv Ax_s [] selfSuccInjectivePAFormula := by
+theorem BProv_Ax_s_selfSuccInjectiveSentence {G : List Formula} :
+    BProv Ax_s G selfSuccInjectivePAFormula := by
+  apply BProv_weaken_nil
   have htranslated : BProv translatedHFFinAx []
       (translateHFFormula HF_selfSuccInjectiveSentence) :=
     BProv_translateHFFormula_of_BProv_HFFin
@@ -9627,7 +9634,7 @@ theorem BProv_Ax_s_hfAdjoinGraphTermAt_injective_self
     (hsuccB : BProv Ax_s G (hfAdjoinGraphTermAt out b b)) :
     BProv Ax_s G (eq a b) := by
   have hall : BProv Ax_s G selfSuccInjectivePAFormula :=
-    BProv_weaken_nil BProv_Ax_s_selfSuccInjectiveSentence
+    BProv_Ax_s_selfSuccInjectiveSentence
   have haRaw := BProv_allE (B := Ax_s) (G := G) (t := a) hall
   have hbRaw := BProv_allE (B := Ax_s) (G := G) (t := b) haRaw
   have houtRaw := BProv_allE (B := Ax_s) (G := G) (t := out) hbRaw
@@ -9727,12 +9734,13 @@ theorem translateHFFormula_selfSuccNonemptySentence :
           (imp (hfEmptyAt 0) bot))) := by
   rfl
 
-theorem BProv_Ax_s_selfSuccNonemptySentence :
-    BProv Ax_s []
+theorem BProv_Ax_s_selfSuccNonemptySentence {G : List Formula} :
+    BProv Ax_s G
       (all (all
         (imp
           (hfAdjoinGraphAt 0 1 1)
           (imp (hfEmptyAt 0) bot)))) := by
+  apply BProv_weaken_nil
   have htranslated : BProv translatedHFFinAx []
       (translateHFFormula HF_selfSuccNonemptySentence) :=
     BProv_translateHFFormula_of_BProv_HFFin
@@ -9754,7 +9762,7 @@ theorem BProv_Ax_s_bot_of_hfAdjoinGraphTermAt_hfEmptyTermAt
         (imp
           (hfAdjoinGraphAt 0 1 1)
           (imp (hfEmptyAt 0) bot)))) :=
-    BProv_weaken_nil BProv_Ax_s_selfSuccNonemptySentence
+    BProv_Ax_s_selfSuccNonemptySentence
   have haRaw := BProv_allE (B := Ax_s) (G := G) (t := a) hall
   have houtRaw := BProv_allE (B := Ax_s) (G := G) (t := out) haRaw
   have himp : BProv Ax_s G
@@ -9776,7 +9784,7 @@ theorem BProv_Ax_s_codedOrdinalDomain_of_ordinalCodeGraphTermAt
     BProv Ax_s G (subst (instTerm coded) codedOrdinalDomain) := by
   have hall : BProv Ax_s G
       (all (ordinalCodeCodomainTermAt (Term.var 0))) :=
-    BProv_weaken_nil BProv_Ax_s_all_ordinalCodeCodomain
+    BProv_Ax_s_all_ordinalCodeCodomain
   have hrawRaw := BProv_allE
     (B := Ax_s) (G := G) (t := raw) hall
   have hraw : BProv Ax_s G (ordinalCodeCodomainTermAt raw) := by
@@ -9836,7 +9844,7 @@ theorem BProv_Ax_s_bot_of_ordinalCodeGraphTermAt_zero_succ
       BProv_hfAdjoinGraphTermAt_of_new_eq_term
         hadjoin hcodedZeroC
     have hempty : BProv Ax_s C (hfEmptyTermAt Term.zero) :=
-      BProv_weaken_nil BProv_Ax_s_hfEmptyTermAt_zero
+      BProv_Ax_s_hfEmptyTermAt_zero
     simpa [rename] using
       (BProv_Ax_s_bot_of_hfAdjoinGraphTermAt_hfEmptyTermAt
         hadjoinZero hempty)
@@ -10297,9 +10305,10 @@ theorem BProv_Ax_s_ordinalCodeInjectiveTermAt_succ
     Term.rename] using houter
 
 /-- PA induction proves the raw-side injectivity invariant at every input. -/
-theorem BProv_Ax_s_all_ordinalCodeInjective :
-    BProv Ax_s []
+theorem BProv_Ax_s_all_ordinalCodeInjective {G : List Formula} :
+    BProv Ax_s G
       (all (ordinalCodeInjectiveTermAt (Term.var 0))) := by
+  apply BProv_weaken_nil
   let phi : Formula :=
     ordinalCodeInjectiveTermAt (Term.var 0)
   have hzero : BProv Ax_s [] (subst substZero phi) := by
@@ -10333,7 +10342,7 @@ theorem ordinalCodeGraphInjective :
   intro G raw₁ raw₂ coded hgraph₁ hgraph₂
   have hall : BProv Ax_s G
       (all (ordinalCodeInjectiveTermAt (Term.var 0))) :=
-    BProv_weaken_nil BProv_Ax_s_all_ordinalCodeInjective
+    BProv_Ax_s_all_ordinalCodeInjective
   have hpointRaw := BProv_allE
     (B := Ax_s) (G := G) (t := raw₁) hall
   have hpoint : BProv Ax_s G

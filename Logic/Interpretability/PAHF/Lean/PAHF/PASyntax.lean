@@ -8418,9 +8418,10 @@ theorem BProv_Ax_s_addSucc_terms {G : List Formula} (s t : Term) :
     term_subst_instTerm_rename_succ] using h2
 
 /-- PA proves the left-zero law for addition. -/
-theorem BProv_Ax_s_zero_add_all :
-    BProv Ax_s []
+theorem BProv_Ax_s_zero_add_all {G : List Formula} :
+    BProv Ax_s G
       (all (eq (Term.add Term.zero (Term.var 0)) (Term.var 0))) := by
+  apply BProv_weaken_nil
   let phi : Formula := eq (Term.add Term.zero (Term.var 0)) (Term.var 0)
   have hzero : BProv Ax_s [] (subst substZero phi) := by
     simpa [phi, substZero, subst, instTerm, Term.subst, Term.upSubst,
@@ -8459,14 +8460,15 @@ theorem BProv_Ax_s_zero_add_term {G : List Formula} (t : Term) :
     BProv Ax_s G (eq (Term.add Term.zero t) t) := by
   have hall : BProv Ax_s G
       (all (eq (Term.add Term.zero (Term.var 0)) (Term.var 0))) :=
-    BProv_weaken_nil BProv_Ax_s_zero_add_all
+    BProv_Ax_s_zero_add_all
   have hinst := BProv_allE (B := Ax_s) (G := G) (t := t) hall
   simpa [subst, instTerm, Term.subst, Term.upSubst] using hinst
 
 /-- PA proves that every number is either zero or the successor of a
 predecessor. -/
-theorem BProv_Ax_s_zeroOrSuccPredAt_all :
-    BProv Ax_s [] (all (zeroOrSuccPredAt 0)) := by
+theorem BProv_Ax_s_zeroOrSuccPredAt_all {G : List Formula} :
+    BProv Ax_s G (all (zeroOrSuccPredAt 0)) := by
+  apply BProv_weaken_nil
   let phi : Formula := zeroOrSuccPredAt 0
   have hzeroLeft : BProv Ax_s [] (subst substZero (zeroAt 0)) := by
     simpa [zeroAt, eqConstAt, substZero, subst, instTerm, Term.subst,
@@ -8512,7 +8514,7 @@ theorem BProv_Ax_s_zeroOrSuccPred_term {G : List Formula} (t : Term) :
       (or (eq t Term.zero)
         (ex (eq (Term.rename Nat.succ t) (Term.succ (Term.var 0))))) := by
   have hall : BProv Ax_s G (all (zeroOrSuccPredAt 0)) :=
-    BProv_weaken_nil BProv_Ax_s_zeroOrSuccPredAt_all
+    BProv_Ax_s_zeroOrSuccPredAt_all
   have hinst := BProv_allE (B := Ax_s) (G := G) (t := t) hall
   simpa [zeroOrSuccPredAt, zeroAt, succPredAt, eqConstAt, subst,
     instTerm, Term.subst, Term.upSubst, Term.numeral,
@@ -8784,12 +8786,13 @@ theorem term_subst_up_up_up_up_up_substSuccVar_rename_add_six (t : Term) :
   exact term_subst_iterUpSubst_substSuccVar_rename_add_succ 5 t
 
 /-- PA proves that successor distributes over addition on the left. -/
-theorem BProv_Ax_s_succ_add_all (x : Term) :
-    BProv Ax_s []
+theorem BProv_Ax_s_succ_add_all {G : List Formula} (x : Term) :
+    BProv Ax_s G
       (all
         (eq
           (Term.add (Term.succ (Term.rename Nat.succ x)) (Term.var 0))
           (Term.succ (Term.add (Term.rename Nat.succ x) (Term.var 0))))) := by
+  apply BProv_weaken_nil
   let phi : Formula :=
     eq
       (Term.add (Term.succ (Term.rename Nat.succ x)) (Term.var 0))
@@ -8855,7 +8858,7 @@ theorem BProv_Ax_s_succ_add_terms {G : List Formula} (x y : Term) :
         (eq
           (Term.add (Term.succ (Term.rename Nat.succ x)) (Term.var 0))
           (Term.succ (Term.add (Term.rename Nat.succ x) (Term.var 0))))) :=
-    BProv_weaken_nil (BProv_Ax_s_succ_add_all x)
+    (BProv_Ax_s_succ_add_all x)
   have hinst := BProv_allE (B := Ax_s) (G := G) (t := y) hall
   simpa [subst, instTerm, Term.subst, Term.upSubst,
     term_subst_instTerm_rename_succ] using hinst
@@ -8883,14 +8886,15 @@ theorem BProv_Ax_s_succ_add_cancel_terms {G : List Formula}
   exact BProv_mp Ax_s G _ _ hinj hsuccEq
 
 /-- PA proves left-cancellation for addition, uniformly in the left addend. -/
-theorem BProv_Ax_s_add_cancel_left_all (y z : Term) :
-    BProv Ax_s []
+theorem BProv_Ax_s_add_cancel_left_all {G : List Formula} (y z : Term) :
+    BProv Ax_s G
       (all
         (imp
           (eq
             (Term.add (Term.var 0) (Term.rename Nat.succ y))
             (Term.add (Term.var 0) (Term.rename Nat.succ z)))
           (eq (Term.rename Nat.succ y) (Term.rename Nat.succ z)))) := by
+  apply BProv_weaken_nil
   let phi : Formula :=
     imp
       (eq
@@ -8966,7 +8970,7 @@ theorem BProv_Ax_s_add_cancel_left_terms {G : List Formula}
             (Term.add (Term.var 0) (Term.rename Nat.succ y))
             (Term.add (Term.var 0) (Term.rename Nat.succ z)))
           (eq (Term.rename Nat.succ y) (Term.rename Nat.succ z)))) :=
-    BProv_weaken_nil (BProv_Ax_s_add_cancel_left_all y z)
+    (BProv_Ax_s_add_cancel_left_all y z)
   have himp : BProv Ax_s G
       (imp (eq (Term.add x y) (Term.add x z)) (eq y z)) := by
     have hinst := BProv_allE (B := Ax_s) (G := G) (t := x) hall
@@ -8976,14 +8980,15 @@ theorem BProv_Ax_s_add_cancel_left_terms {G : List Formula}
 
 /-- PA proves right-cancellation for addition, uniformly in the common right
 addend. -/
-theorem BProv_Ax_s_add_cancel_right_all (x y : Term) :
-    BProv Ax_s []
+theorem BProv_Ax_s_add_cancel_right_all {G : List Formula} (x y : Term) :
+    BProv Ax_s G
       (all
         (imp
           (eq
             (Term.add (Term.rename Nat.succ x) (Term.var 0))
             (Term.add (Term.rename Nat.succ y) (Term.var 0)))
           (eq (Term.rename Nat.succ x) (Term.rename Nat.succ y)))) := by
+  apply BProv_weaken_nil
   let phi : Formula :=
     imp
       (eq
@@ -9078,7 +9083,7 @@ theorem BProv_Ax_s_add_cancel_right_terms {G : List Formula}
             (Term.add (Term.rename Nat.succ x) (Term.var 0))
             (Term.add (Term.rename Nat.succ y) (Term.var 0)))
           (eq (Term.rename Nat.succ x) (Term.rename Nat.succ y)))) :=
-    BProv_weaken_nil (BProv_Ax_s_add_cancel_right_all x y)
+    (BProv_Ax_s_add_cancel_right_all x y)
   have himp : BProv Ax_s G
       (imp (eq (Term.add x z) (Term.add y z)) (eq x y)) := by
     have hinst := BProv_allE (B := Ax_s) (G := G) (t := z) hall
@@ -9087,8 +9092,8 @@ theorem BProv_Ax_s_add_cancel_right_terms {G : List Formula}
   exact BProv_mp Ax_s G _ _ himp h
 
 /-- PA proves associativity of addition, uniformly in the third addend. -/
-theorem BProv_Ax_s_add_assoc_all (x y : Term) :
-    BProv Ax_s []
+theorem BProv_Ax_s_add_assoc_all {G : List Formula} (x y : Term) :
+    BProv Ax_s G
       (all
         (eq
           (Term.add
@@ -9096,6 +9101,7 @@ theorem BProv_Ax_s_add_assoc_all (x y : Term) :
             (Term.var 0))
           (Term.add (Term.rename Nat.succ x)
             (Term.add (Term.rename Nat.succ y) (Term.var 0))))) := by
+  apply BProv_weaken_nil
   let phi : Formula :=
     eq
       (Term.add
@@ -9185,18 +9191,19 @@ theorem BProv_Ax_s_add_assoc_terms {G : List Formula} (x y z : Term) :
             (Term.var 0))
           (Term.add (Term.rename Nat.succ x)
             (Term.add (Term.rename Nat.succ y) (Term.var 0))))) :=
-    BProv_weaken_nil (BProv_Ax_s_add_assoc_all x y)
+    (BProv_Ax_s_add_assoc_all x y)
   have hinst := BProv_allE (B := Ax_s) (G := G) (t := z) hall
   simpa [subst, instTerm, Term.subst, Term.upSubst,
     term_subst_instTerm_rename_succ] using hinst
 
 /-- PA proves commutativity of addition, uniformly in the right addend. -/
-theorem BProv_Ax_s_add_comm_all (x : Term) :
-    BProv Ax_s []
+theorem BProv_Ax_s_add_comm_all {G : List Formula} (x : Term) :
+    BProv Ax_s G
       (all
         (eq
           (Term.add (Term.rename Nat.succ x) (Term.var 0))
           (Term.add (Term.var 0) (Term.rename Nat.succ x)))) := by
+  apply BProv_weaken_nil
   let phi : Formula :=
     eq
       (Term.add (Term.rename Nat.succ x) (Term.var 0))
@@ -9255,21 +9262,22 @@ theorem BProv_Ax_s_add_comm_terms {G : List Formula} (x y : Term) :
         (eq
           (Term.add (Term.rename Nat.succ x) (Term.var 0))
           (Term.add (Term.var 0) (Term.rename Nat.succ x)))) :=
-    BProv_weaken_nil (BProv_Ax_s_add_comm_all x)
+    (BProv_Ax_s_add_comm_all x)
   have hinst := BProv_allE (B := Ax_s) (G := G) (t := y) hall
   simpa [subst, instTerm, Term.subst, Term.upSubst,
     term_subst_instTerm_rename_succ] using hinst
 
 /-- PA proves, uniformly in the left addend, that adding a successor on the
 right never gives back the original left addend. -/
-theorem BProv_Ax_s_add_succ_ne_self_all (y : Term) :
-    BProv Ax_s []
+theorem BProv_Ax_s_add_succ_ne_self_all {G : List Formula} (y : Term) :
+    BProv Ax_s G
       (all
         (imp
           (eq
             (Term.add (Term.var 0) (Term.succ (Term.rename Nat.succ y)))
             (Term.var 0))
           bot)) := by
+  apply BProv_weaken_nil
   let phi : Formula :=
     imp
       (eq
@@ -9363,7 +9371,7 @@ theorem BProv_Ax_s_add_succ_ne_self_terms {G : List Formula}
             (Term.add (Term.var 0) (Term.succ (Term.rename Nat.succ y)))
             (Term.var 0))
           bot)) :=
-    BProv_weaken_nil (BProv_Ax_s_add_succ_ne_self_all y)
+    (BProv_Ax_s_add_succ_ne_self_all y)
   have himp : BProv Ax_s G
       (imp (eq (Term.add x (Term.succ y)) x) bot) := by
     have hinst := BProv_allE (B := Ax_s) (G := G) (t := x) hall
@@ -9373,12 +9381,13 @@ theorem BProv_Ax_s_add_succ_ne_self_terms {G : List Formula}
 
 /-- PA proves uniformly in the right summand that if `x + y = 0`, then
 `x = 0`.  The free term `x` is shifted under the displayed universal binder. -/
-theorem BProv_Ax_s_add_eq_zero_left_all (x : Term) :
-    BProv Ax_s []
+theorem BProv_Ax_s_add_eq_zero_left_all {G : List Formula} (x : Term) :
+    BProv Ax_s G
       (all
         (imp
           (eq (Term.add (Term.rename Nat.succ x) (Term.var 0)) Term.zero)
           (eq (Term.rename Nat.succ x) Term.zero))) := by
+  apply BProv_weaken_nil
   let phi : Formula :=
     imp
       (eq (Term.add (Term.rename Nat.succ x) (Term.var 0)) Term.zero)
@@ -9471,7 +9480,7 @@ theorem BProv_Ax_s_add_eq_zero_left_terms {G : List Formula}
         (imp
           (eq (Term.add (Term.rename Nat.succ x) (Term.var 0)) Term.zero)
           (eq (Term.rename Nat.succ x) Term.zero))) :=
-    BProv_weaken_nil (BProv_Ax_s_add_eq_zero_left_all x)
+    (BProv_Ax_s_add_eq_zero_left_all x)
   have himp : BProv Ax_s G
       (imp (eq (Term.add x y) Term.zero) (eq x Term.zero)) := by
     have hinst := BProv_allE (B := Ax_s) (G := G) (t := y) hall
@@ -9792,9 +9801,10 @@ theorem BProv_Ax_s_mulSucc_terms {G : List Formula} (s t : Term) :
     term_subst_instTerm_rename_succ] using h2
 
 /-- PA proves the left-zero law for multiplication. -/
-theorem BProv_Ax_s_zero_mul_all :
-    BProv Ax_s []
+theorem BProv_Ax_s_zero_mul_all {G : List Formula} :
+    BProv Ax_s G
       (all (eq (Term.mul Term.zero (Term.var 0)) Term.zero)) := by
+  apply BProv_weaken_nil
   let phi : Formula := eq (Term.mul Term.zero (Term.var 0)) Term.zero
   have hzero : BProv Ax_s [] (subst substZero phi) := by
     simpa [phi, substZero, subst, instTerm, Term.subst, Term.upSubst,
@@ -9832,19 +9842,20 @@ theorem BProv_Ax_s_zero_mul_term {G : List Formula} (t : Term) :
     BProv Ax_s G (eq (Term.mul Term.zero t) Term.zero) := by
   have hall : BProv Ax_s G
       (all (eq (Term.mul Term.zero (Term.var 0)) Term.zero)) :=
-    BProv_weaken_nil BProv_Ax_s_zero_mul_all
+    BProv_Ax_s_zero_mul_all
   have hinst := BProv_allE (B := Ax_s) (G := G) (t := t) hall
   simpa [subst, instTerm, Term.subst, Term.upSubst] using hinst
 
 /-- PA proves the left-successor normal form for multiplication. -/
-theorem BProv_Ax_s_succ_mul_all (x : Term) :
-    BProv Ax_s []
+theorem BProv_Ax_s_succ_mul_all {G : List Formula} (x : Term) :
+    BProv Ax_s G
       (all
         (eq
           (Term.mul (Term.succ (Term.rename Nat.succ x)) (Term.var 0))
           (Term.add
             (Term.mul (Term.rename Nat.succ x) (Term.var 0))
             (Term.var 0)))) := by
+  apply BProv_weaken_nil
   let phi : Formula :=
     eq
       (Term.mul (Term.succ (Term.rename Nat.succ x)) (Term.var 0))
@@ -9967,18 +9978,19 @@ theorem BProv_Ax_s_succ_mul_terms {G : List Formula} (x y : Term) :
           (Term.add
             (Term.mul (Term.rename Nat.succ x) (Term.var 0))
             (Term.var 0)))) :=
-    BProv_weaken_nil (BProv_Ax_s_succ_mul_all x)
+    (BProv_Ax_s_succ_mul_all x)
   have hinst := BProv_allE (B := Ax_s) (G := G) (t := y) hall
   simpa [subst, instTerm, Term.subst, Term.upSubst,
     term_subst_instTerm_rename_succ] using hinst
 
 /-- PA proves commutativity of multiplication. -/
-theorem BProv_Ax_s_mul_comm_all (x : Term) :
-    BProv Ax_s []
+theorem BProv_Ax_s_mul_comm_all {G : List Formula} (x : Term) :
+    BProv Ax_s G
       (all
         (eq
           (Term.mul (Term.rename Nat.succ x) (Term.var 0))
           (Term.mul (Term.var 0) (Term.rename Nat.succ x)))) := by
+  apply BProv_weaken_nil
   let phi : Formula :=
     eq
       (Term.mul (Term.rename Nat.succ x) (Term.var 0))
@@ -10040,14 +10052,14 @@ theorem BProv_Ax_s_mul_comm_terms {G : List Formula} (x y : Term) :
         (eq
           (Term.mul (Term.rename Nat.succ x) (Term.var 0))
           (Term.mul (Term.var 0) (Term.rename Nat.succ x)))) :=
-    BProv_weaken_nil (BProv_Ax_s_mul_comm_all x)
+    (BProv_Ax_s_mul_comm_all x)
   have hinst := BProv_allE (B := Ax_s) (G := G) (t := y) hall
   simpa [subst, instTerm, Term.subst, Term.upSubst,
     term_subst_instTerm_rename_succ] using hinst
 
 /-- PA proves left-distributivity of multiplication over addition. -/
-theorem BProv_Ax_s_mul_add_all (x y : Term) :
-    BProv Ax_s []
+theorem BProv_Ax_s_mul_add_all {G : List Formula} (x y : Term) :
+    BProv Ax_s G
       (all
         (eq
           (Term.mul (Term.rename Nat.succ x)
@@ -10055,6 +10067,7 @@ theorem BProv_Ax_s_mul_add_all (x y : Term) :
           (Term.add
             (Term.mul (Term.rename Nat.succ x) (Term.rename Nat.succ y))
             (Term.mul (Term.rename Nat.succ x) (Term.var 0))))) := by
+  apply BProv_weaken_nil
   let phi : Formula :=
     eq
       (Term.mul (Term.rename Nat.succ x)
@@ -10169,14 +10182,14 @@ theorem BProv_Ax_s_mul_add_terms {G : List Formula} (x y z : Term) :
           (Term.add
             (Term.mul (Term.rename Nat.succ x) (Term.rename Nat.succ y))
             (Term.mul (Term.rename Nat.succ x) (Term.var 0))))) :=
-    BProv_weaken_nil (BProv_Ax_s_mul_add_all x y)
+    (BProv_Ax_s_mul_add_all x y)
   have hinst := BProv_allE (B := Ax_s) (G := G) (t := z) hall
   simpa [subst, instTerm, Term.subst, Term.upSubst,
     term_subst_instTerm_rename_succ] using hinst
 
 /-- PA proves right-distributivity of multiplication over addition. -/
-theorem BProv_Ax_s_add_mul_all (x y : Term) :
-    BProv Ax_s []
+theorem BProv_Ax_s_add_mul_all {G : List Formula} (x y : Term) :
+    BProv Ax_s G
       (all
         (eq
           (Term.mul
@@ -10185,6 +10198,7 @@ theorem BProv_Ax_s_add_mul_all (x y : Term) :
           (Term.add
             (Term.mul (Term.rename Nat.succ x) (Term.var 0))
             (Term.mul (Term.rename Nat.succ y) (Term.var 0))))) := by
+  apply BProv_weaken_nil
   let phi : Formula :=
     eq
       (Term.mul
@@ -10239,14 +10253,14 @@ theorem BProv_Ax_s_add_mul_terms {G : List Formula} (x y z : Term) :
           (Term.add
             (Term.mul (Term.rename Nat.succ x) (Term.var 0))
             (Term.mul (Term.rename Nat.succ y) (Term.var 0))))) :=
-    BProv_weaken_nil (BProv_Ax_s_add_mul_all x y)
+    (BProv_Ax_s_add_mul_all x y)
   have hinst := BProv_allE (B := Ax_s) (G := G) (t := z) hall
   simpa [subst, instTerm, Term.subst, Term.upSubst,
     term_subst_instTerm_rename_succ] using hinst
 
 /-- PA proves associativity of multiplication. -/
-theorem BProv_Ax_s_mul_assoc_all (x y : Term) :
-    BProv Ax_s []
+theorem BProv_Ax_s_mul_assoc_all {G : List Formula} (x y : Term) :
+    BProv Ax_s G
       (all
         (eq
           (Term.mul
@@ -10255,6 +10269,7 @@ theorem BProv_Ax_s_mul_assoc_all (x y : Term) :
           (Term.mul
             (Term.rename Nat.succ x)
             (Term.mul (Term.rename Nat.succ y) (Term.var 0))))) := by
+  apply BProv_weaken_nil
   let phi : Formula :=
     eq
       (Term.mul
@@ -10358,15 +10373,16 @@ theorem BProv_Ax_s_mul_assoc_terms {G : List Formula} (x y z : Term) :
           (Term.mul
             (Term.rename Nat.succ x)
             (Term.mul (Term.rename Nat.succ y) (Term.var 0))))) :=
-    BProv_weaken_nil (BProv_Ax_s_mul_assoc_all x y)
+    (BProv_Ax_s_mul_assoc_all x y)
   have hinst := BProv_allE (B := Ax_s) (G := G) (t := z) hall
   simpa [subst, instTerm, Term.subst, Term.upSubst,
     term_subst_instTerm_rename_succ] using hinst
 
 /-- PA proves the right-one law for multiplication. -/
-theorem BProv_Ax_s_mul_one_all :
-    BProv Ax_s []
+theorem BProv_Ax_s_mul_one_all {G : List Formula} :
+    BProv Ax_s G
       (all (eq (Term.mul (Term.var 0) (Term.numeral 1)) (Term.var 0))) := by
+  apply BProv_weaken_nil
   have hbody : BProv Ax_s []
       (eq (Term.mul (Term.var 0) (Term.numeral 1)) (Term.var 0)) := by
     let x : Term := Term.var 0
@@ -10397,14 +10413,15 @@ theorem BProv_Ax_s_mul_one_term {G : List Formula} (x : Term) :
     BProv Ax_s G (eq (Term.mul x (Term.numeral 1)) x) := by
   have hall : BProv Ax_s G
       (all (eq (Term.mul (Term.var 0) (Term.numeral 1)) (Term.var 0))) :=
-    BProv_weaken_nil BProv_Ax_s_mul_one_all
+    BProv_Ax_s_mul_one_all
   have hinst := BProv_allE (B := Ax_s) (G := G) (t := x) hall
   simpa [subst, instTerm, Term.subst, Term.upSubst] using hinst
 
 /-- PA proves the left-one law for multiplication. -/
-theorem BProv_Ax_s_one_mul_all :
-    BProv Ax_s []
+theorem BProv_Ax_s_one_mul_all {G : List Formula} :
+    BProv Ax_s G
       (all (eq (Term.mul (Term.numeral 1) (Term.var 0)) (Term.var 0))) := by
+  apply BProv_weaken_nil
   have hbody : BProv Ax_s []
       (eq (Term.mul (Term.numeral 1) (Term.var 0)) (Term.var 0)) := by
     have hcomm : BProv Ax_s []
@@ -10424,7 +10441,7 @@ theorem BProv_Ax_s_one_mul_term {G : List Formula} (x : Term) :
     BProv Ax_s G (eq (Term.mul (Term.numeral 1) x) x) := by
   have hall : BProv Ax_s G
       (all (eq (Term.mul (Term.numeral 1) (Term.var 0)) (Term.var 0))) :=
-    BProv_weaken_nil BProv_Ax_s_one_mul_all
+    BProv_Ax_s_one_mul_all
   have hinst := BProv_allE (B := Ax_s) (G := G) (t := x) hall
   simpa [subst, instTerm, Term.subst, Term.upSubst] using hinst
 
@@ -15970,11 +15987,12 @@ theorem BProv_Ax_s_leAt_of_ltTermAt_var_succ_right
 `∀ y, ∀ x, x ≤ y ∨ y < x`.  This is the syntactic comparison splitter used by
 the quotient/remainder functionality proofs; no semantic total-order fact is
 assumed. -/
-theorem BProv_Ax_s_leTermAt_or_gtTermAt_all :
-    BProv Ax_s []
+theorem BProv_Ax_s_leTermAt_or_gtTermAt_all {G : List Formula} :
+    BProv Ax_s G
       (all (all
         (or (leTermAt (Term.var 0) (Term.var 1))
           (ltTermAt (Term.var 1) (Term.var 0))))) := by
+  apply BProv_weaken_nil
   let body : Formula :=
     or (leTermAt (Term.var 0) (Term.var 1))
       (ltTermAt (Term.var 1) (Term.var 0))
@@ -16165,7 +16183,7 @@ theorem BProv_Ax_s_leAt_or_gtAt {G : List Formula} {a b : Nat} :
       (all (all
         (or (leTermAt (Term.var 0) (Term.var 1))
           (ltTermAt (Term.var 1) (Term.var 0))))) :=
-    BProv_weaken_nil BProv_Ax_s_leTermAt_or_gtTermAt_all
+    BProv_Ax_s_leTermAt_or_gtTermAt_all
   have hb := BProv_allE (B := Ax_s) (G := G) (t := Term.var b) hall
   have ha := BProv_allE (B := Ax_s) (G := G) (t := Term.var a) hb
   simpa [leAt, leTermAt, ltAt, ltTermAt, subst, instTerm, Term.subst,
@@ -16180,7 +16198,7 @@ theorem BProv_Ax_s_leTermAt_or_gtTermAt {G : List Formula} (a b : Term) :
       (all (all
         (or (leTermAt (Term.var 0) (Term.var 1))
           (ltTermAt (Term.var 1) (Term.var 0))))) :=
-    BProv_weaken_nil BProv_Ax_s_leTermAt_or_gtTermAt_all
+    BProv_Ax_s_leTermAt_or_gtTermAt_all
   have hb := BProv_allE (B := Ax_s) (G := G) (t := b) hall
   have ha := BProv_allE (B := Ax_s) (G := G) (t := a) hb
   simpa [leTermAt, ltTermAt, subst, instTerm, Term.subst, Term.upSubst,
@@ -19314,8 +19332,9 @@ theorem BProv_Ax_s_div2TotalTermAt_zero :
   exact BProv_Ax_s_div2TotalTermAt_intro hstep
 
 /-- PA proves the universal totality of binary halving. -/
-theorem BProv_Ax_s_div2TotalAt_all :
-    BProv Ax_s [] (all (div2TotalAt 0)) := by
+theorem BProv_Ax_s_div2TotalAt_all {G : List Formula} :
+    BProv Ax_s G (all (div2TotalAt 0)) := by
+  apply BProv_weaken_nil
   let phi : Formula := div2TotalAt 0
   have hzero : BProv Ax_s [] (subst substZero phi) := by
     simpa [phi, div2TotalAt, div2TotalTermAt, div2StepTermAt,
@@ -19363,7 +19382,7 @@ theorem BProv_Ax_s_div2TotalAt_all :
 theorem BProv_Ax_s_div2TotalAt {G : List Formula} (value : Nat) :
     BProv Ax_s G (div2TotalAt value) := by
   have hall : BProv Ax_s G (all (div2TotalAt 0)) :=
-    BProv_weaken_nil BProv_Ax_s_div2TotalAt_all
+    BProv_Ax_s_div2TotalAt_all
   have hinst := BProv_allE (B := Ax_s) (G := G)
     (t := Term.var value) hall
   simpa [div2TotalAt, div2TotalTermAt, div2StepTermAt, boolTermAt,
