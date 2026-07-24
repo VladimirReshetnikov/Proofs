@@ -14,6 +14,7 @@ import BooleanAlgebra
 import PowerTowers
 import A158415
 import A290268
+import SquaredSquare
 import FirstOrder
 import ArbitraryLanguageCompactness
 import QuantifierCommutation

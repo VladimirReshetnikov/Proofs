@@ -22,7 +22,7 @@ project, `Lean/` and `Coq/` are siblings; `Research/`, `Support/`, and
 | --- | --- |
 | [`Algebra/`](Algebra/) | Jacobian-conjecture counterexamples: the dimension-three witness and a lower-degree stable representative checked independently in Lean and Coq, plus an exact cubic reduction. |
 | [`Analysis/`](Analysis/) | Exact trigonometric, arctangent, and exponential identities. |
-| [`Combinatorics/`](Combinatorics/) | Enumeration of power towers and radical expressions, including OEIS certificates and research corpora. |
+| [`Combinatorics/`](Combinatorics/) | Enumeration of power towers and radical expressions, including OEIS certificates and research corpora; squaring the square (Duijvestijn's order-21 perfect squared square and small-order impossibility). |
 | [`Computability/`](Computability/) | Set Turing degrees (order, joins, cardinalities, jump/c.e. theory, and Post's problem); lambda/SK/SKI/Iota universality; Busy Beaver semantics, domination, exact small-state scores and times, and certificate bridges. |
 | [`Logic/`](Logic/) | First-order logic and completeness, propositional/equational axiom systems, PA infinitude, and PA/HF interpretability. |
 | [`NumberTheory/`](NumberTheory/) | FLT for exponent four, floor-square-root sums, rational enumeration, and an arithmetic RH sentence. |
@@ -48,6 +48,14 @@ is the broad Lean import surface.
 - Exact trigonometric, arctangent, and tiny-exponent-tower identities.
 - Formal semantics and finite certificates for OEIS A000081, A002845,
   A158415, A198683, and A199812.
+- A Lean/Coq [squaring-the-square development](Combinatorics/SquaredSquare/README.md):
+  Duijvestijn's order-21 perfect squared square of side 112 — a square cut
+  into 21 pairwise non-congruent squares, kernel-checked from integer
+  certificates and extended by dilation to every square in Lean — plus the
+  elementary lower bound that every perfect squared square has at least 7
+  pieces, bracketing the minimum order in `[7, 21]`.  The sharp bound 21
+  (Duijvestijn's exhaustive search of orders 7–20) is documented as not
+  formalized.
 - Nicod's NAND axiom, Wolfram's single Boolean equation, Meredith's basis,
   and checked equational certificates.
 - A [first-order completeness and compactness development](Logic/FirstOrder/README.md):
@@ -119,6 +127,7 @@ lake build +PAListCoding +PAListCoding.Audit
 lake build +PAFiniteBasisReduction
 lake build +PAUndecidable +PAUndecidable.Audit
 lake build +PowerTowers.Core
+lake build +SquaredSquare
 lake build +CombinatoryLogic
 lake build +BusyBeaver.BB2
 lake build +BusyBeaver.BB3

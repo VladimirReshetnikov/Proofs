@@ -3,6 +3,7 @@
 -Q Analysis/ExponentialIdentities/Coq ExponentialIdentities
 -Q Combinatorics/ExpressionEnumeration/PowerTowers/Coq PowerTowers
 -Q Combinatorics/ExpressionEnumeration/RadicalExpressions/A158415/Coq A158415
+-Q Combinatorics/SquaredSquare/Coq SquaredSquare
 -Q Computability/BusyBeaver/Coq BusyBeaver
 -Q Computability/CombinatoryLogic/Coq CombinatoryLogic
 -Q Logic/FirstOrder/Coq FirstOrder
@@ -253,6 +254,13 @@ Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A198683/N12/N12Symbolic.v
 Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A198683/SmallValues/EightBounds.v
 Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A199812.v
 Combinatorics/ExpressionEnumeration/RadicalExpressions/A158415/Coq/A158415.v
+Combinatorics/SquaredSquare/Coq/Defs.v
+Combinatorics/SquaredSquare/Coq/Duijvestijn.v
+Combinatorics/SquaredSquare/Coq/Intervals.v
+Combinatorics/SquaredSquare/Coq/Minimality.v
+Combinatorics/SquaredSquare/Coq/Scaling.v
+Combinatorics/SquaredSquare/Coq/MinimalOrder.v
+Combinatorics/SquaredSquare/Coq/Audit.v
 Computability/BusyBeaver/Coq/BusyBeaver.v
 Computability/BusyBeaver/Coq/BusyBeaverMathlib.v
 Computability/BusyBeaver/Coq/BusyBeaverKnownValues.v
