@@ -171,13 +171,13 @@ Proof.
       (pEq (tMul (Term.numeral q) modulus) (Term.numeral (q * m)))).
   { exact (BProv_eqTrans Ax_s G _ _ _
       (BProv_eq_congr_mul_right Ax_s G (Term.numeral q) _ _ hmod)
-      (BProv_weaken_nil Ax_s G _ (BProv_Ax_s_mulNumerals q m))). }
+      (BProv_Ax_s_mulNumerals G q m)). }
   assert (hadd : BProv Ax_s G
       (pEq (tAdd (tMul (Term.numeral q) modulus) (Term.numeral r))
         (Term.numeral (q * m + r)))).
   { exact (BProv_eqTrans Ax_s G _ _ _
       (BProv_eq_congr_add_left Ax_s G _ _ (Term.numeral r) hmul)
-      (BProv_weaken_nil Ax_s G _ (BProv_Ax_s_addNumerals (q * m) r))). }
+      (BProv_Ax_s_addNumerals G (q * m) r)). }
   rewrite hdiv in hadd.
   exact hadd.
 Qed.
@@ -313,7 +313,7 @@ Proof.
   intros G p a hp.
   exact (BProv_eqTrans Ax_s G _ _ _
     (BProv_eq_congr_mul Ax_s G _ _ _ _ hp hp)
-    (BProv_weaken_nil Ax_s G _ (BProv_Ax_s_mulNumerals a a))).
+    (BProv_Ax_s_mulNumerals G a a)).
 Qed.
 
 (* Lean: BProv_Ax_s_properRemainderWitness_square_of_head_eq *)
@@ -549,7 +549,7 @@ Proof.
   assert (hmul : BProv Ax_s G
       (pEq (tMul (tSucc (Term.numeral i)) (Term.numeral s))
         (Term.numeral (S i * s)))).
-  { exact (BProv_weaken_nil Ax_s G _ (BProv_Ax_s_mulNumerals (S i) s)). }
+  { exact (BProv_Ax_s_mulNumerals G (S i) s). }
   assert (hraw : BProv Ax_s G
       (pEq (betaModTermTerm (Term.numeral s) (Term.numeral i))
         (Term.numeral (S (S i * s))))).
@@ -923,7 +923,7 @@ Proof.
   unfold mertensOneEqOneStatement.
   apply BProv_andI.
   - exact BProv_Ax_s_mertensCounts_one.
-  - exact (BProv_eqSym Ax_s [] _ _ (BProv_Ax_s_addNumerals 0 1)).
+  - exact (BProv_eqSym Ax_s [] _ _ (BProv_Ax_s_addNumerals [] 0 1)).
 Qed.
 
 (* Lean: BProv_Ax_s_mertens_two_eq_zero *)
@@ -943,7 +943,7 @@ Proof.
   unfold mertensThreeEqNegOneStatement.
   apply BProv_andI.
   - exact BProv_Ax_s_mertensCounts_three.
-  - exact (BProv_eqSym Ax_s [] _ _ (BProv_Ax_s_addNumerals 1 1)).
+  - exact (BProv_eqSym Ax_s [] _ _ (BProv_Ax_s_addNumerals [] 1 1)).
 Qed.
 
 (* ===== Power traces and the arithmetized RH growth bound ===== *)
