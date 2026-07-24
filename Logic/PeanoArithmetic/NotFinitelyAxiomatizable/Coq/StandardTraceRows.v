@@ -554,6 +554,18 @@ Proof.
       * exact hvalue.
 Qed.
 
+(** Shared discharge for the binary (add/mul) row cases: unpack the
+    seven-fold witness of [standardBinaryFacts_of_sat] and rebuild the
+    corresponding [StandardRowWitness] constructor. *)
+Ltac binary_row_of_sat tag op opValue ctor hcode hsat :=
+  destruct (standardBinaryFacts_of_sat _ tag op opValue _ _ _ _ _
+    (fun _ _ _ => eq_refl) hcode hsat)
+    as [leftCode [rightCode [leftValue [rightValue
+      [htarget [hleft [hright hvalue]]]]]]];
+  exact (ctor _ _ _ _ _ _ _
+    leftCode rightCode leftValue rightValue
+    htarget hleft hright hvalue).
+
 Lemma standardRowAdd_of_sat : forall target
     code value betaCode betaStep seedTerm e,
   raw_term_eval K e code = rawNumeralValue K target ->
@@ -564,16 +576,7 @@ Lemma standardRowAdd_of_sat : forall target
     (raw_term_eval K e seedTerm) (raw_term_eval K e value).
 Proof.
   intros target code value betaCode betaStep seedTerm e hcode hsat.
-  destruct (standardBinaryFacts_of_sat target tagAdd PA.tAdd
-    (raw_add K) code value betaCode betaStep e
-    (fun _ _ _ => eq_refl) hcode hsat)
-    as [leftCode [rightCode [leftValue [rightValue
-      [htarget [hleft [hright hvalue]]]]]]].
-  exact (standardRowAdd K rank target
-    (raw_term_eval K e betaCode) (raw_term_eval K e betaStep)
-    (raw_term_eval K e seedTerm) (raw_term_eval K e value)
-    leftCode rightCode leftValue rightValue
-    htarget hleft hright hvalue).
+  binary_row_of_sat tagAdd PA.tAdd (raw_add K) standardRowAdd hcode hsat.
 Qed.
 
 Lemma standardRowMul_of_sat : forall target
@@ -586,16 +589,7 @@ Lemma standardRowMul_of_sat : forall target
     (raw_term_eval K e seedTerm) (raw_term_eval K e value).
 Proof.
   intros target code value betaCode betaStep seedTerm e hcode hsat.
-  destruct (standardBinaryFacts_of_sat target tagMul PA.tMul
-    (raw_mul K) code value betaCode betaStep e
-    (fun _ _ _ => eq_refl) hcode hsat)
-    as [leftCode [rightCode [leftValue [rightValue
-      [htarget [hleft [hright hvalue]]]]]]].
-  exact (standardRowMul K rank target
-    (raw_term_eval K e betaCode) (raw_term_eval K e betaStep)
-    (raw_term_eval K e seedTerm) (raw_term_eval K e value)
-    leftCode rightCode leftValue rightValue
-    htarget hleft hright hvalue).
+  binary_row_of_sat tagMul PA.tMul (raw_mul K) standardRowMul hcode hsat.
 Qed.
 
 Lemma standardRowChooseBranch_of_sat : forall target formulaIndex
