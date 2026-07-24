@@ -230,16 +230,10 @@ noncomputable def sourceQuantifierFreeIntroductionProof :
             FirstOrder.Semiterm.bvar) =
               ![(parameterTerm (n := 2) (1 : Fin 2)).val
                   ![C, r] Empty.elim, C, r] := by
-        funext i
-        cases i using Fin.cases with
-        | zero => simp [upperLevel, parameterTerm]
-        | succ i =>
-            cases i using Fin.cases with
-            | zero => simp
-            | succ i =>
-                cases i using Fin.cases with
-                | zero => simp
-                | succ i => exact i.elim0
+        refine funext_fin3 ?_ ?_ ?_
+        · simp [upperLevel, parameterTerm]
+        · simp
+        · simp
       have hf :
           (FirstOrder.Semiterm.val
               (s := _structure.lMap (arithmeticHom 3 2))

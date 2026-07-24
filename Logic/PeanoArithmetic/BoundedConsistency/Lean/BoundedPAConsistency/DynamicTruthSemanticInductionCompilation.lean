@@ -117,15 +117,10 @@ private def sourceOneValue : M :=
   simp only [sourceSuccValue, sourceSucc, sourceOne,
     FirstOrder.Semiterm.val_func]
   congr 1
-  funext i
-  cases i using Fin.cases with
-  | zero => rfl
-  | succ i =>
-      cases i using Fin.cases with
-      | zero =>
-          exact (val_sourceOne_raw (M := M) (x :> v)).trans
-            (val_sourceOne_raw (M := M) ![x]).symm
-      | succ i => exact i.elim0
+  refine funext_fin2 ?_ ?_
+  · rfl
+  · exact (val_sourceOne_raw (M := M) (x :> v)).trans
+      (val_sourceOne_raw (M := M) ![x]).symm
 
 /-- The dependency-light version of four-way application.  The public
 semantic module has a stronger theorem specialized to PA models; here only
