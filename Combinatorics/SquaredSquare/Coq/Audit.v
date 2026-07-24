@@ -1,0 +1,13 @@
+(*
+  Assumption audit for the squared-square development.
+
+  The only expected assumptions are the axioms of the classical real
+  numbers from the Rocq standard library (the abstract completeness /
+  classical-order interface of R).  No project-specific axioms are used.
+*)
+
+From SquaredSquare Require Import Defs Duijvestijn.
+
+Print Assumptions Duijvestijn.LeanProofs.SquaredSquare.exists_perfect_squared_square.
+Print Assumptions Duijvestijn.LeanProofs.SquaredSquare.duijvestijn_perfect.
+Print Assumptions Defs.LeanProofs.SquaredSquare.side_eq_of_congruent.
