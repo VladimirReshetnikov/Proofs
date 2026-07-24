@@ -30,7 +30,7 @@ Proof.
     exact (BProv_Ax_s_leTermAt_or_gtTermAt G (tVar half) pred).
   }
   assert (hleBranch : BProv Ax_s (target :: G) target).
-  { apply BProv_ass. simpl. left. reflexivity. }
+  { apply BProv_ass_head. }
   assert (hgtBranch : BProv Ax_s (ltTermAt pred halfTerm :: G) target).
   {
     set (C := ltTermAt pred halfTerm :: G).

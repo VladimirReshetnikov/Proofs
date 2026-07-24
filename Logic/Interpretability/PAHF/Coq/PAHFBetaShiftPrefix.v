@@ -943,7 +943,7 @@ Proof.
     apply (BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_succ_of_entry_exists
       (entryEx :: G) oldCode oldStep currentCode newStep bound).
     - exact (BProv_context_cons Ax_s G entryEx _ hprefix).
-    - apply BProv_ass. simpl. left. reflexivity.
+    - apply BProv_ass_head.
     - exact (BProv_context_cons Ax_s G entryEx _ hcommon).
     - exact (BProv_context_cons Ax_s G entryEx _ hlarge).
   }
@@ -955,7 +955,7 @@ Proof.
       (pImp entryEx pBot :: G)
       oldCode oldStep currentCode newStep bound).
     - exact (BProv_context_cons Ax_s G (pImp entryEx pBot) _ hprefix).
-    - apply BProv_ass. simpl. left. reflexivity.
+    - apply BProv_ass_head.
   }
   exact (BProv_orE Ax_s G entryEx (pImp entryEx pBot)
     (betaShiftPrefixCodeExistsTermAt

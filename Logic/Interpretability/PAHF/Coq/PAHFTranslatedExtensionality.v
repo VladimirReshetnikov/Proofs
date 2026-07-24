@@ -121,7 +121,7 @@ Lemma BProv_Ax_s_hfLtDistinguishesThroughTermAt_zero :
 Proof.
   set (belowOne := ltTermAt (tVar 0) (tSucc tZero)).
   assert (hlt : BProv Ax_s [belowOne] belowOne).
-  { apply BProv_ass. simpl. left. reflexivity. }
+  { apply BProv_ass_head. }
   assert (hleTerm : BProv Ax_s [belowOne]
       (leTermAt (tVar 0) tZero)).
   {
@@ -249,7 +249,7 @@ Proof.
       (hfLtDistinguishesThroughTermAt (tVar 0))).
   {
     unfold phi, hfLtDistinguishesThroughAt.
-    apply BProv_ass. simpl. left. reflexivity.
+    apply BProv_ass_head.
   }
   assert (hsuccTerm : BProv Ax_s [phi]
       (hfLtDistinguishesThroughTermAt (tSucc (tVar 0)))).
@@ -531,9 +531,9 @@ Proof.
           [doubleEqAt low lowHalf; doubleEqAt high highHalf]
           G _ hhalfLt).
       * apply BProv_Ax_s_le_succ_double_of_doubleEqAt.
-        apply BProv_context_cons. apply BProv_ass. simpl. left. reflexivity.
+        apply BProv_context_cons. apply BProv_ass_head.
       * apply BProv_Ax_s_double_le_of_doubleEqAt.
-        apply BProv_ass. simpl. left. reflexivity.
+        apply BProv_ass_head.
     + set (C := oddDoubleEqAt low lowHalf :: GH).
       apply BProv_Ax_s_leAt_of_half_lt_and_binary_head_bounds
         with (highHalf := highHalf) (lowHalf := lowHalf).
@@ -542,9 +542,9 @@ Proof.
           [oddDoubleEqAt low lowHalf; doubleEqAt high highHalf]
           G _ hhalfLt).
       * apply BProv_Ax_s_le_succ_double_of_doubleEqAt.
-        apply BProv_context_cons. apply BProv_ass. simpl. left. reflexivity.
+        apply BProv_context_cons. apply BProv_ass_head.
       * apply BProv_Ax_s_double_le_of_oddDoubleEqAt.
-        apply BProv_ass. simpl. left. reflexivity.
+        apply BProv_ass_head.
   - set (GH := oddDoubleEqAt high highHalf :: G).
     assert (hlowStepH : BProv Ax_s GH
         (div2StepAt low lowHalf lowBit)).
@@ -559,9 +559,9 @@ Proof.
           [doubleEqAt low lowHalf; oddDoubleEqAt high highHalf]
           G _ hhalfLt).
       * apply BProv_Ax_s_le_succ_double_of_oddDoubleEqAt.
-        apply BProv_context_cons. apply BProv_ass. simpl. left. reflexivity.
+        apply BProv_context_cons. apply BProv_ass_head.
       * apply BProv_Ax_s_double_le_of_doubleEqAt.
-        apply BProv_ass. simpl. left. reflexivity.
+        apply BProv_ass_head.
     + set (C := oddDoubleEqAt low lowHalf :: GH).
       apply BProv_Ax_s_leAt_of_half_lt_and_binary_head_bounds
         with (highHalf := highHalf) (lowHalf := lowHalf).
@@ -570,9 +570,9 @@ Proof.
           [oddDoubleEqAt low lowHalf; oddDoubleEqAt high highHalf]
           G _ hhalfLt).
       * apply BProv_Ax_s_le_succ_double_of_oddDoubleEqAt.
-        apply BProv_context_cons. apply BProv_ass. simpl. left. reflexivity.
+        apply BProv_context_cons. apply BProv_ass_head.
       * apply BProv_Ax_s_double_le_of_oddDoubleEqAt.
-        apply BProv_ass. simpl. left. reflexivity.
+        apply BProv_ass_head.
 Qed.
 
 Lemma BProv_Ax_s_eqConstAt_one_of_oddDoubleEqAt_div2StepAt :
@@ -631,9 +631,9 @@ Proof.
       GH low lowHalf lowBit target hlowStepH).
     + set (C := doubleEqAt low lowHalf :: GH).
       assert (hhigh : BProv Ax_s C (doubleEqAt high highHalf)).
-      { apply BProv_context_cons. apply BProv_ass. simpl. left. reflexivity. }
+      { apply BProv_context_cons. apply BProv_ass_head. }
       assert (hlow : BProv Ax_s C (doubleEqAt low lowHalf)).
-      { apply BProv_ass. simpl. left. reflexivity. }
+      { apply BProv_ass_head. }
       assert (hhalfEqC : BProv Ax_s C
           (pEq (tVar lowHalf) (tVar highHalf))).
       { unfold C, GH. exact (BProv_context_prefix Ax_s
@@ -658,9 +658,9 @@ Proof.
         (BProv_Ax_s_ltAt_eq_bot C low high hltC hheads)).
     + set (C := oddDoubleEqAt low lowHalf :: GH).
       assert (hhigh : BProv Ax_s C (doubleEqAt high highHalf)).
-      { apply BProv_context_cons. apply BProv_ass. simpl. left. reflexivity. }
+      { apply BProv_context_cons. apply BProv_ass_head. }
       assert (hlow : BProv Ax_s C (oddDoubleEqAt low lowHalf)).
-      { apply BProv_ass. simpl. left. reflexivity. }
+      { apply BProv_ass_head. }
       assert (hhalfEqC : BProv Ax_s C
           (pEq (tVar lowHalf) (tVar highHalf))).
       { unfold C, GH. exact (BProv_context_prefix Ax_s
@@ -701,9 +701,9 @@ Proof.
       GH low lowHalf lowBit target hlowStepH).
     + set (C := doubleEqAt low lowHalf :: GH).
       assert (hhigh : BProv Ax_s C (oddDoubleEqAt high highHalf)).
-      { apply BProv_context_cons. apply BProv_ass. simpl. left. reflexivity. }
+      { apply BProv_context_cons. apply BProv_ass_head. }
       assert (hlow : BProv Ax_s C (doubleEqAt low lowHalf)).
-      { apply BProv_ass. simpl. left. reflexivity. }
+      { apply BProv_ass_head. }
       assert (hhighStepC : BProv Ax_s C
           (div2StepAt high highHalf highBit)).
       { unfold C, GH. exact (BProv_context_prefix Ax_s
@@ -721,9 +721,9 @@ Proof.
           C low lowHalf lowBit hlow hlowStepC)).
     + set (C := oddDoubleEqAt low lowHalf :: GH).
       assert (hhigh : BProv Ax_s C (oddDoubleEqAt high highHalf)).
-      { apply BProv_context_cons. apply BProv_ass. simpl. left. reflexivity. }
+      { apply BProv_context_cons. apply BProv_ass_head. }
       assert (hlow : BProv Ax_s C (oddDoubleEqAt low lowHalf)).
-      { apply BProv_ass. simpl. left. reflexivity. }
+      { apply BProv_ass_head. }
       assert (hhalfEqC : BProv Ax_s C
           (pEq (tVar lowHalf) (tVar highHalf))).
       { unfold C, GH. exact (BProv_context_prefix Ax_s
@@ -773,9 +773,9 @@ Proof.
     {
       set (D := leAt highHalf lowHalf :: C).
       assert (hleLowHigh : BProv Ax_s D (leAt lowHalf highHalf)).
-      { apply BProv_context_cons. apply BProv_ass. simpl. left. reflexivity. }
+      { apply BProv_context_cons. apply BProv_ass_head. }
       assert (hleHighLow : BProv Ax_s D (leAt highHalf lowHalf)).
-      { apply BProv_ass. simpl. left. reflexivity. }
+      { apply BProv_ass_head. }
       assert (hhalfEq : BProv Ax_s D
           (pEq (tVar lowHalf) (tVar highHalf))).
       { apply BProv_eqSym. exact (BProv_Ax_s_eq_of_leAt_leAt
@@ -803,14 +803,14 @@ Proof.
       exact (BProv_andI Ax_s D _ _ hhalfEq hbits).
     }
     assert (hltBranch : BProv Ax_s (ltAt lowHalf highHalf :: C) target).
-    { apply BProv_orI1. apply BProv_ass. simpl. left. reflexivity. }
+    { apply BProv_orI1. apply BProv_ass_head. }
     exact (BProv_orE Ax_s C _ _ target hcmp' heqBranch hltBranch).
   }
   assert (hgtBranch : BProv Ax_s (ltAt highHalf lowHalf :: G) target).
   {
     set (C := ltAt highHalf lowHalf :: G).
     assert (hhalfLt : BProv Ax_s C (ltAt highHalf lowHalf)).
-    { apply BProv_ass. simpl. left. reflexivity. }
+    { apply BProv_ass_head. }
     assert (hhighStepC : BProv Ax_s C
         (div2StepAt high highHalf highBit)).
     { apply BProv_context_cons. exact hhighStep. }

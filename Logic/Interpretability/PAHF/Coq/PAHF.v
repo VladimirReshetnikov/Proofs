@@ -10747,8 +10747,7 @@ Proof.
     assert (hzeroAss : BProv Ax_s [pEq (tAdd x tZero) tZero]
         (pEq (tAdd x tZero) tZero)).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (haddZero : BProv Ax_s [pEq (tAdd x tZero) tZero]
         (pEq (tAdd x tZero) x)).
@@ -10777,8 +10776,7 @@ Proof.
         [pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero; phi]
         (pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero)).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (haddSucc : BProv Ax_s
         [pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero; phi]
@@ -10862,8 +10860,7 @@ Proof.
     assert (hleBody : BProv Ax_s (leBody :: map (rename S) G)
         leBody).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hbRen : BProv Ax_s (map (rename S) G)
         (rename S (eqConstAt b n))).
@@ -10922,8 +10919,7 @@ Proof.
     assert (hleBody : BProv Ax_s (leBody :: map (rename S) G)
         leBody).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     pose proof (BProv_Ax_s_add_eq_zero_left_terms
       (leBody :: map (rename S) G) (tVar (S a)) (tVar 0)
@@ -11034,8 +11030,7 @@ Proof.
       assert (hsuccAss : BProv Ax_s (succPredAt 0 :: C)
           (succPredAt 0)).
       {
-        apply BProv_ass.
-        simpl. left. reflexivity.
+        apply BProv_ass_head.
       }
       change (BProv Ax_s (succPredAt 0 :: C) (pEx succBody))
         in hsuccAss.
@@ -11046,8 +11041,7 @@ Proof.
         set (D := succBody :: map (rename S) (succPredAt 0 :: C)).
         assert (hpred : BProv Ax_s D succBody).
         {
-          apply BProv_ass.
-          simpl. left. reflexivity.
+          apply BProv_ass_head.
         }
         assert (hleShiftRaw : BProv Ax_s D (rename S leBody)).
         {
@@ -11447,8 +11441,7 @@ Proof.
     assert (hphi : BProv Ax_s [phi]
         (pEq (tAdd tZero (tVar 0)) (tVar 0))).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hstep : BProv Ax_s [phi]
         (pEq (tAdd tZero (tSucc (tVar 0)))
@@ -11518,8 +11511,7 @@ Proof.
         (pEq (tAdd (tSucc (Term.rename S x)) (tVar 0))
           (tSucc (tAdd (Term.rename S x) (tVar 0))))).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hleft : BProv Ax_s [phi]
         (pEq (tAdd (tSucc (Term.rename S x)) (tSucc (tVar 0)))
@@ -11626,8 +11618,7 @@ Proof.
     assert (heq : BProv Ax_s [pEq (tAdd tZero y) (tAdd tZero z)]
         (pEq (tAdd tZero y) (tAdd tZero z))).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hy : BProv Ax_s [pEq (tAdd tZero y) (tAdd tZero z)]
         (pEq (tAdd tZero y) y)).
@@ -11662,8 +11653,7 @@ Proof.
           (pEq (tAdd (tSucc (tVar 0)) (Term.rename S y))
             (tAdd (tSucc (tVar 0)) (Term.rename S z)))).
       {
-        apply BProv_ass.
-        simpl. left. reflexivity.
+        apply BProv_ass_head.
       }
       pose proof (BProv_Ax_s_succ_add_cancel_terms [succEq; phi]
         (tVar 0) (Term.rename S y) (Term.rename S z) heqSucc)
@@ -11727,8 +11717,7 @@ Proof.
     assert (heq : BProv Ax_s [pEq (tAdd x tZero) (tAdd y tZero)]
         (pEq (tAdd x tZero) (tAdd y tZero))).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hx : BProv Ax_s [pEq (tAdd x tZero) (tAdd y tZero)]
         (pEq (tAdd x tZero) x)).
@@ -11763,8 +11752,7 @@ Proof.
           (pEq (tAdd (Term.rename S x) (tSucc (tVar 0)))
             (tAdd (Term.rename S y) (tSucc (tVar 0))))).
       {
-        apply BProv_ass.
-        simpl. left. reflexivity.
+        apply BProv_ass_head.
       }
       assert (hxSucc : BProv Ax_s [succEq; phi]
           (pEq (tAdd (Term.rename S x) (tSucc (tVar 0)))
@@ -11881,8 +11869,7 @@ Proof.
           (tAdd (Term.rename S x)
             (tAdd (Term.rename S y) (tVar 0))))).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hleftSucc : BProv Ax_s [phi]
         (pEq
@@ -11993,8 +11980,7 @@ Proof.
         (pEq (tAdd (Term.rename S x) (tVar 0))
           (tAdd (tVar 0) (Term.rename S x)))).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hleft : BProv Ax_s [phi]
         (pEq (tAdd (Term.rename S x) (tSucc (tVar 0)))
@@ -12062,8 +12048,7 @@ Proof.
     assert (hbad : BProv Ax_s [pEq (tAdd tZero (tSucc y)) tZero]
         (pEq (tAdd tZero (tSucc y)) tZero)).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hzeroAdd : BProv Ax_s [pEq (tAdd tZero (tSucc y)) tZero]
         (pEq (tAdd tZero (tSucc y)) (tSucc y))).
@@ -12102,8 +12087,7 @@ Proof.
           (pEq (tAdd (tSucc (tVar 0)) (tSucc (Term.rename S y)))
             (tSucc (tVar 0)))).
       {
-        apply BProv_ass.
-        simpl. left. reflexivity.
+        apply BProv_ass_head.
       }
       assert (haddSucc : BProv Ax_s [succEq; phi]
           (pEq (tAdd (tSucc (tVar 0)) (tSucc (Term.rename S y)))
@@ -12198,8 +12182,7 @@ Proof.
     assert (hphi : BProv Ax_s [phi]
         (pEq (tMul tZero (tVar 0)) tZero)).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hstep : BProv Ax_s [phi]
         (pEq (tMul tZero (tSucc (tVar 0)))
@@ -12279,8 +12262,7 @@ Proof.
         (pEq (tMul (tSucc (Term.rename S x)) (tVar 0))
           (tAdd (tMul (Term.rename S x) (tVar 0)) (tVar 0)))).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hleftStep : BProv Ax_s [phi]
         (pEq (tMul (tSucc (Term.rename S x)) (tSucc (tVar 0)))
@@ -12481,8 +12463,7 @@ Proof.
         (pEq (tMul (Term.rename S x) (tVar 0))
           (tMul (tVar 0) (Term.rename S x)))).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hleftStep : BProv Ax_s [phi]
         (pEq (tMul (Term.rename S x) (tSucc (tVar 0)))
@@ -12599,8 +12580,7 @@ Proof.
             (tMul (Term.rename S x) (Term.rename S y))
             (tMul (Term.rename S x) (tVar 0))))).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hySucc : BProv Ax_s [phi]
         (pEq (tAdd (Term.rename S y) (tSucc (tVar 0)))
@@ -12859,8 +12839,7 @@ Proof.
           (tMul (Term.rename S x)
             (tMul (Term.rename S y) (tVar 0))))).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hleftStep : BProv Ax_s [phi]
         (pEq
@@ -13188,8 +13167,7 @@ Proof.
   {
     assert (hltBody : BProv Ax_s (ltBody :: map (rename S) G) ltBody).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hinst : BProv Ax_s (ltBody :: map (rename S) G)
         (subst (instTerm (tSucc (tVar 0)))
@@ -13766,8 +13744,7 @@ Proof.
   {
     assert (heq : BProv Ax_s (ltBody :: map (rename S) G) ltBody).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     exact (BProv_Ax_s_add_succ_ne_self_terms
       (ltBody :: map (rename S) G) (tVar (S a)) (tVar 0) heq).
@@ -14786,8 +14763,7 @@ Proof.
       assert (hxZero : BProv Ax_s [pEq (tVar 0) tZero]
           (pEq (tVar 0) tZero)).
       {
-        apply BProv_ass.
-        simpl. left. reflexivity.
+        apply BProv_ass_head.
       }
       assert (hleZero : BProv Ax_s [pEq (tVar 0) tZero]
           (leTermAt tZero tZero)).
@@ -15163,8 +15139,7 @@ Proof.
   assert (hleft : BProv Ax_s (leConstAt a 0 :: G) (eqConstAt a 0)).
   {
     apply BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero.
-    apply BProv_ass.
-    simpl. left. reflexivity.
+    apply BProv_ass_head.
   }
   assert (hright : BProv Ax_s (eqConstAt a 1 :: G) (eqConstAt a 0)).
   {
@@ -15241,8 +15216,7 @@ Proof.
         (pEq (Term.rename S a) tZero :: C)
         (rename S (pEq a tZero))).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     set (succBody :=
       pEq (Term.rename S (Term.rename S a)) (tSucc (tVar 0))).
@@ -15391,8 +15365,7 @@ Proof.
         (pEq (Term.rename S a) tZero :: C)
         (rename S (pEq a tZero))).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     set (succBody :=
       pEq (Term.rename S (Term.rename S a)) (tSucc (tVar 0))).
@@ -16718,8 +16691,7 @@ Proof.
       {
         assert (h : BProv Ax_s (zeroAt 0 :: C) (zeroAt 0)).
         {
-          apply BProv_ass.
-          simpl. left. reflexivity.
+          apply BProv_ass_head.
         }
         unfold zeroAt, eqConstAt in h.
         simpl in h.
@@ -16775,8 +16747,7 @@ Proof.
       assert (hsuccAss : BProv Ax_s (succPredAt 0 :: C)
           (succPredAt 0)).
       {
-        apply BProv_ass.
-        simpl. left. reflexivity.
+        apply BProv_ass_head.
       }
       change (BProv Ax_s (succPredAt 0 :: C) (pEx succBody))
         in hsuccAss.
@@ -17055,15 +17026,13 @@ Proof.
   }
   assert (hzeroBranch : BProv Ax_s (zeroAt bit :: G) (eqConstAt bit 0)).
   {
-    apply BProv_ass.
-    simpl. left. reflexivity.
+    apply BProv_ass_head.
   }
   assert (honeBranch : BProv Ax_s (oneAt bit :: G) (eqConstAt bit 0)).
   {
     assert (hbitOne : BProv Ax_s (oneAt bit :: G) (eqConstAt bit 1)).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hbot : BProv Ax_s (oneAt bit :: G) pBot).
     {
@@ -17289,8 +17258,7 @@ Proof.
     {
       assert (hbitZero : BProv Ax_s (zeroAt bit :: G) (eqConstAt bit 0)).
       {
-        apply BProv_ass.
-        simpl. left. reflexivity.
+        apply BProv_ass_head.
       }
       assert (hmodC : BProv Ax_s (zeroAt bit :: G) (eqConstAt modulus 2)).
       {
@@ -17305,8 +17273,7 @@ Proof.
     {
       assert (hbitOne : BProv Ax_s (oneAt bit :: G) (eqConstAt bit 1)).
       {
-        apply BProv_ass.
-        simpl. left. reflexivity.
+        apply BProv_ass_head.
       }
       assert (hmodC : BProv Ax_s (oneAt bit :: G) (eqConstAt modulus 2)).
       {
@@ -24819,7 +24786,7 @@ Proof.
   apply BProv_andE1 with
     (b := remTermTermAt (Term.rename S out)
       (Term.rename S code) (tVar 0)).
-  apply BProv_ass. simpl. left. reflexivity.
+  apply BProv_ass_head.
 Qed.
 
 (* Lean: BProv_Ax_s_betaTermTermAt_opened_body_rem *)
@@ -24837,7 +24804,7 @@ Proof.
   apply BProv_andE2 with
     (a := pEq (tVar 0)
       (Term.rename S (betaModTermTerm step idx))).
-  apply BProv_ass. simpl. left. reflexivity.
+  apply BProv_ass_head.
 Qed.
 
 (* Lean: BProv_Ax_s_remTermTermAt_of_betaTermTermAt *)
@@ -25813,8 +25780,7 @@ Proof.
   set (leHyp := leAt 0 (S last)).
   assert (hle : BProv Ax_s (leHyp :: map (rename S) G) leHyp).
   {
-    apply BProv_ass.
-    simpl. left. reflexivity.
+    apply BProv_ass_head.
   }
   assert (hcodeRen : BProv Ax_s (map (rename S) G)
       (rename S (eqConstAt code c))).
@@ -25890,8 +25856,7 @@ Proof.
   set (leHyp := leConstAt 0 0).
   assert (hle : BProv Ax_s (leHyp :: map (rename S) G) leHyp).
   {
-    apply BProv_ass.
-    simpl. left. reflexivity.
+    apply BProv_ass_head.
   }
   assert (hcodeRen : BProv Ax_s (map (rename S) G)
       (rename S (eqConstAt code c))).
@@ -25954,8 +25919,7 @@ Proof.
   set (witness := betaDiv2StepWitnessAt (S code) (S step) 0).
   assert (hle : BProv Ax_s (leHyp :: map (rename S) G) leHyp).
   {
-    apply BProv_ass.
-    simpl. left. reflexivity.
+    apply BProv_ass_head.
   }
   pose proof (BProv_Ax_s_leConstAt_succ_cases
     (leHyp :: map (rename S) G) 0 n hle) as hcases.
@@ -26019,8 +25983,7 @@ Proof.
     assert (hleN : BProv Ax_s C (leConstAt 0 n)).
     {
       unfold C.
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     exact (BProv_mp Ax_s C (leConstAt 0 n) witness himp hleN).
   }
@@ -26031,8 +25994,7 @@ Proof.
     assert (hidx : BProv Ax_s C (eqConstAt 0 (S n))).
     {
       unfold C.
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hcodeBody : BProv Ax_s C (eqConstAt (S code) c)).
     {
@@ -26088,8 +26050,7 @@ Proof.
   set (witness := betaDiv2StepWitnessAt (S code) (S step) 0).
   assert (hle : BProv Ax_s (leHyp :: map (rename S) G) leHyp).
   {
-    apply BProv_ass.
-    simpl. left. reflexivity.
+    apply BProv_ass_head.
   }
   assert (hlastRen : BProv Ax_s (map (rename S) G)
       (rename S (eqConstAt last n))).
@@ -26461,8 +26422,7 @@ Proof.
   apply (BProv_andE1 Ax_s _
     (pEq (tVar 0) (Term.rename S (betaModTerm step idx)))
     (remAt (S out) (S code) 0)).
-  apply BProv_ass.
-  simpl. left. reflexivity.
+  apply BProv_ass_head.
 Qed.
 
 (* Lean: BProv_Ax_s_betaAt_opened_body_rem *)
@@ -26477,8 +26437,7 @@ Proof.
   apply (BProv_andE2 Ax_s _
     (pEq (tVar 0) (Term.rename S (betaModTerm step idx)))
     (remAt (S out) (S code) 0)).
-  apply BProv_ass.
-  simpl. left. reflexivity.
+  apply BProv_ass_head.
 Qed.
 
 (* Lean: BProv_Ax_s_eqConstAt_of_betaAt_eqConst_entry *)
@@ -26559,8 +26518,7 @@ Proof.
   apply (BProv_andE1 Ax_s _
     (pEq (tVar 0) (Term.rename S (betaModTerm step idx)))
     (remTermAt (Term.rename S out) (S code) 0)).
-  apply BProv_ass.
-  simpl. left. reflexivity.
+  apply BProv_ass_head.
 Qed.
 
 (* Lean: BProv_Ax_s_betaTermAt_opened_body_rem *)
@@ -26575,8 +26533,7 @@ Proof.
   apply (BProv_andE2 Ax_s _
     (pEq (tVar 0) (Term.rename S (betaModTerm step idx)))
     (remTermAt (Term.rename S out) (S code) 0)).
-  apply BProv_ass.
-  simpl. left. reflexivity.
+  apply BProv_ass_head.
 Qed.
 
 (* Lean: BProv_Ax_s_eq_of_betaAt_betaTermAt_same_index *)
@@ -27454,7 +27411,7 @@ Proof.
   intros G out code step idxValue.
   apply (BProv_andE1 Ax_s _ (eqConstAt 0 idxValue)
     (betaAt (S out) (S code) (S step) 0)).
-  apply BProv_ass. simpl. left. reflexivity.
+  apply BProv_ass_head.
 Qed.
 
 (* Lean: BProv_Ax_s_betaAtConstIdx_opened_body_beta *)
@@ -27468,7 +27425,7 @@ Proof.
   intros G out code step idxValue.
   apply (BProv_andE2 Ax_s _ (eqConstAt 0 idxValue)
     (betaAt (S out) (S code) (S step) 0)).
-  apply BProv_ass. simpl. left. reflexivity.
+  apply BProv_ass_head.
 Qed.
 
 (* Lean: BProv_Ax_s_betaTermAtConstIdx_opened_body_idx *)
@@ -27483,7 +27440,7 @@ Proof.
   intros G out code step idxValue.
   apply (BProv_andE1 Ax_s _ (eqConstAt 0 idxValue)
     (betaTermAt (Term.rename S out) (S code) (S step) 0)).
-  apply BProv_ass. simpl. left. reflexivity.
+  apply BProv_ass_head.
 Qed.
 
 (* Lean: BProv_Ax_s_betaTermAtConstIdx_opened_body_beta *)
@@ -27498,7 +27455,7 @@ Proof.
   intros G out code step idxValue.
   apply (BProv_andE2 Ax_s _ (eqConstAt 0 idxValue)
     (betaTermAt (Term.rename S out) (S code) (S step) 0)).
-  apply BProv_ass. simpl. left. reflexivity.
+  apply BProv_ass_head.
 Qed.
 
 (* Lean: BProv_Ax_s_betaTermAtConstIdx_of_betaAtConstIdx_eq_term *)
@@ -27572,7 +27529,7 @@ Proof.
   intros G out idx code step.
   apply (BProv_andE1 Ax_s _ (pEq (tVar 0) (Term.rename S idx))
     (betaTermAt (Term.rename S out) (S code) (S step) 0)).
-  apply BProv_ass. simpl. left. reflexivity.
+  apply BProv_ass_head.
 Qed.
 
 (* Lean: BProv_Ax_s_betaTermAtTermIdx_opened_body_beta *)
@@ -27588,7 +27545,7 @@ Proof.
   intros G out idx code step.
   apply (BProv_andE2 Ax_s _ (pEq (tVar 0) (Term.rename S idx))
     (betaTermAt (Term.rename S out) (S code) (S step) 0)).
-  apply BProv_ass. simpl. left. reflexivity.
+  apply BProv_ass_head.
 Qed.
 
 (* Lean: BProv_Ax_s_betaTermAtTermIdx_of_eq_beta *)
@@ -27651,7 +27608,7 @@ Proof.
       (rename S (eqConstAt out 0))).
   {
     assert (hbodyAss : BProv Ax_s (body :: map (rename S) G) body).
-    { apply BProv_ass. simpl. left. reflexivity. }
+    { apply BProv_ass_head. }
     assert (hsourceIdx : BProv Ax_s (body :: map (rename S) G)
         (pEq (tVar 0) (Term.rename S idxTerm))).
     { exact (BProv_andE1 Ax_s _ _ _ hbodyAss). }
@@ -27699,7 +27656,7 @@ Proof.
       (rename S (pEq (tVar out) outTerm))).
   {
     assert (hbodyAss : BProv Ax_s (body :: map (rename S) G) body).
-    { apply BProv_ass. simpl. left. reflexivity. }
+    { apply BProv_ass_head. }
     assert (hsourceIdx : BProv Ax_s (body :: map (rename S) G)
         (pEq (tVar 0) (Term.rename S idxTerm))).
     { exact (BProv_andE1 Ax_s _ _ _ hbodyAss). }
@@ -27775,7 +27732,7 @@ Proof.
       (rename S (pEq out2 out1))).
   {
     assert (hbody1 : BProv Ax_s (body1 :: map (rename S) G) body1).
-    { apply BProv_ass. simpl. left. reflexivity. }
+    { apply BProv_ass_head. }
     assert (hidx1 : BProv Ax_s (body1 :: map (rename S) G)
         (pEq (tVar 0) (Term.rename S idxTerm1))).
     { exact (BProv_andE1 Ax_s _ _ _ hbody1). }
@@ -27802,7 +27759,7 @@ Proof.
     {
       assert (hbody2 : BProv Ax_s
           (body2 :: map (rename S) (body1 :: map (rename S) G)) body2).
-      { apply BProv_ass. simpl. left. reflexivity. }
+      { apply BProv_ass_head. }
       assert (hidx2 : BProv Ax_s
           (body2 :: map (rename S) (body1 :: map (rename S) G))
           (pEq (tVar 0) (Term.rename S (Term.rename S idxTerm1)))).
@@ -27909,7 +27866,7 @@ Proof.
       (rename S (eqConstAt out 0))).
   {
     assert (hbodyAss : BProv Ax_s (body :: map (rename S) G) body).
-    { apply BProv_ass. simpl. left. reflexivity. }
+    { apply BProv_ass_head. }
     assert (hsourceIdx : BProv Ax_s (body :: map (rename S) G)
         (eqConstAt 0 idxValue)).
     { exact (BProv_andE1 Ax_s _ _ _ hbodyAss). }
@@ -27959,7 +27916,7 @@ Proof.
   intros G out code step idx.
   apply (BProv_andE1 Ax_s _ (pEq (tVar 0) (tSucc (tVar (S idx))))
     (betaAt (S out) (S code) (S step) 0)).
-  apply BProv_ass. simpl. left. reflexivity.
+  apply BProv_ass_head.
 Qed.
 
 (* Lean: BProv_Ax_s_betaAtSuccIdx_opened_body_beta *)
@@ -27975,7 +27932,7 @@ Proof.
   intros G out code step idx.
   apply (BProv_andE2 Ax_s _ (pEq (tVar 0) (tSucc (tVar (S idx))))
     (betaAt (S out) (S code) (S step) 0)).
-  apply BProv_ass. simpl. left. reflexivity.
+  apply BProv_ass_head.
 Qed.
 
 (* Lean: BProv_Ax_s_eqConstAt_zero_of_betaAt_eqConst_code_zero *)
@@ -27993,7 +27950,7 @@ Proof.
       (rename S (eqConstAt out 0))).
   {
     assert (hbodyAss : BProv Ax_s (body :: map (rename S) G) body).
-    { apply BProv_ass. simpl. left. reflexivity. }
+    { apply BProv_ass_head. }
     assert (hrem : BProv Ax_s (body :: map (rename S) G)
         (remAt (S out) (S code) 0)).
     { exact (BProv_andE2 Ax_s _ _ _ hbodyAss). }
@@ -28026,7 +27983,7 @@ Proof.
       (rename S (pEq out tZero))).
   {
     assert (hbodyAss : BProv Ax_s (body :: map (rename S) G) body).
-    { apply BProv_ass. simpl. left. reflexivity. }
+    { apply BProv_ass_head. }
     assert (hrem : BProv Ax_s (body :: map (rename S) G)
         (remTermAt (Term.rename S out) (S code) 0)).
     { exact (BProv_andE2 Ax_s _ _ _ hbodyAss). }
@@ -28060,7 +28017,7 @@ Proof.
       (rename S (eqConstAt out 0))).
   {
     assert (hbodyAss : BProv Ax_s (body :: map (rename S) G) body).
-    { apply BProv_ass. simpl. left. reflexivity. }
+    { apply BProv_ass_head. }
     assert (hmodEq : BProv Ax_s (body :: map (rename S) G)
         (pEq (tVar 0) (betaModTerm (S step) (S idx)))).
     { exact (BProv_andE1 Ax_s _ _ _ hbodyAss). }
@@ -28102,7 +28059,7 @@ Proof.
       (rename S (pEq out tZero))).
   {
     assert (hbodyAss : BProv Ax_s (body :: map (rename S) G) body).
-    { apply BProv_ass. simpl. left. reflexivity. }
+    { apply BProv_ass_head. }
     assert (hmodEq : BProv Ax_s (body :: map (rename S) G)
         (pEq (tVar 0) (betaModTerm (S step) (S idx)))).
     { exact (BProv_andE1 Ax_s _ _ _ hbodyAss). }
@@ -28144,7 +28101,7 @@ Proof.
       (rename S (eqConstAt out 0))).
   {
     assert (hbodyAss : BProv Ax_s (body :: map (rename S) G) body).
-    { apply BProv_ass. simpl. left. reflexivity. }
+    { apply BProv_ass_head. }
     assert (hbetaRaw : BProv Ax_s (body :: map (rename S) G)
         (betaAt (S out) (S code) (S step) 0)).
     { exact (BProv_andE2 Ax_s _ _ _ hbodyAss). }
@@ -28177,7 +28134,7 @@ Proof.
       (rename S (pEq out tZero))).
   {
     assert (hbodyAss : BProv Ax_s (body :: map (rename S) G) body).
-    { apply BProv_ass. simpl. left. reflexivity. }
+    { apply BProv_ass_head. }
     assert (hbetaRaw : BProv Ax_s (body :: map (rename S) G)
         (betaTermAt (Term.rename S out) (S code) (S step) 0)).
     { exact (BProv_andE2 Ax_s _ _ _ hbodyAss). }
@@ -28211,7 +28168,7 @@ Proof.
       (rename S (eqConstAt out 0))).
   {
     assert (hbodyAss : BProv Ax_s (body :: map (rename S) G) body).
-    { apply BProv_ass. simpl. left. reflexivity. }
+    { apply BProv_ass_head. }
     assert (hbetaRaw : BProv Ax_s (body :: map (rename S) G)
         (betaAt (S out) (S code) (S step) 0)).
     { exact (BProv_andE2 Ax_s _ _ _ hbodyAss). }
@@ -28244,7 +28201,7 @@ Proof.
       (rename S (eqConstAt out 0))).
   {
     assert (hbodyAss : BProv Ax_s (body :: map (rename S) G) body).
-    { apply BProv_ass. simpl. left. reflexivity. }
+    { apply BProv_ass_head. }
     assert (hbetaRaw : BProv Ax_s (body :: map (rename S) G)
         (betaAt (S out) (S code) (S step) 0)).
     { exact (BProv_andE2 Ax_s _ _ _ hbodyAss). }
@@ -28277,7 +28234,7 @@ Proof.
       (rename S (pEq out tZero))).
   {
     assert (hbodyAss : BProv Ax_s (body :: map (rename S) G) body).
-    { apply BProv_ass. simpl. left. reflexivity. }
+    { apply BProv_ass_head. }
     assert (hbetaRaw : BProv Ax_s (body :: map (rename S) G)
         (betaTermAt (Term.rename S out) (S code) (S step) 0)).
     { exact (BProv_andE2 Ax_s _ _ _ hbodyAss). }
@@ -28311,7 +28268,7 @@ Proof.
       (rename S (eqConstAt out 0))).
   {
     assert (hbodyAss : BProv Ax_s (body :: map (rename S) G) body).
-    { apply BProv_ass. simpl. left. reflexivity. }
+    { apply BProv_ass_head. }
     assert (hbetaRaw : BProv Ax_s (body :: map (rename S) G)
         (betaAt (S out) (S code) (S step) 0)).
     { exact (BProv_andE2 Ax_s _ _ _ hbodyAss). }
@@ -31837,16 +31794,14 @@ Proof.
     assert (hstepEx : BProv Ax_s (pEx body :: map (rename S) G)
         (pEx body)).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hopened : BProv Ax_s bodyCtx pBot).
     {
       assert (hbody : BProv Ax_s bodyCtx body).
       {
         unfold bodyCtx.
-        apply BProv_ass.
-        simpl. left. reflexivity.
+        apply BProv_ass_head.
       }
       pose proof (BProv_andE2 Ax_s bodyCtx
         (betaAtConstIdx (S (S set)) 1 0 0) tail hbody) as htail.
@@ -31858,8 +31813,7 @@ Proof.
         assert (hbitBody : BProv Ax_s bitCtx bitBody).
         {
           unfold bitCtx.
-          apply BProv_ass.
-          simpl. left. reflexivity.
+          apply BProv_ass_head.
         }
         pose proof (BProv_andE1 Ax_s bitCtx
           (oneAt 0)
@@ -35331,8 +35285,7 @@ Lemma BProv_Ax_s_HF_extensionality_fresh_member_forward :
 Proof.
   apply (BProv_hfMemAt_forward_of_all Ax_s
     [rename S (pAll (iffForm (hfMemAt 0 2) (hfMemAt 0 1)))] 0 2 1).
-  apply BProv_ass.
-  simpl. left. reflexivity.
+  apply BProv_ass_head.
 Qed.
 
 (* Lean: BProv_Ax_s_HF_extensionality_fresh_member_reverse *)
@@ -35343,8 +35296,7 @@ Lemma BProv_Ax_s_HF_extensionality_fresh_member_reverse :
 Proof.
   apply (BProv_hfMemAt_reverse_of_all Ax_s
     [rename S (pAll (iffForm (hfMemAt 0 2) (hfMemAt 0 1)))] 0 2 1).
-  apply BProv_ass.
-  simpl. left. reflexivity.
+  apply BProv_ass_head.
 Qed.
 
 (* Lean: hfDistinguishesAt *)
@@ -35954,7 +35906,7 @@ Proof.
   {
     set (C := witness :: map (rename S) G).
     assert (hwitness : BProv Ax_s C witness).
-    { apply BProv_ass. simpl. left. reflexivity. }
+    { apply BProv_ass_head. }
     assert (hhigh : BProv Ax_s C (hfMemAt 0 1)).
     {
       exact (BProv_andE1 Ax_s C (hfMemAt 0 1)
@@ -36000,7 +35952,7 @@ Proof.
   {
     set (C := witness :: map (rename S) G).
     assert (hwitness : BProv Ax_s C witness).
-    { apply BProv_ass. simpl. left. reflexivity. }
+    { apply BProv_ass_head. }
     assert (hhigh : BProv Ax_s C (hfMemAt 0 2)).
     {
       exact (BProv_andE1 Ax_s C (hfMemAt 0 2)
@@ -36048,7 +36000,7 @@ Proof.
     pose proof (BProv_Ax_s_leAt_or_gtAt [sameMembers] 1 0) as hcmp.
     apply (BProv_orE Ax_s [sameMembers] (leAt 1 0) (ltAt 0 1)
       (leAt 1 0) hcmp).
-    - apply BProv_ass. simpl. left. reflexivity.
+    - apply BProv_ass_head.
     - apply BProv_botE. exact hlt01_bot.
   }
   assert (hle01 : BProv Ax_s [sameMembers] (leAt 0 1)).
@@ -36056,7 +36008,7 @@ Proof.
     pose proof (BProv_Ax_s_leAt_or_gtAt [sameMembers] 0 1) as hcmp.
     apply (BProv_orE Ax_s [sameMembers] (leAt 0 1) (ltAt 1 0)
       (leAt 0 1) hcmp).
-    - apply BProv_ass. simpl. left. reflexivity.
+    - apply BProv_ass_head.
     - apply BProv_botE. exact hlt10_bot.
   }
   exact (BProv_Ax_s_eq_of_leAt_leAt [sameMembers] 1 0 hle10 hle01).
@@ -36166,9 +36118,9 @@ Proof.
   intro hdistinguish.
   apply BProv_Ax_s_translated_HF_extensionality_of_distinguishing.
   - apply hdistinguish.
-    apply BProv_ass. simpl. left. reflexivity.
+    apply BProv_ass_head.
   - apply hdistinguish.
-    apply BProv_ass. simpl. left. reflexivity.
+    apply BProv_ass_head.
 Qed.
 
 (* Lean: BProv_Ax_s_translated_HF_extensionality_of_all_hfLtDistinguishesAt *)
@@ -36455,7 +36407,7 @@ Proof.
           (rename S (rename S (rename S target)))).
       {
         assert (hbody : BProv Ax_s (body :: map (rename S) G2) body).
-        { apply BProv_ass. simpl. left. reflexivity. }
+        { apply BProv_ass_head. }
         assert (hzeroC : BProv Ax_s (body :: map (rename S) G2)
             (betaTermAtTermIdx tZero (S (S (S code))) (S (S (S step)))
               (Term.rename S (Term.rename S (Term.rename S idxTerm))))).
@@ -36532,7 +36484,7 @@ Proof.
           (rename S (rename S (rename S target)))).
       {
         assert (hbody : BProv Ax_s (body :: map (rename S) G2) body).
-        { apply BProv_ass. simpl. left. reflexivity. }
+        { apply BProv_ass_head. }
         assert (hcurC : BProv Ax_s (body :: map (rename S) G2)
             (betaTermAtTermIdx (Term.numeral cur) (S (S (S code)))
               (S (S (S step)))
@@ -36588,8 +36540,7 @@ Proof.
   intros G code step idx.
   apply (BProv_andE1 Ax_s _ _
     (betaDiv2StepWitnessAt (S code) (S step) 0)).
-  apply BProv_ass.
-  simpl. left. reflexivity.
+  apply BProv_ass_head.
 Qed.
 
 (* Lean: BProv_Ax_s_betaDiv2StepWitnessAtTermIdx_opened_body_witness *)
@@ -36604,8 +36555,7 @@ Lemma BProv_Ax_s_betaDiv2StepWitnessAtTermIdx_opened_body_witness :
 Proof.
   intros G code step idx.
   apply (BProv_andE2 Ax_s _ (pEq (tVar 0) (Term.rename S idx))).
-  apply BProv_ass.
-  simpl. left. reflexivity.
+  apply BProv_ass_head.
 Qed.
 
 (* Lean: BProv_Ax_s_betaDiv2StepWitnessAtTermIdx_next_termIdx_eqConst_div_two *)
@@ -37099,7 +37049,7 @@ Proof.
         (tSucc (tVar 0))).
       assert (hleSucc : BProv Ax_s
           (leSucc :: phi :: map (rename S) G) leSucc).
-      { apply BProv_ass. simpl. left. reflexivity. }
+      { apply BProv_ass_head. }
       pose proof (BProv_Ax_s_leTermAt_pred_of_succ_le
         (leSucc :: phi :: map (rename S) G)
         (tVar 0) (tVar (S last)) hleSucc) as hlePred.
@@ -37107,7 +37057,7 @@ Proof.
           (leSucc :: phi :: map (rename S) G) phi).
       {
         apply BProv_context_cons.
-        apply BProv_ass. simpl. left. reflexivity.
+        apply BProv_ass_head.
       }
       pose proof (BProv_mp Ax_s (leSucc :: phi :: map (rename S) G)
         (leTermAt (tVar 0) (tVar (S last)))
@@ -37578,16 +37528,14 @@ Proof.
     assert (hstepEx : BProv Ax_s (pEx body :: map (rename S) G)
         (pEx body)).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hopened : BProv Ax_s bodyCtx pBot).
     {
       assert (hbody : BProv Ax_s bodyCtx body).
       {
         unfold bodyCtx.
-        apply BProv_ass.
-        simpl. left. reflexivity.
+        apply BProv_ass_head.
       }
       pose proof (BProv_andE2 Ax_s bodyCtx
         (betaAtConstIdx (S (S set)) 1 0 0) tail hbody) as htail.
@@ -37599,8 +37547,7 @@ Proof.
         assert (hbitBody : BProv Ax_s bitCtx bitBody).
         {
           unfold bitCtx.
-          apply BProv_ass.
-          simpl. left. reflexivity.
+          apply BProv_ass_head.
         }
         pose proof (BProv_andE2 Ax_s bitCtx
           (oneAt 0)
@@ -37692,16 +37639,14 @@ Proof.
     assert (hstepEx : BProv Ax_s (pEx body :: map (rename S) G)
         (pEx body)).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hopened : BProv Ax_s bodyCtx pBot).
     {
       assert (hbody : BProv Ax_s bodyCtx body).
       {
         unfold bodyCtx.
-        apply BProv_ass.
-        simpl. left. reflexivity.
+        apply BProv_ass_head.
       }
       pose proof (BProv_andE2 Ax_s bodyCtx
         (betaAtConstIdx (S (S set)) 1 0 0) tail hbody) as htail.
@@ -37713,8 +37658,7 @@ Proof.
         assert (hbitBody : BProv Ax_s bitCtx bitBody).
         {
           unfold bitCtx.
-          apply BProv_ass.
-          simpl. left. reflexivity.
+          apply BProv_ass_head.
         }
         pose proof (BProv_andE1 Ax_s bitCtx
           (oneAt 0)
@@ -37810,16 +37754,14 @@ Proof.
     assert (hstepEx : BProv Ax_s (pEx body :: map (rename S) G)
         (pEx body)).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hopened : BProv Ax_s bodyCtx pBot).
     {
       assert (hbody : BProv Ax_s bodyCtx body).
       {
         unfold bodyCtx.
-        apply BProv_ass.
-        simpl. left. reflexivity.
+        apply BProv_ass_head.
       }
       pose proof (BProv_andE2 Ax_s bodyCtx
         (betaAtConstIdx (S (S set)) 1 0 0) tail hbody) as htail.
@@ -37831,8 +37773,7 @@ Proof.
         assert (hbitBody : BProv Ax_s bitCtx bitBody).
         {
           unfold bitCtx.
-          apply BProv_ass.
-          simpl. left. reflexivity.
+          apply BProv_ass_head.
         }
         pose proof (BProv_andE1 Ax_s bitCtx
           (oneAt 0)
@@ -37932,8 +37873,7 @@ Proof.
   assert (hbody : BProv Ax_s C finalBody).
   {
     unfold C.
-    apply BProv_ass.
-    simpl. left. reflexivity.
+    apply BProv_ass_head.
   }
   assert (hcur' : BProv Ax_s C (eqConstAt 1 cur)).
   {
@@ -38148,8 +38088,7 @@ Proof.
   assert (hbodyFinal : BProv Ax_s C finalBody).
   {
     unfold C.
-    apply BProv_ass.
-    simpl. left. reflexivity.
+    apply BProv_ass_head.
   }
   pose proof (BProv_andE1 Ax_s C
     (betaAt 1 4 3 (S (S (S (S (S elem))))))
@@ -38293,8 +38232,7 @@ Proof.
   assert (hbodyFinal : BProv Ax_s C finalBody).
   {
     unfold C.
-    apply BProv_ass.
-    simpl. left. reflexivity.
+    apply BProv_ass_head.
   }
   pose proof (BProv_andE1 Ax_s C
     (betaAt 1 4 3 (S (S (S (S (S elem))))))
@@ -38440,8 +38378,7 @@ Proof.
   assert (hbitBody : BProv Ax_s bitCtx bitBody).
   {
     unfold bitCtx.
-    apply BProv_ass.
-    simpl. left. reflexivity.
+    apply BProv_ass_head.
   }
   pose proof (BProv_andE1 Ax_s bitCtx
     (oneAt 0)
@@ -38462,8 +38399,7 @@ Proof.
   assert (hbodyFinal : BProv Ax_s C finalBody).
   {
     unfold C.
-    apply BProv_ass.
-    simpl. left. reflexivity.
+    apply BProv_ass_head.
   }
   pose proof (BProv_andE2 Ax_s C
     (betaAt 1 4 3 (S (S (S (S (S elem))))))
@@ -38537,16 +38473,14 @@ Proof.
     assert (hstepEx : BProv Ax_s (pEx body :: map (rename S) G)
         (pEx body)).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hopened : BProv Ax_s bodyCtx pBot).
     {
       assert (hbody : BProv Ax_s bodyCtx body).
       {
         unfold bodyCtx.
-        apply BProv_ass.
-        simpl. left. reflexivity.
+        apply BProv_ass_head.
       }
       pose proof (BProv_andE2 Ax_s bodyCtx
         (betaAtConstIdx (S (S set)) 1 0 0) tail hbody) as htail.
@@ -38558,8 +38492,7 @@ Proof.
         assert (hbitBody : BProv Ax_s bitCtx bitBody).
         {
           unfold bitCtx.
-          apply BProv_ass.
-          simpl. left. reflexivity.
+          apply BProv_ass_head.
         }
         pose proof (BProv_andE1 Ax_s bitCtx
           (oneAt 0)
@@ -38642,8 +38575,7 @@ Proof.
     assert (hbitBody : BProv Ax_s (bitBody :: map (rename S) zeroCtx)
         bitBody).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     pose proof (BProv_andE1 Ax_s (bitBody :: map (rename S) zeroCtx)
       (oneAt 0)
@@ -38709,8 +38641,7 @@ Proof.
     assert (hstepEx : BProv Ax_s (pEx body :: map (rename S) G)
         (pEx body)).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hopened : BProv Ax_s bodyCtx pBot).
     {
@@ -38809,8 +38740,7 @@ Lemma BProv_Ax_s_hfMemAt_pred_opened_step_succ :
     (pEq (tVar 1) (tSucc (tVar 0))).
 Proof.
   intros G elem set bitBody tail body bodyCtx succCtx succBody.
-  apply BProv_ass.
-  simpl. left. reflexivity.
+  apply BProv_ass_head.
 Qed.
 
 (* Lean: BProv_Ax_s_hfMemAt_pred_opened_body_entry *)
@@ -39009,8 +38939,7 @@ Lemma BProv_Ax_s_hfMemZeroSetAt_pred_opened_step_succ :
     (pEq (tVar 1) (tSucc (tVar 0))).
 Proof.
   intros G elem bitBody tail body bodyCtx succCtx succBody.
-  apply BProv_ass.
-  simpl. left. reflexivity.
+  apply BProv_ass_head.
 Qed.
 
 (* Lean: BProv_Ax_s_hfMemZeroSetAt_pred_opened_body_entry *)
@@ -39164,16 +39093,14 @@ Proof.
     assert (hstepEx : BProv Ax_s (pEx body :: map (rename S) G)
         (pEx body)).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hopened : BProv Ax_s bodyCtx pBot).
     {
       assert (hbody : BProv Ax_s bodyCtx body).
       {
         unfold bodyCtx.
-        apply BProv_ass.
-        simpl. left. reflexivity.
+        apply BProv_ass_head.
       }
       pose proof (BProv_andE2 Ax_s bodyCtx
         (betaTermAtConstIdx tZero 1 0 0) tail hbody) as htail.
@@ -39185,8 +39112,7 @@ Proof.
         assert (hbitBody : BProv Ax_s bitCtx bitBody).
         {
           unfold bitCtx.
-          apply BProv_ass.
-          simpl. left. reflexivity.
+          apply BProv_ass_head.
         }
         pose proof (BProv_andE1 Ax_s bitCtx
           (oneAt 0)
@@ -39266,8 +39192,7 @@ Proof.
     assert (hbitBody : BProv Ax_s (bitBody :: map (rename S) zeroCtx)
         bitBody).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     pose proof (BProv_andE1 Ax_s (bitBody :: map (rename S) zeroCtx)
       (oneAt 0)
@@ -39333,8 +39258,7 @@ Proof.
     assert (hstepEx : BProv Ax_s (pEx body :: map (rename S) G)
         (pEx body)).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hopened : BProv Ax_s bodyCtx pBot).
     {
@@ -39557,8 +39481,7 @@ Proof.
   assert (hbodyFinal : BProv Ax_s C finalBody).
   {
     unfold C.
-    apply BProv_ass.
-    simpl. left. reflexivity.
+    apply BProv_ass_head.
   }
   pose proof (BProv_andE1 Ax_s C
     (betaAt 1 4 3 (S (S (S (S (S elem))))))
@@ -39793,8 +39716,7 @@ Proof.
     set (C := witness :: map (rename S) G).
     assert (hdist : BProv B C (hfDistinguishesAt 0 (S high) (S low))).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hhighC : BProv B C
         (pEq (tVar (S high)) (Term.rename S highCode))).
@@ -39879,8 +39801,7 @@ Proof.
   { apply BProv_context_cons. exact hlowZero. }
   assert (hlowMem : BProv Ax_s (hfMemAt elem low :: G) (hfMemAt elem low)).
   {
-    apply BProv_ass.
-    simpl. left. reflexivity.
+    apply BProv_ass_head.
   }
   exact (BProv_Ax_s_hfMemAt_bot_of_eqConst_zero (hfMemAt elem low :: G)
     elem low hlowZeroCtx hlowMem).
@@ -39926,8 +39847,7 @@ Proof.
   { apply BProv_context_cons. exact hdvdLow. }
   assert (hlowMem : BProv Ax_s (hfMemAt elem low :: G) (hfMemAt elem low)).
   {
-    apply BProv_ass.
-    simpl. left. reflexivity.
+    apply BProv_ass_head.
   }
   exact (BProv_Ax_s_hfMemAt_bot_of_eqConst_zero_elem_dvd_set
     (hfMemAt elem low :: G) elem low modulus
@@ -39972,8 +39892,7 @@ Proof.
     set (C := modEq :: map (rename S) G).
     assert (hmod : BProv Ax_s C (eqConstAt 0 2)).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (helemRen : BProv Ax_s (map (rename S) G)
         (rename S (eqConstAt elem 0))).
@@ -40073,8 +39992,7 @@ Proof.
   { apply BProv_context_cons. exact hlow. }
   assert (hlowMem : BProv Ax_s (hfMemAt elem low :: G) (hfMemAt elem low)).
   {
-    apply BProv_ass.
-    simpl. left. reflexivity.
+    apply BProv_ass_head.
   }
   exact (BProv_Ax_s_hfMemAt_bot_of_eqConst_not_mem (hfMemAt elem low :: G)
     elem low elemValue lowValue helemCtx hlowCtx hnot hlowMem).
@@ -40117,8 +40035,7 @@ Proof.
     set (C := witnessEq :: map (rename S) G).
     assert (helem : BProv Ax_s C (eqConstAt 0 elemValue)).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hhighRen : BProv Ax_s (map (rename S) G)
         (rename S (eqConstAt high highValue))).
@@ -40225,8 +40142,7 @@ Proof.
       assert (hleCtx : BProv Ax_s (leConstAt low n :: G)
           (leConstAt low n)).
       {
-        apply BProv_ass.
-        simpl. left. reflexivity.
+        apply BProv_ass_head.
       }
       assert (hn' : n < highValue) by lia.
       exact (IH (leConstAt low n :: G) hhighCtx hleCtx hn').
@@ -40240,8 +40156,7 @@ Proof.
       assert (hlowCtx : BProv Ax_s (eqConstAt low (S n) :: G)
           (eqConstAt low (S n))).
       {
-        apply BProv_ass.
-        simpl. left. reflexivity.
+        apply BProv_ass_head.
       }
       exact (BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_lt
         (eqConstAt low (S n) :: G) high low highValue (S n)
@@ -40283,8 +40198,7 @@ Proof.
       assert (hleCtx : BProv Ax_s (leConstAt low n :: G)
           (leConstAt low n)).
       {
-        apply BProv_ass.
-        simpl. left. reflexivity.
+        apply BProv_ass_head.
       }
       assert (hn : n < S n) by lia.
       exact (BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_high_leConst_low
@@ -40299,8 +40213,7 @@ Proof.
       assert (hlowCtx : BProv Ax_s (eqConstAt low (S n) :: G)
           (eqConstAt low (S n))).
       {
-        apply BProv_ass.
-        simpl. left. reflexivity.
+        apply BProv_ass_head.
       }
       assert (hltCtx : BProv Ax_s (eqConstAt low (S n) :: G)
           (ltAt low high)).
@@ -40344,8 +40257,7 @@ Proof.
     assert (hlt : BProv Ax_s (ltAt 0 (S high) :: map (rename S) G)
         (ltAt 0 (S high))).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     exact (BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_high_ltAt
       (ltAt 0 (S high) :: map (rename S) G) (S high) 0 highValue
@@ -40368,8 +40280,7 @@ Proof.
     apply BProv_impI.
     assert (hlt : BProv Ax_s [lowLtZero] lowLtZero).
     {
-      apply BProv_ass.
-      simpl. left. reflexivity.
+      apply BProv_ass_head.
     }
     assert (hle : BProv Ax_s [lowLtZero] (leTermAt tZero (tVar 0))).
     { exact (BProv_Ax_s_leTermAt_zero_left [lowLtZero] (tVar 0)). }
@@ -40429,8 +40340,7 @@ Proof.
   set (memZero := subst (Term.upSubst (instTerm tZero)) (hfMemAt 0 1)).
   assert (hmemAss : BProv Ax_s [memZero] memZero).
   {
-    apply BProv_ass.
-    simpl. left. reflexivity.
+    apply BProv_ass_head.
   }
   assert (hzeroMem : BProv Ax_s [memZero] (hfMemZeroSetAt 0)).
   {
