@@ -42,6 +42,10 @@ name = "A290268"
 srcDir = "Combinatorics/DerivativeExpansions/A290268/Lean"
 
 [[lean_lib]]
+name = "SquaredSquare"
+srcDir = "Combinatorics/SquaredSquare/Lean"
+
+[[lean_lib]]
 name = "BusyBeaver"
 srcDir = "Computability/BusyBeaver/Lean"
 
