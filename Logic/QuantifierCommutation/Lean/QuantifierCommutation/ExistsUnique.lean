@@ -1,3 +1,5 @@
+import QuantifierCommutation.Counterexample
+
 /-!
 # Nested unique-existence quantifiers do not commute
 
@@ -120,14 +122,14 @@ theorem existsUnique_counterexample :
 fails. -/
 theorem existsUnique_swap_implication_fails :
     ¬ (ExistsUniqueXY uniqueRelation → ExistsUniqueYX uniqueRelation) :=
-  fun h => uniqueRelation_not_existsUniqueYX (h uniqueRelation_existsUniqueXY)
+  implication_fails uniqueRelation_existsUniqueXY
+    uniqueRelation_not_existsUniqueYX
 
 /-- Therefore two adjacent `∃!` quantifiers cannot in general be swapped. -/
 theorem existsUnique_not_commutative :
-    ¬ (ExistsUniqueXY uniqueRelation ↔ ExistsUniqueYX uniqueRelation) := by
-  intro h
-  exact uniqueRelation_not_existsUniqueYX
-    (h.mp uniqueRelation_existsUniqueXY)
+    ¬ (ExistsUniqueXY uniqueRelation ↔ ExistsUniqueYX uniqueRelation) :=
+  not_equivalent uniqueRelation_existsUniqueXY
+    uniqueRelation_not_existsUniqueYX
 
 end QuantifierCommutation
 end LeanProofs

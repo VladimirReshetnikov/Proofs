@@ -1,3 +1,5 @@
+import QuantifierCommutation.Counterexample
+
 /-!
 # Nested nonexistence quantifiers do not commute
 
@@ -69,13 +71,12 @@ theorem noExists_counterexample :
 fails. -/
 theorem noExists_swap_implication_fails :
     ¬ (NoExistsXY firstColumn → NoExistsYX firstColumn) :=
-  fun h => firstColumn_not_noExistsYX (h firstColumn_noExistsXY)
+  implication_fails firstColumn_noExistsXY firstColumn_not_noExistsYX
 
 /-- Therefore two adjacent `∄` quantifiers cannot in general be swapped. -/
 theorem noExists_not_commutative :
-    ¬ (NoExistsXY firstColumn ↔ NoExistsYX firstColumn) := by
-  intro h
-  exact firstColumn_not_noExistsYX (h.mp firstColumn_noExistsXY)
+    ¬ (NoExistsXY firstColumn ↔ NoExistsYX firstColumn) :=
+  not_equivalent firstColumn_noExistsXY firstColumn_not_noExistsYX
 
 end QuantifierCommutation
 end LeanProofs
