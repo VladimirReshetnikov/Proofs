@@ -68,6 +68,18 @@ The proof is the classical corner/edge argument:
   non-congruence — or the two extras sit on opposite edges, forcing their
   sides to sum to `0`.
 
+**The minimality statement, reduced** (Lean
+`SquaredSquare/MinimalOrder.lean`, Coq `Coq/MinimalOrder.v`): the
+proposition "the minimal number of pieces of a perfect squared square is
+21" is formalized (`IsLeast perfectOrders 21`, resp. the achieved/lower
+bound conjunction `minimal_order_21_iff`) and proved **equivalent** to the
+single named open proposition `DuijvestijnSearchClaim` — every perfect
+squared square has at least 21 pieces.  The forward inputs are proved
+(`mem_perfectOrders_21` from the existence certificate; every achievable
+order is at least 7); `DuijvestijnSearchClaim` itself is the exact content
+of Duijvestijn's exhaustive search and remains unproved, with no axiom
+introduced for it.
+
 **Status of the sharp bound 21.** The true minimality statement — no
 perfect squared square of order `7..20`, making Duijvestijn's dissection
 optimal — is A. J. W. Duijvestijn's 1978 exhaustive computer search over
@@ -95,11 +107,13 @@ Combinatorics/SquaredSquare/
 ├── Lean/SquaredSquare/Scaling.lean  -- dilation closure, any side
 ├── Lean/SquaredSquare/Intervals.lean-- 1-D interval partition sum
 ├── Lean/SquaredSquare/Minimality.lean -- no perfect squared square ≤ 6 pieces
+├── Lean/SquaredSquare/MinimalOrder.lean -- minimality reduced to the search claim
 ├── Coq/Defs.v                       -- definitions and congruence lemmas
 ├── Coq/Duijvestijn.v                -- existence certificate (vm_compute)
 ├── Coq/Intervals.v                  -- 1-D interval partition sum
 ├── Coq/Minimality.v                 -- no perfect squared square ≤ 6 pieces
 ├── Coq/Scaling.v                    -- dilation closure, any side
+├── Coq/MinimalOrder.v               -- minimality reduced to the search claim
 ├── Coq/Audit.v                      -- Print Assumptions for main theorems
 └── Support/bouwkamp_decode.py       -- Bouwkamp-code decoder / data check
 ```
@@ -121,6 +135,7 @@ coqc -Q Combinatorics/SquaredSquare/Coq SquaredSquare Combinatorics/SquaredSquar
 coqc -Q Combinatorics/SquaredSquare/Coq SquaredSquare Combinatorics/SquaredSquare/Coq/Intervals.v
 coqc -Q Combinatorics/SquaredSquare/Coq SquaredSquare Combinatorics/SquaredSquare/Coq/Minimality.v
 coqc -Q Combinatorics/SquaredSquare/Coq SquaredSquare Combinatorics/SquaredSquare/Coq/Scaling.v
+coqc -Q Combinatorics/SquaredSquare/Coq SquaredSquare Combinatorics/SquaredSquare/Coq/MinimalOrder.v
 coqc -Q Combinatorics/SquaredSquare/Coq SquaredSquare Combinatorics/SquaredSquare/Coq/Audit.v
 ```
 

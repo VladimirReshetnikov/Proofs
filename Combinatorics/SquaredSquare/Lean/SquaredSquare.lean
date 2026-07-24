@@ -3,6 +3,7 @@ import SquaredSquare.Duijvestijn
 import SquaredSquare.Scaling
 import SquaredSquare.Intervals
 import SquaredSquare.Minimality
+import SquaredSquare.MinimalOrder
 
 /-!
 # Squaring the square
