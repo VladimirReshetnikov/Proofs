@@ -6,8 +6,9 @@
   classical-order interface of R).  No project-specific axioms are used.
 *)
 
-From SquaredSquare Require Import Defs Duijvestijn.
+From SquaredSquare Require Import Defs Duijvestijn Intervals Minimality.
 
 Print Assumptions Duijvestijn.LeanProofs.SquaredSquare.exists_perfect_squared_square.
 Print Assumptions Duijvestijn.LeanProofs.SquaredSquare.duijvestijn_perfect.
 Print Assumptions Defs.LeanProofs.SquaredSquare.side_eq_of_congruent.
+Print Assumptions Minimality.LeanProofs.SquaredSquare.seven_le_length.
