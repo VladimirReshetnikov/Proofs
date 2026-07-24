@@ -3,6 +3,7 @@ import BoundedPAConsistency.DynamicTruthShiftInvariantStructuralSuccessor
 import BoundedPAConsistency.DynamicTruthCertificateFieldFamily
 import BoundedPAConsistency.DynamicTruthCrossLevelSourceSuccessor
 import BoundedPAConsistency.StagedTruthCertificateProofCompiler
+import BoundedPAConsistency.FinFunext
 import Foundation.FirstOrder.Completeness
 
 /-!
@@ -595,16 +596,7 @@ noncomputable def sourceQuantifierFreeStrongStepProof :
               (#2 : ClosedSemiterm SourceLanguage 5),
               (#0 : ClosedSemiterm SourceLanguage 5)] i)) =
           ![bound, shifted, q] := by
-      funext i
-      cases i using Fin.cases with
-      | zero => simp
-      | succ i =>
-          cases i using Fin.cases with
-          | zero => simp
-          | succ i =>
-              cases i using Fin.cases with
-              | zero => simp
-              | succ i => exact i.elim0
+      refine funext_fin3 ?_ ?_ ?_ <;> simp
     have hfreeEnv :
         (fun i ↦ FirstOrder.Semiterm.val
           (s := _structure)
@@ -613,16 +605,7 @@ noncomputable def sourceQuantifierFreeStrongStepProof :
               (#3 : ClosedSemiterm SourceLanguage 5),
               (#4 : ClosedSemiterm SourceLanguage 5)] i)) =
           ![bound, free, p] := by
-      funext i
-      cases i using Fin.cases with
-      | zero => simp
-      | succ i =>
-          cases i using Fin.cases with
-          | zero => simp
-          | succ i =>
-              cases i using Fin.cases with
-              | zero => simp
-              | succ i => exact i.elim0
+      refine funext_fin3 ?_ ?_ ?_ <;> simp
     simpa only [hshiftedEnv, hfreeEnv] using hcq.trans (by
       simpa [TwoPredicateSourceContextInductionKernel.secondAtom] using
         hcurrentToSuccessor)).get
