@@ -210,19 +210,13 @@ theorem wolfram_characterizes_sheffer_on_bool
 
 /--
 On the two-element algebra, Meredith's two equations have exactly the same two
-Sheffer truth-table models: NAND and NOR.
+Sheffer truth-table models: NAND and NOR.  This is immediate from the
+equational derivation of Wolfram's axiom, so no second truth-table search is
+needed.
 -/
 theorem meredith_characterizes_sheffer_on_bool
-    (op : Bool → Bool → Bool) (h : MeredithAxioms op) : IsBooleanSheffer op := by
-  cases hff : op false false <;> cases hft : op false true <;>
-    cases htf : op true false <;> cases htt : op true true <;>
-    simp [MeredithAxioms, hff, hft, htf, htt] at h
-  · right
-    funext a b
-    cases a <;> cases b <;> simp [boolNor, hff, hft, htf, htt]
-  · left
-    funext a b
-    cases a <;> cases b <;> simp [boolNand, hff, hft, htf, htt]
+    (op : Bool → Bool → Bool) (h : MeredithAxioms op) : IsBooleanSheffer op :=
+  wolfram_characterizes_sheffer_on_bool op (meredith_derives_wolfram_axiom op h)
 
 /-! ## Functional completeness for ordinary connectives -/
 
