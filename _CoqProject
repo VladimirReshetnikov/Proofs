@@ -258,6 +258,7 @@ Combinatorics/SquaredSquare/Coq/Defs.v
 Combinatorics/SquaredSquare/Coq/Duijvestijn.v
 Combinatorics/SquaredSquare/Coq/Intervals.v
 Combinatorics/SquaredSquare/Coq/Minimality.v
+Combinatorics/SquaredSquare/Coq/Scaling.v
 Combinatorics/SquaredSquare/Coq/Audit.v
 Computability/BusyBeaver/Coq/BusyBeaver.v
 Computability/BusyBeaver/Coq/BusyBeaverMathlib.v

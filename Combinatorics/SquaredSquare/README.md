@@ -40,9 +40,9 @@ non-congruent squares with sides
 placed according to Duijvestijn's Bouwkamp code
 `(50,35,27)(8,19)(15,17,11)(6,24)(29,25,9,2)(7,18)(16)(42)(4,37)(33)`.
 Main theorems: `duijvestijn_perfect`, `exists_perfect_squared_square`.
-The Lean module `Scaling.lean` adds dilation closure, so **every** square of
-positive side admits such a 21-piece perfect dissection
-(`exists_perfect_squared_square_of_side`).
+The scaling modules (`Scaling.lean`, `Coq/Scaling.v`) add dilation closure,
+so **every** square of positive side admits such a 21-piece perfect
+dissection (`exists_perfect_squared_square_of_side`, in both provers).
 
 All combinatorial content — in-bounds placement, pairwise separation of the
 open pieces, distinct sides, and exact coverage of every unit grid cell of
@@ -99,6 +99,7 @@ Combinatorics/SquaredSquare/
 ├── Coq/Duijvestijn.v                -- existence certificate (vm_compute)
 ├── Coq/Intervals.v                  -- 1-D interval partition sum
 ├── Coq/Minimality.v                 -- no perfect squared square ≤ 6 pieces
+├── Coq/Scaling.v                    -- dilation closure, any side
 ├── Coq/Audit.v                      -- Print Assumptions for main theorems
 └── Support/bouwkamp_decode.py       -- Bouwkamp-code decoder / data check
 ```
@@ -119,6 +120,7 @@ coqc -Q Combinatorics/SquaredSquare/Coq SquaredSquare Combinatorics/SquaredSquar
 coqc -Q Combinatorics/SquaredSquare/Coq SquaredSquare Combinatorics/SquaredSquare/Coq/Duijvestijn.v
 coqc -Q Combinatorics/SquaredSquare/Coq SquaredSquare Combinatorics/SquaredSquare/Coq/Intervals.v
 coqc -Q Combinatorics/SquaredSquare/Coq SquaredSquare Combinatorics/SquaredSquare/Coq/Minimality.v
+coqc -Q Combinatorics/SquaredSquare/Coq SquaredSquare Combinatorics/SquaredSquare/Coq/Scaling.v
 coqc -Q Combinatorics/SquaredSquare/Coq SquaredSquare Combinatorics/SquaredSquare/Coq/Audit.v
 ```
 
