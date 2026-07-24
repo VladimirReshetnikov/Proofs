@@ -1,6 +1,8 @@
 import SquaredSquare.Basic
 import SquaredSquare.Duijvestijn
 import SquaredSquare.Scaling
+import SquaredSquare.Intervals
+import SquaredSquare.Minimality
 
 /-!
 # Squaring the square
