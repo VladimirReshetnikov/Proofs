@@ -19,6 +19,22 @@ universe u
 namespace FiniteSkolemCut
 namespace ProgramTrace
 
+/-- The recurring child-bound obligation: hull numerals are `RawLt`-ordered
+like their standard codes.  Composes the ambient-to-hull order transport with
+the standard numeral order. -/
+private theorem hull_rawLt_numeralValue_of_lt {alpha : Type u}
+    (M : PA.PreModel alpha) (S : CanonicalSelectors M)
+    (rank : Nat) (generator : alpha) (hPA : RawPASatisfies M)
+    (hLtRank : formulaRank traceLtFormula ≤ rank)
+    {m n : Nat} (hmn : m < n) :
+    RawLt (preModel M S rank generator)
+      (PA.Term.numeralValue (preModel M S rank generator) m)
+      (PA.Term.numeralValue (preModel M S rank generator) n) := by
+  apply hull_rawLt_of_ambient M S rank generator
+    (by simpa [traceLtFormula] using hLtRank)
+  simpa only [hull_numeralValue_val_transport] using
+    rawLt_numeralValue_of_lt (m := m) (n := n) hPA hmn
+
 /-- Every normalized standard-row descriptor reconstructs a genuine
 `programCases` witness in the hull. -/
 theorem sat_programCases_of_standardRowWitness {alpha : Type u}
@@ -89,10 +105,7 @@ theorem sat_programCases_of_standardRowWitness {alpha : Type u}
               (by simp only [PA.Term.eval_numeral])).symm
       · simp only [PA.Term.eval_numeral]
         rw [hcode]
-        apply hull_rawLt_of_ambient M S rank generator
-          (by simpa [traceLtFormula] using hLtRank)
-        simpa only [KM, hull_numeralValue_val_transport] using
-          rawLt_numeralValue_of_lt (m := childCode) (n := target) hPA (by
+        exact hull_rawLt_numeralValue_of_lt M S rank generator hPA hLtRank (by
             rw [target_eq]
             exact Program.right_lt_nodeCode 2 childCode)
       · simpa only [PA.Term.eval_numeral] using hlookup
@@ -124,20 +137,14 @@ theorem sat_programCases_of_standardRowWitness {alpha : Type u}
               (by simp only [PA.Term.eval_numeral]) hinner).symm
       · simp only [PA.Term.eval_numeral]
         rw [hcode]
-        apply hull_rawLt_of_ambient M S rank generator
-          (by simpa [traceLtFormula] using hLtRank)
-        simpa only [KM, hull_numeralValue_val_transport] using
-          rawLt_numeralValue_of_lt (m := leftCode) (n := target) hPA (by
+        exact hull_rawLt_numeralValue_of_lt M S rank generator hPA hLtRank (by
             rw [target_eq]
             exact Nat.lt_trans
               (Program.left_lt_nodeCode leftCode rightCode)
               (Program.right_lt_nodeCode 3 _))
       · simp only [PA.Term.eval_numeral]
         rw [hcode]
-        apply hull_rawLt_of_ambient M S rank generator
-          (by simpa [traceLtFormula] using hLtRank)
-        simpa only [KM, hull_numeralValue_val_transport] using
-          rawLt_numeralValue_of_lt (m := rightCode) (n := target) hPA (by
+        exact hull_rawLt_numeralValue_of_lt M S rank generator hPA hLtRank (by
             rw [target_eq]
             exact Nat.lt_trans
               (Program.right_lt_nodeCode leftCode rightCode)
@@ -172,20 +179,14 @@ theorem sat_programCases_of_standardRowWitness {alpha : Type u}
               (by simp only [PA.Term.eval_numeral]) hinner).symm
       · simp only [PA.Term.eval_numeral]
         rw [hcode]
-        apply hull_rawLt_of_ambient M S rank generator
-          (by simpa [traceLtFormula] using hLtRank)
-        simpa only [KM, hull_numeralValue_val_transport] using
-          rawLt_numeralValue_of_lt (m := leftCode) (n := target) hPA (by
+        exact hull_rawLt_numeralValue_of_lt M S rank generator hPA hLtRank (by
             rw [target_eq]
             exact Nat.lt_trans
               (Program.left_lt_nodeCode leftCode rightCode)
               (Program.right_lt_nodeCode 4 _))
       · simp only [PA.Term.eval_numeral]
         rw [hcode]
-        apply hull_rawLt_of_ambient M S rank generator
-          (by simpa [traceLtFormula] using hLtRank)
-        simpa only [KM, hull_numeralValue_val_transport] using
-          rawLt_numeralValue_of_lt (m := rightCode) (n := target) hPA (by
+        exact hull_rawLt_numeralValue_of_lt M S rank generator hPA hLtRank (by
             rw [target_eq]
             exact Nat.lt_trans
               (Program.right_lt_nodeCode leftCode rightCode)
@@ -241,10 +242,7 @@ theorem sat_programCases_of_standardRowWitness {alpha : Type u}
       · intro i
         simp only [PA.Term.eval_numeral]
         rw [hcode]
-        apply hull_rawLt_of_ambient M S rank generator
-          (by simpa [traceLtFormula] using hLtRank)
-        simpa only [KM, hull_numeralValue_val_transport] using
-          rawLt_numeralValue_of_lt (m := codes i) (n := target) hPA (by
+        exact hull_rawLt_numeralValue_of_lt M S rank generator hPA hLtRank (by
             rw [target_eq]
             exact Nat.lt_trans (Program.vector_entry_lt_code codes i)
               (Nat.lt_trans
@@ -303,10 +301,7 @@ theorem sat_programCases_of_standardRowWitness {alpha : Type u}
       · intro i
         simp only [PA.Term.eval_numeral]
         rw [hcode]
-        apply hull_rawLt_of_ambient M S rank generator
-          (by simpa [traceLtFormula] using hLtRank)
-        simpa only [KM, hull_numeralValue_val_transport] using
-          rawLt_numeralValue_of_lt (m := codes i) (n := target) hPA (by
+        exact hull_rawLt_numeralValue_of_lt M S rank generator hPA hLtRank (by
             rw [target_eq]
             exact Nat.lt_trans (Program.vector_entry_lt_code codes i)
               (Nat.lt_trans

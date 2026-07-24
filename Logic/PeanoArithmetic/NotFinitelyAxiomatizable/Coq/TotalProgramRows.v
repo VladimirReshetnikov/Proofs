@@ -309,20 +309,23 @@ Proof.
   destruct (lt_dec child target); [reflexivity | contradiction].
 Qed.
 
+(** Shared opening move of every [totalRowProgram_of_*] case lemma:
+    take one step of the program recursion and select the schedule case. *)
+Ltac unfold_totalRowStep hs :=
+  rewrite totalRowProgram_eq; unfold totalRowProgramStep; rewrite hs.
+
 Theorem totalRowProgram_of_seed : forall rank target,
   scheduleSkolemCode target = siSeed ->
   totalRowProgram rank target = spSeed.
 Proof.
-  intros rank target hs. rewrite totalRowProgram_eq.
-  unfold totalRowProgramStep. now rewrite hs.
+  intros rank target hs. now unfold_totalRowStep hs.
 Qed.
 
 Theorem totalRowProgram_of_zero : forall rank target,
   scheduleSkolemCode target = siZero ->
   totalRowProgram rank target = spZero.
 Proof.
-  intros rank target hs. rewrite totalRowProgram_eq.
-  unfold totalRowProgramStep. now rewrite hs.
+  intros rank target hs. now unfold_totalRowStep hs.
 Qed.
 
 Theorem totalRowProgram_of_succ : forall rank target child,
@@ -330,8 +333,7 @@ Theorem totalRowProgram_of_succ : forall rank target child,
   child < target ->
   totalRowProgram rank target = spSucc (totalRowProgram rank child).
 Proof.
-  intros rank target child hs hlt. rewrite totalRowProgram_eq.
-  unfold totalRowProgramStep. rewrite hs.
+  intros rank target child hs hlt. unfold_totalRowStep hs.
   now rewrite belowProgram_total by exact hlt.
 Qed.
 
@@ -341,8 +343,7 @@ Theorem totalRowProgram_of_add : forall rank target left right,
   totalRowProgram rank target =
     spAdd (totalRowProgram rank left) (totalRowProgram rank right).
 Proof.
-  intros rank target left right hs hl hr. rewrite totalRowProgram_eq.
-  unfold totalRowProgramStep. rewrite hs.
+  intros rank target left right hs hl hr. unfold_totalRowStep hs.
   now rewrite !belowProgram_total by assumption.
 Qed.
 
@@ -352,8 +353,7 @@ Theorem totalRowProgram_of_mul : forall rank target left right,
   totalRowProgram rank target =
     spMul (totalRowProgram rank left) (totalRowProgram rank right).
 Proof.
-  intros rank target left right hs hl hr. rewrite totalRowProgram_eq.
-  unfold totalRowProgramStep. rewrite hs.
+  intros rank target left right hs hl hr. unfold_totalRowStep hs.
   now rewrite !belowProgram_total by assumption.
 Qed.
 
@@ -369,7 +369,7 @@ Theorem totalRowProgram_of_choose : forall rank target formulaIndex
         (fun child _ => totalRowProgram rank child) childCodes).
 Proof.
   intros rank target formulaIndex argsCode childCodes hs hi hdecode hchildren.
-  rewrite totalRowProgram_eq. unfold totalRowProgramStep. rewrite hs.
+  unfold_totalRowStep hs.
   assert (hib : (formulaIndex <? length (formula_rank_enum rank)) = true)
     by (apply Nat.ltb_lt; exact hi).
   rewrite hib, hdecode.
@@ -383,7 +383,7 @@ Theorem totalRowProgram_of_default_choose_index :
   totalRowProgram rank target = spZero.
 Proof.
   intros rank target formulaIndex argsCode hs hi.
-  rewrite totalRowProgram_eq. unfold totalRowProgramStep. rewrite hs.
+  unfold_totalRowStep hs.
   assert (hib : (formulaIndex <? length (formula_rank_enum rank)) = false)
     by (apply Nat.ltb_ge; exact hi).
   now rewrite hib.
@@ -397,7 +397,7 @@ Theorem totalRowProgram_of_default_choose_args :
   totalRowProgram rank target = spZero.
 Proof.
   intros rank target formulaIndex argsCode hs hi hargs.
-  rewrite totalRowProgram_eq. unfold totalRowProgramStep. rewrite hs.
+  unfold_totalRowStep hs.
   assert (hib : (formulaIndex <? length (formula_rank_enum rank)) = true)
     by (apply Nat.ltb_lt; exact hi).
   now rewrite hib, hargs.
@@ -409,8 +409,7 @@ Theorem totalRowProgram_of_args_instruction : forall rank target,
      scheduleSkolemCode target = siArgsCons child rest) ->
   totalRowProgram rank target = spZero.
 Proof.
-  intros rank target [hs | [child [rest hs]]];
-    rewrite totalRowProgram_eq; unfold totalRowProgramStep; now rewrite hs.
+  intros rank target [hs | [child [rest hs]]]; now unfold_totalRowStep hs.
 Qed.
 
 (** Canonical fixed-rank representatives for arbitrary hull programs. *)

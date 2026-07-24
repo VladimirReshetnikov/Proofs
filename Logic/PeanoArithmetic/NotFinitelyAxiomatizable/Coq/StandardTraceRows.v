@@ -33,7 +33,7 @@ Proof.
   pose proof (raw_eq_of_closed_bprov M hPA
     (PA.tAdd (PA.Term.numeral m) (PA.Term.numeral n))
     (PA.Term.numeral (m + n)) e
-    (PA.Formula.BProv_Ax_s_addNumerals m n)) as h.
+    (PA.Formula.BProv_Ax_s_addNumerals nil m n)) as h.
   cbn [raw_term_eval] in h.
   rewrite !raw_term_eval_numeral in h. exact h.
 Qed.
@@ -340,6 +340,18 @@ Let K : RawPAModel := skolemHullRawModel M ambientSeed rank
 
 Variable hPA : RawPASatisfies M.
 
+(** Shared discharge for the nullary (seed/zero) row cases: identify the
+    target code through numeral injectivity and forward the value fact. *)
+Ltac nullary_row_of_sat ctor hcode hsat :=
+  apply ctor;
+  [ apply (hull_rawNumeralValue_injective M ambientSeed rank
+      (rawCanonicalSelector M) hPA);
+    etransitivity; [symmetry; exact hcode |];
+    etransitivity; [exact (proj1 hsat) |];
+    apply hull_eval_nodeTerm_numerals; [exact hPA | |];
+      apply raw_term_eval_numeral
+  | exact (proj2 hsat) ].
+
 Lemma standardRowSeed_of_sat : forall target
     code value betaCode betaStep seedTerm e,
   raw_term_eval K e code = rawNumeralValue K target ->
@@ -350,14 +362,7 @@ Lemma standardRowSeed_of_sat : forall target
 Proof.
   intros target code value betaCode betaStep seedTerm e hcode hsat.
   cbn [seedCase raw_formula_sat] in hsat.
-  apply standardRowSeed.
-  - apply (hull_rawNumeralValue_injective M ambientSeed rank
-      (rawCanonicalSelector M) hPA).
-    etransitivity; [symmetry; exact hcode |].
-    etransitivity; [exact (proj1 hsat) |].
-    apply hull_eval_nodeTerm_numerals; [exact hPA | |];
-      apply raw_term_eval_numeral.
-  - exact (proj2 hsat).
+  nullary_row_of_sat standardRowSeed hcode hsat.
 Qed.
 
 Lemma standardRowZero_of_sat : forall target
@@ -370,14 +375,7 @@ Lemma standardRowZero_of_sat : forall target
 Proof.
   intros target code value betaCode betaStep seedTerm e hcode hsat.
   cbn [zeroCase raw_formula_sat] in hsat.
-  apply standardRowZero.
-  - apply (hull_rawNumeralValue_injective M ambientSeed rank
-      (rawCanonicalSelector M) hPA).
-    etransitivity; [symmetry; exact hcode |].
-    etransitivity; [exact (proj1 hsat) |].
-    apply hull_eval_nodeTerm_numerals; [exact hPA | |];
-      apply raw_term_eval_numeral.
-  - exact (proj2 hsat).
+  nullary_row_of_sat standardRowZero hcode hsat.
 Qed.
 
 Lemma standardRowSucc_of_sat : forall target
